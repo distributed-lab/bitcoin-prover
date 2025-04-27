@@ -1,6 +1,7 @@
 [package]
 name = "blocks"
-type = "lib"
+type = "bin"
 authors = ["Distributed Lab"]
 
 [dependencies]
+sha256 = { tag = "v0.1.0", git = "https://github.com/noir-lang/sha256" }
