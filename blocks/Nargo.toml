@@ -1,0 +1,6 @@
+[package]
+name = "blocks"
+type = "lib"
+authors = ["Distributed Lab"]
+
+[dependencies]
