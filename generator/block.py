@@ -13,8 +13,8 @@ class Block:
 
     def to_toml_block(self) -> str:
         return f"version = \"0x{self.version}\"\n" + \
-                f"prev_hash = \"0x{self.prev_hash}\"\n" + \
-                f"merkle_hash = \"0x{self.merkle_hash}\"\n" + \
+                f"prev_hash = \"{self.prev_hash}\"\n" + \
+                f"merkle_hash = \"{self.merkle_hash}\"\n" + \
                 f"time = \"0x{self.time}\"\n" + \
                 f"nBits = \"0x{self.nBits}\"\n" + \
                 f"nonce = \"0x{self.nonce}\"\n"
