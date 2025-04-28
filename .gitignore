@@ -1,1 +1,4 @@
 blocks/target/
+.venv/*
+*dev*
+*__pycache__*
