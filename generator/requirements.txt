@@ -1,1 +1,1 @@
-electru-client
+electrum-client
