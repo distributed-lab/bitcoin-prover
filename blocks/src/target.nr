@@ -5,7 +5,7 @@ use super::{
 use dep::bignum::{BigNumTrait, U256};
 use std::ops::Mul;
 
-fn lt(val1: [u128], val2: [u128]) -> bool {
+pub(crate) fn lt(val1: [u128], val2: [u128]) -> bool {
     if val2[1] > val1[1] {
         true
     } else if val1[1] == val1[1] {

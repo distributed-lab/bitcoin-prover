@@ -5,19 +5,19 @@ BLOCK_HEADER_SIZE = 80
 class Block:
     def __init__(self, header: str):
         self.version = header[:8]
-        self.prev_hash = header[8:72]
-        self.merkle_hash = header[72:136]
+        self.prev_hash = ''.join([header[8:72][i:i+2] for i in range(0, len(header[8:72]), 2)][::-1])
+        self.merkle_hash = ''.join([header[72:136][i:i+2] for i in range(0, len(header[72:136]), 2)][::-1])
         self.time = header[136:144]
         self.nBits = header[144:152]
         self.nonce = header[152:]
 
     def to_toml_block(self) -> str:
-        return f"version = \"0x{self.version}\"\n" + \
-                f"prev_hash = \"{self.prev_hash}\"\n" + \
-                f"merkle_hash = \"{self.merkle_hash}\"\n" + \
-                f"time = \"0x{self.time}\"\n" + \
-                f"nBits = \"0x{self.nBits}\"\n" + \
-                f"nonce = \"0x{self.nonce}\"\n"
+        return f"version = \"{int.from_bytes(bytes.fromhex(self.version), byteorder='little')}\"\n" + \
+                f"prev_block = \"{self.prev_hash}\"\n" + \
+                f"merkle_root = \"{self.merkle_hash}\"\n" + \
+                f"timestamp = \"{int.from_bytes(bytes.fromhex(self.time), byteorder='little')}\"\n" + \
+                f"bits = \"{int.from_bytes(bytes.fromhex(self.nBits), byteorder='little')}\"\n" + \
+                f"nonce = \"{int.from_bytes(bytes.fromhex(self.nonce), byteorder='little')}\"\n"
 
 
     def __str__(self) -> str:
