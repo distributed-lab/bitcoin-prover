@@ -8,7 +8,7 @@ use std::ops::Mul;
 pub(crate) fn lt(val1: [u128], val2: [u128]) -> bool {
     if val2[1] > val1[1] {
         true
-    } else if val1[1] == val1[1] {
+    } else if val1[1] == val2[1] {
         if val2[0] > val1[0] {
             true
         } else {

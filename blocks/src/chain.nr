@@ -27,23 +27,23 @@ pub(crate) fn check_chain<let SIZE: u32>(blocks: [BlockHeader; SIZE]) -> bool {
                 is_correct = false;
                 println("new bits fail");
             } else {
-                // * 100 - noir desn't have float, we will use integers which have 2 nums after , like 2 last nums
-                let actual_time = (blocks[i - 1].timestamp - blocks[i - 2016].timestamp) * 100;
+                let actual_time =
+                    (blocks[i - 1].timestamp - blocks[i - 2016].timestamp) * 10000000000;
                 let expected_time = 2016 * 10 * 60;
                 let mut ratio = actual_time / expected_time;
-                if ratio < 25 {
-                    ratio = 25;
-                } else if ratio > 400 {
-                    ratio = 400;
+                if ratio < 2500000000 {
+                    ratio = 2500000000;
+                } else if ratio > 40000000000 {
+                    ratio = 40000000000;
                 }
 
                 let max_target = U256::from(
                     0x00000000FFFF0000000000000000000000000000000000000000000000000000,
                 );
-                // dib by 100 to compensate * 100
+
                 let mut target = uncompres_target(blocks[i - 1].bits)
                     .mul(U256::from(ratio as Field))
-                    .div(U256::from(100));
+                    .div(U256::from(10000000000));
 
                 target = if lt(max_target.get_limbs_slice(), target.get_limbs_slice()) {
                     max_target
@@ -51,7 +51,10 @@ pub(crate) fn check_chain<let SIZE: u32>(blocks: [BlockHeader; SIZE]) -> bool {
                     target
                 };
 
-                target = bitwise_and_U256(target.get_limbs_slice(), max_target.get_limbs_slice());
+                // Safety:
+                target = unsafe { cut(target) };
+
+                assert(target == uncompres_target(blocks[i].bits));
 
                 if target != uncompres_target(blocks[i].bits) {
                     is_correct = false;
@@ -84,6 +87,17 @@ pub(crate) fn check_chain<let SIZE: u32>(blocks: [BlockHeader; SIZE]) -> bool {
     is_correct
 }
 
-fn bitwise_and_U256(val1: [u128], val2: [u128]) -> U256 {
-    U256::from_slice([val1[0] & val2[0], val1[1] & val2[1], val1[2] & val2[2]])
+pub(crate) unconstrained fn cut(value: U256) -> U256 {
+    let mut res = value;
+    let mut count = 0;
+    loop {
+        if res.udiv(U256::from(2.pow_32(24))).is_zero() {
+            break;
+        }
+
+        res = res.udiv(U256::from(2.pow_32(8)));
+        count += 1;
+    }
+
+    res.mul(U256::from(2.pow_32(count * 8)))
 }
