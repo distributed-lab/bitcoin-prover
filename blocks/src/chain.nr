@@ -22,13 +22,13 @@ pub(crate) fn check_chain<let SIZE: u32>(blocks: [BlockHeader; SIZE]) -> bool {
         }
 
         // if new target
-        if (i + 1) % 2016 == 0 {
+        if i % 2016 == 0 {
             if prev_bits == blocks[i].bits {
                 is_correct = false;
                 println("new bits fail");
             } else {
                 // * 100 - noir desn't have float, we will use integers which have 2 nums after , like 2 last nums
-                let actual_time = (blocks[i].timestamp - blocks[i - 2015].timestamp) * 100;
+                let actual_time = (blocks[i - 1].timestamp - blocks[i - 2016].timestamp) * 100;
                 let expected_time = 2016 * 10 * 60;
                 let mut ratio = actual_time / expected_time;
                 if ratio < 25 {
@@ -40,9 +40,10 @@ pub(crate) fn check_chain<let SIZE: u32>(blocks: [BlockHeader; SIZE]) -> bool {
                 let max_target = U256::from(
                     0x00000000FFFF0000000000000000000000000000000000000000000000000000,
                 );
-                let unc_targ = uncompres_target(blocks[i].bits);
                 // dib by 100 to compensate * 100
-                let mut target = unc_targ.mul(U256::from(ratio as Field)).div(U256::from(100));
+                let mut target = uncompres_target(blocks[i - 1].bits)
+                    .mul(U256::from(ratio as Field))
+                    .div(U256::from(100));
 
                 target = if lt(max_target.get_limbs_slice(), target.get_limbs_slice()) {
                     max_target
@@ -52,7 +53,7 @@ pub(crate) fn check_chain<let SIZE: u32>(blocks: [BlockHeader; SIZE]) -> bool {
 
                 target = bitwise_and_U256(target.get_limbs_slice(), max_target.get_limbs_slice());
 
-                if target != unc_targ {
+                if target != uncompres_target(blocks[i].bits) {
                     is_correct = false;
                     println("target eq fail");
                 }
