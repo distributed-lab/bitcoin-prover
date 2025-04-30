@@ -1,6 +1,6 @@
 use super::{block::{BlockHeader, get_block_hash}, target::{check_target, lt, uncompres_target}};
 use dep::bignum::{BigNumTrait, U256};
-use std::ops::{Div, Mul};
+use std::ops::Mul;
 
 pub(crate) fn check_chain<let SIZE: u32>(blocks: [BlockHeader; SIZE]) -> bool {
     let mut is_correct = true;
@@ -27,23 +27,28 @@ pub(crate) fn check_chain<let SIZE: u32>(blocks: [BlockHeader; SIZE]) -> bool {
                 is_correct = false;
                 println("new bits fail");
             } else {
-                let actual_time =
-                    (blocks[i - 1].timestamp - blocks[i - 2016].timestamp) * 10000000000;
+                let actual_time = (blocks[i - 1].timestamp - blocks[i - 2016].timestamp);
                 let expected_time = 2016 * 10 * 60;
-                let mut ratio = actual_time / expected_time;
-                if ratio < 2500000000 {
-                    ratio = 2500000000;
-                } else if ratio > 40000000000 {
-                    ratio = 40000000000;
-                }
 
                 let max_target = U256::from(
                     0x00000000FFFF0000000000000000000000000000000000000000000000000000,
                 );
 
-                let mut target = uncompres_target(blocks[i - 1].bits)
-                    .mul(U256::from(ratio as Field))
-                    .div(U256::from(10000000000));
+                let targ = uncompres_target(blocks[i - 1].bits);
+                let mut target =
+                    targ.mul(U256::from(actual_time as Field)).udiv(U256::from(expected_time));
+
+                if lt(
+                    target.get_limbs_slice(),
+                    targ.udiv(U256::from(4)).get_limbs_slice(),
+                ) {
+                    target = targ.udiv(U256::from(4));
+                } else if lt(
+                    targ.mul(U256::from(4)).get_limbs_slice(),
+                    target.get_limbs_slice(),
+                ) {
+                    target = targ.mul(U256::from(4));
+                }
 
                 target = if lt(max_target.get_limbs_slice(), target.get_limbs_slice()) {
                     max_target

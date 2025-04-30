@@ -15,24 +15,29 @@ fn main(blocks: [BlockHeader; 150]) -> pub bool {
 
 #[test]
 fn test() {
-    // We use many
-    let actual_time = (1458291885 - 1457133956) as u64 * 10000000000;
+    let actual_time = (1458291885 - 1457133956);
     let expected_time = 2016 * 10 * 60;
-    let mut ratio = actual_time / expected_time;
-    if ratio < 2500000000 {
-        ratio = 2500000000;
-    } else if ratio > 40000000000 {
-        ratio = 40000000000;
-    }
 
     let max_target = U256::from(
         0x00000000FFFF0000000000000000000000000000000000000000000000000000,
     );
-    let mut target = U256::from(
+
+    let targ = U256::from(
         0x000000000000000006f0a8000000000000000000000000000000000000000000,
-    )
-        .mul(U256::from(ratio as Field))
-        .udiv(U256::from(10000000000));
+    );
+    let mut target = targ.mul(U256::from(actual_time as Field)).udiv(U256::from(expected_time));
+
+    if lt(
+        target.get_limbs_slice(),
+        targ.udiv(U256::from(4)).get_limbs_slice(),
+    ) {
+        target = targ.udiv(U256::from(4));
+    } else if lt(
+        targ.mul(U256::from(4)).get_limbs_slice(),
+        target.get_limbs_slice(),
+    ) {
+        target = targ.mul(U256::from(4));
+    }
 
     target = if lt(max_target.get_limbs_slice(), target.get_limbs_slice()) {
         max_target
@@ -40,12 +45,13 @@ fn test() {
         target
     };
 
+    // Safety:
     target = unsafe { cut(target) };
 
     assert(
-        U256::from(
-            0x000000000000000006a4c3000000000000000000000000000000000000000000,
-        )
-            == target,
+        target
+            == U256::from(
+                0x000000000000000006a4c3000000000000000000000000000000000000000000,
+            ),
     );
 }
