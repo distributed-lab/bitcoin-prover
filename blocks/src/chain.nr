@@ -45,9 +45,9 @@ pub(crate) fn check_chain<let SIZE: u32>(blocks: [BlockHeader; SIZE]) -> bool {
                 let mut target = unc_targ.mul(U256::from(ratio as Field)).div(U256::from(100));
 
                 target = if lt(max_target.get_limbs_slice(), target.get_limbs_slice()) {
-                    target
-                } else {
                     max_target
+                } else {
+                    target
                 };
 
                 target = bitwise_and_U256(target.get_limbs_slice(), max_target.get_limbs_slice());
