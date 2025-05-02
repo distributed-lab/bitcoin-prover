@@ -65,6 +65,8 @@ pub(crate) fn check_chain<let SIZE: u32>(blocks: [BlockHeader; SIZE]) -> bool {
                     is_correct = false;
                     println("target eq fail");
                 }
+
+                prev_bits = blocks[i].bits;
             }
         } else {
             if prev_bits != blocks[i].bits {
@@ -95,7 +97,7 @@ pub(crate) fn check_chain<let SIZE: u32>(blocks: [BlockHeader; SIZE]) -> bool {
 pub(crate) unconstrained fn cut(value: U256) -> U256 {
     let mut res = value;
     let mut count = 0;
-    loop {
+    for _ in 0..256 {
         if res.udiv(U256::from(2.pow_32(24))).is_zero() {
             break;
         }
