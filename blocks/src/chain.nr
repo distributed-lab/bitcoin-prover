@@ -7,6 +7,11 @@ pub(crate) fn check_chain<let SIZE: u32>(blocks: [BlockHeader; SIZE]) -> bool {
     let mut median_timestamp = blocks[0].timestamp as i64;
     let mut prev_bits = blocks[0].bits;
 
+    if !check_target(blocks[0]) {
+        is_correct = false;
+        println("target check fail");
+    }
+
     // without genesis block
     for i in 1..SIZE {
         // prev
