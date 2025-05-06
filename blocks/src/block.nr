@@ -11,46 +11,19 @@ pub(crate) struct BlockHeader {
 
 impl BlockHeader {
     pub(crate) fn to_byte_array(self) -> [u8; 80] {
-        let mut res = [0; 80];
-        let mut count = 0;
+        let mut res = u32_to_le_bytes(self.version).as_slice();
 
-        let vers = u32_to_le_bytes(self.version);
-        for i in 0..4 {
-            res[count] = vers[i];
-            count += 1;
-        }
+        res = res.append(sha256_to_le_bytes(self.prev_block));
 
-        let prev = sha256_to_le_bytes(self.prev_block);
-        for i in 0..32 {
-            res[count] = prev[i];
-            count += 1;
-        }
+        res = res.append(sha256_to_le_bytes(self.merkle_root));
 
-        let merkle = sha256_to_le_bytes(self.merkle_root);
-        for i in 0..32 {
-            res[count] = merkle[i];
-            count += 1;
-        }
+        res = res.append(u32_to_le_bytes(self.timestamp));
 
-        let time = u32_to_le_bytes(self.timestamp);
-        for i in 0..4 {
-            res[count] = time[i];
-            count += 1;
-        }
+        res = res.append(u32_to_le_bytes(self.bits));
 
-        let bits = u32_to_le_bytes(self.bits);
-        for i in 0..4 {
-            res[count] = bits[i];
-            count += 1;
-        }
+        res = res.append(u32_to_le_bytes(self.nonce));
 
-        let nonce = u32_to_le_bytes(self.nonce);
-        for i in 0..4 {
-            res[count] = nonce[i];
-            count += 1;
-        }
-
-        res
+        res.as_array()
     }
 }
 

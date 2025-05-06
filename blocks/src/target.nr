@@ -32,8 +32,8 @@ fn hash_as_u128_slice(value: [u8; 32]) -> [u128] {
     let mut res = [0; 3].as_slice();
 
     for i in 0..16 {
-        res[0] += (value[i + 16] as u128) << ((15 - i) * 8);
-        res[1] += (value[i] as u128) << ((15 - i) * 8);
+        res[0] += (value[i + 16] as u128) << ((15 - i) << 3);
+        res[1] += (value[i] as u128) << ((15 - i) << 3);
     }
 
     res
