@@ -1,4 +1,5 @@
 from typing import List
+import hashlib
 
 BLOCK_HEADER_SIZE = 80
 
@@ -10,6 +11,9 @@ class Block:
         self.time = header[136:144]
         self.nBits = header[144:152]
         self.nonce = header[152:]
+    
+    def get_block_hash(self) -> str:
+        return hashlib.sha256(hashlib.sha256(bytes.fromhex(self.version) + bytes.fromhex(self.prev_hash)[::-1] + bytes.fromhex(self.merkle_hash)[::-1] + bytes.fromhex(self.time + self.nBits + self.nonce)).digest()).digest()[::-1].hex()
 
     def to_toml_block(self) -> str:
         return f"version = \"{int.from_bytes(bytes.fromhex(self.version), byteorder='little')}\"\n" + \

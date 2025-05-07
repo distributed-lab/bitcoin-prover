@@ -1,5 +1,5 @@
 use bignum::{BigNumTrait, fields::U256::U256};
-use block::BlockHeader;
+use block::{BlockHeader, get_block_hash};
 use chain::{check_chain, cut};
 use std::ops::Mul;
 use target::lt;
@@ -9,7 +9,8 @@ pub mod convert;
 pub mod target;
 pub mod chain;
 
-fn main(blocks: [BlockHeader; 150]) -> pub bool {
+fn main(blocks: [BlockHeader; 150], last_block_hash: pub str<64>) -> pub bool {
+    assert(get_block_hash(blocks[blocks.len() - 1]) == last_block_hash);
     check_chain(blocks)
 }
 
