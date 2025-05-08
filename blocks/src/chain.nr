@@ -2,6 +2,9 @@ use super::{block::{BlockHeader, get_block_hash}, target::{check_target, lt, unc
 use dep::bignum::{BigNumTrait, U256};
 use std::ops::Mul;
 
+global expected_time: Field = 1209600;
+global max_target: Field = 0x00000000FFFF0000000000000000000000000000000000000000000000000000;
+
 pub(crate) fn check_chain<let SIZE: u32>(blocks: [BlockHeader; SIZE]) -> bool {
     let mut is_correct = true;
     let mut median_timestamp = blocks[0].timestamp as i64;
@@ -28,51 +31,42 @@ pub(crate) fn check_chain<let SIZE: u32>(blocks: [BlockHeader; SIZE]) -> bool {
 
         // if new target
         if i % 2016 == 0 {
-            if prev_bits == blocks[i].bits {
-                is_correct = false;
-                println("new bits fail");
-            } else {
-                let actual_time = (blocks[i - 1].timestamp - blocks[i - 2016].timestamp);
-                let expected_time = 2016 * 10 * 60;
+            let actual_time = (blocks[i - 1].timestamp - blocks[i - 2016].timestamp);
 
-                let max_target = U256::from(
-                    0x00000000FFFF0000000000000000000000000000000000000000000000000000,
-                );
+            let targ = uncompres_target(blocks[i - 1].bits);
+            let mut target =
+                targ.mul(U256::from((actual_time) as Field)).udiv(U256::from(expected_time));
 
-                let targ = uncompres_target(blocks[i - 1].bits);
-                let mut target =
-                    targ.mul(U256::from(actual_time as Field)).udiv(U256::from(expected_time));
-
-                if lt(
-                    target.get_limbs_slice(),
-                    targ.udiv(U256::from(4)).get_limbs_slice(),
-                ) {
-                    target = targ.udiv(U256::from(4));
-                } else if lt(
-                    targ.mul(U256::from(4)).get_limbs_slice(),
-                    target.get_limbs_slice(),
-                ) {
-                    target = targ.mul(U256::from(4));
-                }
-
-                target = if lt(max_target.get_limbs_slice(), target.get_limbs_slice()) {
-                    max_target
-                } else {
-                    target
-                };
-
-                // Safety:
-                target = unsafe { cut(target) };
-
-                assert(target == uncompres_target(blocks[i].bits));
-
-                if target != uncompres_target(blocks[i].bits) {
-                    is_correct = false;
-                    println("target eq fail");
-                }
-
-                prev_bits = blocks[i].bits;
+            if lt(
+                target.get_limbs_slice(),
+                targ.udiv(U256::from(4)).get_limbs_slice(),
+            ) {
+                target = targ.udiv(U256::from(4));
+            } else if lt(
+                targ.mul(U256::from(4)).get_limbs_slice(),
+                target.get_limbs_slice(),
+            ) {
+                target = targ.mul(U256::from(4));
             }
+
+            target = if lt(
+                U256::from(max_target).get_limbs_slice(),
+                target.get_limbs_slice(),
+            ) {
+                U256::from(max_target)
+            } else {
+                // Safety:
+                unsafe {
+                    cut(target)
+                }
+            };
+
+            if target != uncompres_target(blocks[i].bits) {
+                is_correct = false;
+                println("target eq fail");
+            }
+
+            prev_bits = blocks[i].bits;
         } else {
             if prev_bits != blocks[i].bits {
                 is_correct = false;
@@ -99,17 +93,26 @@ pub(crate) fn check_chain<let SIZE: u32>(blocks: [BlockHeader; SIZE]) -> bool {
     is_correct
 }
 
-pub(crate) unconstrained fn cut(value: U256) -> U256 {
-    let mut res = value;
+pub(crate) unconstrained fn cut(mut value: U256) -> U256 {
     let mut count = 0;
     for _ in 0..256 {
-        if res.udiv(U256::from(2.pow_32(24))).is_zero() {
+        if value.udiv(U256::from(2.pow_32(24))).is_zero() {
             break;
         }
 
-        res = res.udiv(U256::from(2.pow_32(8)));
+        value = value.udiv(U256::from(2.pow_32(8)));
         count += 1;
     }
 
-    res.mul(U256::from(2.pow_32(count * 8)))
+    if (
+        lt(
+            U256::from(7).get_limbs_slice(),
+            value.udiv(U256::from(2.pow_32(20))).get_limbs_slice(),
+        )
+    ) {
+        value = value.udiv(U256::from(2.pow_32(8)));
+        count += 1;
+    }
+
+    value.mul(U256::from(2.pow_32(count * 8)))
 }

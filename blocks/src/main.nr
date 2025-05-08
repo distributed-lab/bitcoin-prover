@@ -17,7 +17,7 @@ fn main(blocks: [BlockHeader; 150], last_block_hash: pub str<64>) -> pub bool {
 #[test]
 fn test() {
     let actual_time = (1458291885 - 1457133956);
-    let expected_time = 2016 * 10 * 60;
+    let expected_time = 1209600;
 
     let max_target = U256::from(
         0x00000000FFFF0000000000000000000000000000000000000000000000000000,
