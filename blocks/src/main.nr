@@ -47,7 +47,7 @@ fn test() {
     };
 
     // Safety:
-    target = unsafe { cut(target) };
+    target = unsafe { cut(target).0 };
 
     assert(
         target

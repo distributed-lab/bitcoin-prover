@@ -55,10 +55,17 @@ pub(crate) fn check_chain<let SIZE: u32>(blocks: [BlockHeader; SIZE]) -> bool {
             ) {
                 U256::from(max_target)
             } else {
-                // Safety:
-                unsafe {
-                    cut(target)
-                }
+                // Safety: the target will be cut using shift and compared to the res
+                let (res, shift) = unsafe { cut(target) };
+
+                assert(
+                    target.udiv(U256::from(2.pow_32(shift as Field))).mul(U256::from(2.pow_32(
+                        shift as Field,
+                    )))
+                        == res,
+                );
+
+                res
             };
 
             if target != uncompres_target(blocks[i].bits) {
@@ -93,15 +100,15 @@ pub(crate) fn check_chain<let SIZE: u32>(blocks: [BlockHeader; SIZE]) -> bool {
     is_correct
 }
 
-pub(crate) unconstrained fn cut(mut value: U256) -> U256 {
-    let mut count = 0;
+pub(crate) unconstrained fn cut(mut value: U256) -> (U256, u8) {
+    let mut count: u8 = 0;
     for _ in 0..256 {
         if value.udiv(U256::from(2.pow_32(24))).is_zero() {
             break;
         }
 
         value = value.udiv(U256::from(2.pow_32(8)));
-        count += 1;
+        count += 8;
     }
 
     if (
@@ -111,8 +118,8 @@ pub(crate) unconstrained fn cut(mut value: U256) -> U256 {
         )
     ) {
         value = value.udiv(U256::from(2.pow_32(8)));
-        count += 1;
+        count += 8;
     }
 
-    value.mul(U256::from(2.pow_32(count * 8)))
+    (value.mul(U256::from(2.pow_32(count as Field))), count)
 }
