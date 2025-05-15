@@ -1,131 +1,58 @@
-use sha256;
+use bignum::{BigNumTrait, fields::U256::U256};
+use block::{BlockHeader, get_block_hash};
+use chain::{check_chain, cut};
+use std::ops::Mul;
+use target::lt;
 
-fn u32_to_le_bytes(value: u32) -> [u8; 4] {
-    let mut res = [0; 4];
-    for i in 0..4 {
-        res[i] = (value >> (i * 8)) as u8;
-    }
+pub mod block;
+pub mod convert;
+pub mod target;
+pub mod chain;
 
-    res
+fn main(blocks: [BlockHeader; 150], last_block_hash: pub str<64>) -> pub bool {
+    assert(get_block_hash(blocks[blocks.len() - 1]) == last_block_hash);
+    check_chain(blocks)
 }
 
-fn sha256_to_le_bytes(value: str<64>) -> [u8; 32] {
-    let mut res = [0; 32];
-    let value = value.as_bytes();
-    for i in 0..32 {
-        res[31 - i] =
-            (hex_symbol_to_byte(value[2 * i]) << 4) + hex_symbol_to_byte(value[2 * i + 1]);
+#[test]
+fn test() {
+    let actual_time = (1458291885 - 1457133956);
+    let expected_time = 1209600;
+
+    let max_target = U256::from(
+        0x00000000FFFF0000000000000000000000000000000000000000000000000000,
+    );
+
+    let targ = U256::from(
+        0x000000000000000006f0a8000000000000000000000000000000000000000000,
+    );
+    let mut target = targ.mul(U256::from(actual_time as Field)).udiv(U256::from(expected_time));
+
+    if lt(
+        target.get_limbs_slice(),
+        targ.udiv(U256::from(4)).get_limbs_slice(),
+    ) {
+        target = targ.udiv(U256::from(4));
+    } else if lt(
+        targ.mul(U256::from(4)).get_limbs_slice(),
+        target.get_limbs_slice(),
+    ) {
+        target = targ.mul(U256::from(4));
     }
 
-    res
-}
-
-fn bytes_to_hex_string(value: [u8; 32]) -> str<64> {
-    let mut res = [0; 64];
-    for i in 0..32 {
-        res[2 * i] = byte_to_hex_symbol(value[i] >> 4);
-        res[2 * i + 1] = byte_to_hex_symbol(value[i] & 0xf);
-    }
-
-    str<64>::from(res)
-}
-
-fn byte_to_hex_symbol(value: u8) -> u8 {
-    if value <= 9 {
-        value + 48
+    target = if lt(max_target.get_limbs_slice(), target.get_limbs_slice()) {
+        max_target
     } else {
-        value + 87
-    }
-}
-
-fn hex_symbol_to_byte(value: u8) -> u8 {
-    if value < 58 {
-        value - 48
-    } else {
-        value - 87
-    }
-}
-
-fn reverse_bytes(bytes: [u8; 32]) -> [u8; 32] {
-    let mut res = [0; 32];
-    for i in 0..32 {
-        res[i] = bytes[31 - i];
-    }
-    res
-}
-
-struct Block {
-    version: u32,
-    prev_block: str<64>,
-    merkle_root: str<64>,
-    timestamp: u32,
-    bits: u32,
-    nonce: u32,
-}
-
-impl Block {
-    fn to_byte_array(self) -> [u8; 80] {
-        let mut res = [0; 80];
-        let mut count = 0;
-
-        let vers = u32_to_le_bytes(self.version);
-        for i in 0..4 {
-            res[count] = vers[i];
-            count += 1;
-        }
-
-        let prev = sha256_to_le_bytes(self.prev_block);
-        for i in 0..32 {
-            res[count] = prev[i];
-            count += 1;
-        }
-
-        let merkle = sha256_to_le_bytes(self.merkle_root);
-        for i in 0..32 {
-            res[count] = merkle[i];
-            count += 1;
-        }
-
-        let time = u32_to_le_bytes(self.timestamp);
-        for i in 0..4 {
-            res[count] = time[i];
-            count += 1;
-        }
-
-        let bits = u32_to_le_bytes(self.bits);
-        for i in 0..4 {
-            res[count] = bits[i];
-            count += 1;
-        }
-
-        let nonce = u32_to_le_bytes(self.nonce);
-        for i in 0..4 {
-            res[count] = nonce[i];
-            count += 1;
-        }
-
-        res
-    }
-}
-
-fn get_block_hash(value: Block) -> str<64> {
-    bytes_to_hex_string(
-        reverse_bytes(sha256::digest(sha256::digest(value.to_byte_array()))),
-    )
-}
-
-fn main() {
-    let block = Block {
-        version: 1,
-        prev_block: "00000000b873e79784647a6c82962c70d228557d24a747ea4d1b8bbe878e1206",
-        merkle_root: "20222eb90f5895556926c112bb5aa0df4ab5abc3107e21a6950aec3b2e3541e2",
-        timestamp: 1296688946,
-        bits: 486604799,
-        nonce: 875942400,
+        target
     };
 
+    // Safety:
+    target = unsafe { cut(target).0 };
+
     assert(
-        get_block_hash(block) == "000000006c02c8ea6e4ff69651f7fcde348fb9d557a06e6957b65552002a7820",
+        target
+            == U256::from(
+                0x000000000000000006a4c3000000000000000000000000000000000000000000,
+            ),
     );
-    println(get_block_hash(block));
 }

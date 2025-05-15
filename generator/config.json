@@ -5,10 +5,10 @@
     },
     "blocks": {
         "start": 0,
-        "count": 10000
+        "count": 150
     },
     "nargo": {
-        "struct_name": "BlockHeader",
-        "file_path": "./Prover.dev.toml"
+        "struct_name": "blocks",
+        "file_path": "../blocks/Prover.toml"
     }
 }

@@ -21,6 +21,7 @@ def main():
 
     nargo_toml = create_nargo_toml(blocks, config["nargo"]["struct_name"])
     with open(config["nargo"]["file_path"], "w") as f:
+        f.write(f"last_block_hash = \"{blocks[len(blocks) - 1].get_block_hash()}\"\n\n")
         f.write(nargo_toml)
 
 if __name__ == "__main__":
