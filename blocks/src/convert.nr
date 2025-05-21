@@ -34,7 +34,7 @@ pub(crate) fn bytes_to_hex_string(value: [u8; 32]) -> str<64> {
         res[(i << 1) + 1] = byte_to_hex_symbol(value[i] & 0xf);
     }
 
-    str<64>::from(res)
+    res.as_str_unchecked()
 }
 
 pub(crate) fn byte_to_hex_symbol(value: u8) -> u8 {
