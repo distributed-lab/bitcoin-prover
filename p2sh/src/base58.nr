@@ -11,7 +11,7 @@ pub(crate) fn check_script<let LEN: u32, let ADR: u32>(script: str<LEN>, addr: s
     get_address::<ADR>(hash) == addr
 }
 
-fn script_to_bytes<let LEN: u32>(script: str<LEN>) -> [u8; LEN / 2] {
+pub(crate) fn script_to_bytes<let LEN: u32>(script: str<LEN>) -> [u8; LEN / 2] {
     let raw_bytes = script.as_bytes();
     let mut res = [0; LEN / 2];
 
