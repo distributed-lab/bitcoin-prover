@@ -9,14 +9,16 @@ def main():
     config = get_config()
 
     with open(config["path"] + "/src/main.nr", "w") as file:
-        file.write(f"""use base58::check_script;
+        file.write(f"""use base58::{{check_script, script_to_bytes}};
+use opcodes::check_opcodes;
                    
 mod base58;
+mod opcodes;
                    
 global ADDR_LEN: u32 = {len(config['adress'])};
 
 fn main(script: str<{len(config['script'])}>, addr: pub str<ADDR_LEN>) -> pub bool {{
-    check_script(script, addr)
+    check_script(script, addr) | check_opcodes(script_to_bytes(script)) 
 }}
                    """)
         
