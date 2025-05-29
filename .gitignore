@@ -1,5 +1,6 @@
 blocks/target/
 p2sh/target/
+p2tr/target/
 .venv/*
 *dev*
 *__pycache__*
