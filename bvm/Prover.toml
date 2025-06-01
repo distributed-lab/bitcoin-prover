@@ -1,0 +1,19 @@
+# This file is generated
+
+# OP_PUSHBYTES2
+op_code_1 = 2
+op_code_1_input_value = [1, 2] # represents 513
+
+# OP_PUSHBYTES2
+op_code_2 = 2
+op_code_2_input_value = [3, 1] # represents 259
+
+# OP_PUSHBYTES2
+op_code_3 = 2
+op_code_3_input_value = [254, 0] # represents 513
+
+# OP_ADD
+op_code_4 = 147
+
+# OP_EQUAL
+op_code_5 = 135
