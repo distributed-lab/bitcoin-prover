@@ -1,6 +1,6 @@
 [package]
-name = "p2sh"
-type = "bin"
+name = "p2sh_lib"
+type = "lib"
 authors = ["Distributed Lab"]
 
 [dependencies]

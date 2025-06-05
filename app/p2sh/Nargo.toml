@@ -1,0 +1,6 @@
+[package]
+name = "p2sh_bin"
+type = "bin"
+
+[dependencies]
+p2sh_lib = { path = "../../crates/p2sh" }
