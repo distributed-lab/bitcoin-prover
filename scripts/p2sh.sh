@@ -18,4 +18,4 @@ bb prove -b ./target/p2sh_bin.json -w ./target/p2sh_bin.gz -o ./target/p2sh_bin
 bb write_vk -b ./target/p2sh_bin.json -o ./target/p2sh_bin
 
 # Verify the proof
-bb verify -k ./target/p2sh_bin/vk -p ./target/p2sh_bin/proof
+bb verify -k ./target/p2sh_bin/vk -p ./target/p2sh_bin/proof -i ./target/p2sh_bin/public_inputs

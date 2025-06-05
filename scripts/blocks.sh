@@ -18,4 +18,4 @@ bb prove -b ./target/blocks_bin.json -w ./target/blocks_bin.gz -o ./target/block
 bb write_vk -b ./target/blocks_bin.json -o ./target/blocks_bin
 
 # Verify the proof
-bb verify -k ./target/blocks_bin/vk -p ./target/blocks_bin/proof
+bb verify -k ./target/blocks_bin/vk -p ./target/blocks_bin/proof -i ./target/blocks_bin/public_inputs
