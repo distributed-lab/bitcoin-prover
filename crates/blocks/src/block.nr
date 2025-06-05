@@ -1,6 +1,6 @@
 use super::convert::{bytes_to_hex_string, reverse_bytes, sha256_to_le_bytes, u32_to_le_bytes};
 
-pub(crate) struct BlockHeader {
+pub struct BlockHeader {
     pub version: u32,
     pub prev_block: str<64>,
     pub merkle_root: str<64>,

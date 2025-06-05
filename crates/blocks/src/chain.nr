@@ -5,7 +5,7 @@ use std::ops::Mul;
 global expected_time: Field = 1209600;
 global max_target: Field = 0x00000000FFFF0000000000000000000000000000000000000000000000000000;
 
-pub(crate) fn check_chain<let SIZE: u32>(blocks: [BlockHeader; SIZE]) -> bool {
+pub fn check_chain<let SIZE: u32>(blocks: [BlockHeader; SIZE]) -> bool {
     let mut is_correct = true;
     let mut median_timestamp = blocks[0].timestamp as i64;
     let mut prev_bits = blocks[0].bits;

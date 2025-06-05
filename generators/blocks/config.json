@@ -5,10 +5,10 @@
     },
     "blocks": {
         "start": 0,
-        "count": 150
+        "count": 3
     },
     "nargo": {
         "struct_name": "blocks",
-        "file_path": "../blocks/Prover.toml"
+        "file_path": "app/blocks/Prover.toml"
     }
 }

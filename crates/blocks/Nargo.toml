@@ -1,6 +1,6 @@
 [package]
-name = "blocks"
-type = "bin"
+name = "blocks_lib"
+type = "lib"
 authors = ["Distributed Lab"]
 
 [dependencies]

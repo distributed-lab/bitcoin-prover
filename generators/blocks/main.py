@@ -7,7 +7,7 @@ import logging
 def setup_logging():
     logging.basicConfig(level=logging.DEBUG)
 
-def get_config(path: str = "./config.json") -> Dict:
+def get_config(path: str = "./generators/blocks/config.json") -> Dict:
     with open(path, "r") as f:
         return json.load(f)
 
