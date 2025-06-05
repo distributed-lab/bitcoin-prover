@@ -1,9 +1,11 @@
+use super::merkle_root::hex_to_bytes;
+
 global bech32m: [u8; 32] = "qpzry9x8gf2tvdw0s3jn54khce6mua7l".as_bytes();
 
-fn get_address(sha2: [u8; 32]) -> str<62> {
+pub(crate) fn get_address(value: [u8; 32]) -> str<62> {
     let mut res = [0; 0].as_slice();
 
-    let data = bytes_to_bits(sha2).as_slice().append([0, 0, 0, 0]);
+    let data = bytes_to_bits(value).as_slice().append([0, 0, 0, 0]);
 
     let mut nums = [0; 0].as_slice();
     for i in 0..52 {

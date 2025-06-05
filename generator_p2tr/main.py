@@ -8,59 +8,71 @@ def get_config(path: str = "./config.json") -> Dict:
 def main():
     config = get_config()
 
-    N = len(config['scripts'])
-
     with open(config["path"] + "/src/main.nr", "w") as file:
-        file.write(f"""use merkle_root::{{hash_from_script, get_branch}};
-                   
+        file.write(f"""use dep::bignum::{{BigNum, U768}};
+use merkle_root::{{hex_to_bytes, hash_from_script, get_branch}};
+use keys::{{Point, get_tweaked_pub_key}};
+use bech32m::get_address;
+use types::{{I768, sqrt_secp256k}};
+use std::ops::{{Mul, Add}};
+
 mod merkle_root;
 mod keys;
 mod types;
+mod bech32m;
                    
-global N: u32 = {N};
+global N: u32 = {len(config['script'])};
 
 fn main(
-    address: str<62>, 
-    priv_key: str<64>,
+    address: pub str<62>, 
+    pub_key: str<64>,
+    script: str<N>,
 """)
         
-        for idx, script in enumerate(config['scripts']):
-            file.write(f"\tscript{idx + 1}: str<{len(script)}>,\n")
+        for idx in range(0, len(config['merklePath'])):
+            file.write(f"\tnode{idx + 1}: str<64>,\n")
         
-        file.write(f""") -> pub bool {{
-    let mut scrs0: [[u8; 32]; {N}] = [[0; 32]; {N}];\n""")
-        
-        for i in range(1, N + 1):
-            file.write(f"\tscrs0[{i - 1}] = hash_from_script(script{i});\n")
+        file.write(f""") -> pub bool {{        
+    let mut node: [u8; 32] = hash_from_script(script);\n""")
+                
+        for i in range(1, len(config['merklePath']) + 1):
+            file.write(f"\tnode = get_branch(node, hex_to_bytes(node{i}));\n")
 
-        file.write("\n")
-
-        lvl = 0
-        prev = 0
-        while N != 1:
-            lvl += 1
-            prev = N
-            N = N // 2 + N % 2
-            file.write(f"\tlet mut scrs{lvl}: [[u8; 32]; {N}] = [[0; 32]; {N}];\n")
-            for i in range(0, N):
-                if i == N - 1 and prev % 2 == 1:
-                    file.write(f"\tscrs{lvl}[{i}] = scrs{lvl - 1}[{2 * i}];\n")
-                else:
-                    file.write(f"\tscrs{lvl}[{i}] = get_branch(scrs{lvl - 1}[{2 * i}], scrs{lvl - 1}[{2 * i + 1}]);\n")
-
-
-        file.write(f"""
-    println(scrs{lvl}[0]);
-    true
-}}""")
+        file.write("""
+                   
+    let modulo: U768 = U768::from_be_bytes([
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFE, 0xFF, 0xFF, 0xFC, 0x2F,
+    ]);
+               
+    let pub_x = I768 {
+        num: U768::from_be_bytes([0; 65].as_slice().append(hex_to_bytes(pub_key)).as_array::<97>()),
+        is_neg: false
+    };
+                   
+    // y^2 = x^3 + 7
+    let pub_y = sqrt_secp256k(pub_x.mul(pub_x).umod(modulo).mul(pub_x).add(I768::from(7)).umod(modulo));
+                   
+    let pub_key_point = Point { x: pub_x, y: pub_y, is_O: false};
+    
+    let twpk = get_tweaked_pub_key(pub_key_point, node);
+               
+    get_address(twpk.to_be_bytes().as_slice().pop_front().1.as_array()) == address
+}
+""")
         
     print("main.nr was generated")
 
     with open(config["path"] + "/Prover.toml", "w") as file:
-        file.write(f'address = "{config["address"]}"\npriv_key = "{config["priv_key"]}"\n')
+        file.write(f'address = "{config["address"]}"\npub_key = "{config["pub_key"]}"\nscript = "{config["script"]}"\n')
 
-        for idx, script in enumerate(config['scripts']):
-            file.write(f'script{idx + 1} = "{script}"\n')
+        for idx, script in enumerate(config['merklePath']):
+            file.write(f'node{idx + 1} = "{script}"\n')
     
     print("Prover.toml was generated")
 

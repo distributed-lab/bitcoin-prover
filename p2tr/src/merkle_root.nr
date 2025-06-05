@@ -56,7 +56,7 @@ pub(crate) fn hash_from_script<let N: u32>(script: str<N>) -> [u8; 32] {
     if N < 253 {
         sha256::digest::<66 + N / 2>(dstringHash
             .as_slice()
-            .append([192].as_slice().push_back((N / 2) as u8).append(script_to_bytes(script)))
+            .append([192].as_slice().push_back((N / 2) as u8).append(hex_to_bytes(script)))
             .as_array())
     } else if N < 65536 {
         sha256::digest::<68 + N / 2>(dstringHash
@@ -65,7 +65,7 @@ pub(crate) fn hash_from_script<let N: u32>(script: str<N>) -> [u8; 32] {
                 .as_slice()
                 .push_back(253)
                 .append(((N / 2) as Field).to_le_bytes::<2>())
-                .append(script_to_bytes(script)))
+                .append(hex_to_bytes(script)))
             .as_array())
     } else if N < 4294967296 {
         sha256::digest::<70 + N / 2>(dstringHash
@@ -74,7 +74,7 @@ pub(crate) fn hash_from_script<let N: u32>(script: str<N>) -> [u8; 32] {
                 .as_slice()
                 .push_back(254)
                 .append(((N / 2) as Field).to_le_bytes::<4>())
-                .append(script_to_bytes(script)))
+                .append(hex_to_bytes(script)))
             .as_array())
     } else {
         sha256::digest::<74 + N / 2>(dstringHash
@@ -83,12 +83,12 @@ pub(crate) fn hash_from_script<let N: u32>(script: str<N>) -> [u8; 32] {
                 .as_slice()
                 .push_back(255)
                 .append(((N / 2) as Field).to_le_bytes::<8>())
-                .append(script_to_bytes(script)))
+                .append(hex_to_bytes(script)))
             .as_array())
     }
 }
 
-fn script_to_bytes<let LEN: u32>(script: str<LEN>) -> [u8; LEN / 2] {
+pub(crate) fn hex_to_bytes<let LEN: u32>(script: str<LEN>) -> [u8; LEN / 2] {
     let raw_bytes = script.as_bytes();
     let mut res = [0; LEN / 2];
 
