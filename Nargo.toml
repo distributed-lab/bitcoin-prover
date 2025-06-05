@@ -3,6 +3,7 @@ name = "wrapless-prover"
 members = [
     "crates/blocks",
     "crates/p2sh",
+    "crates/p2tr",
     "app/blocks",
     "app/p2sh",
     "app/p2tr"
