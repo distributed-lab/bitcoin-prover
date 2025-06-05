@@ -1,5 +1,5 @@
 {
-    "path": "../p2tr",
+    "path": "./app/p2tr",
     "script": "5887",
     "merklePath": [
         

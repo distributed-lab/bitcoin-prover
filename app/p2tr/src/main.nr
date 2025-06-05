@@ -1,28 +1,19 @@
 use dep::bignum::{BigNum, U768};
-use bech32m::get_address;
-use keys::{get_tweaked_pub_key, Point};
-use merkle_root::{get_branch, hash_from_script, hex_to_bytes};
-use std::ops::{Add, Mul};
-use types::{I768, sqrt_secp256k};
-
-mod merkle_root;
-mod keys;
-mod types;
-mod bech32m;
-
-global N: u32 = 40;
+use p2tr_lib::merkle_root::{hex_to_bytes, hash_from_script, get_branch};
+use p2tr_lib::keys::{Point, get_tweaked_pub_key};
+use p2tr_lib::bech32m::get_address;
+use p2tr_lib::types::{I768, sqrt_secp256k};
+use std::ops::{Mul, Add};
+                   
+global N: u32 = 4;
 
 fn main(
-    address: pub str<62>,
+    address: pub str<62>, 
     pub_key: str<64>,
     script: str<N>,
-    node1: str<64>,
-    node2: str<64>,
-) -> pub bool {
+) -> pub bool {        
     let mut node: [u8; 32] = hash_from_script(script);
-    node = get_branch(node, hex_to_bytes(node1));
-    node = get_branch(node, hex_to_bytes(node2));
-
+  
     let modulo: U768 = U768::from_be_bytes([
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -32,21 +23,18 @@ fn main(
         0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
         0xFF, 0xFF, 0xFE, 0xFF, 0xFF, 0xFC, 0x2F,
     ]);
-
+               
     let pub_x = I768 {
-        num: U768::from_be_bytes(
-            [0; 65].as_slice().append(hex_to_bytes(pub_key)).as_array::<97>(),
-        ),
-        is_neg: false,
+        num: U768::from_be_bytes([0; 65].as_slice().append(hex_to_bytes(pub_key)).as_array::<97>()),
+        is_neg: false
     };
+                   
     // y^2 = x^3 + 7
-    let pub_y = sqrt_secp256k(pub_x.mul(pub_x).umod(modulo).mul(pub_x).add(I768::from(7)).umod(
-        modulo,
-    ));
-
-    let pub_key_point = Point { x: pub_x, y: pub_y, is_O: false };
-
+    let pub_y = sqrt_secp256k(pub_x.mul(pub_x).umod(modulo).mul(pub_x).add(I768::from(7)).umod(modulo));
+                   
+    let pub_key_point = Point { x: pub_x, y: pub_y, is_O: false};
+    
     let twpk = get_tweaked_pub_key(pub_key_point, node);
-
+               
     get_address(twpk.to_be_bytes().as_slice().pop_front().1.as_array()) == address
 }

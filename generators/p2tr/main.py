@@ -1,7 +1,7 @@
 import json
 from typing import Dict
 
-def get_config(path: str = "./config.json") -> Dict:
+def get_config(path: str = "./generators/p2tr/config.json") -> Dict:
     with open(path, "r") as f:
         return json.load(f)
     
@@ -10,16 +10,11 @@ def main():
 
     with open(config["path"] + "/src/main.nr", "w") as file:
         file.write(f"""use dep::bignum::{{BigNum, U768}};
-use merkle_root::{{hex_to_bytes, hash_from_script, get_branch}};
-use keys::{{Point, get_tweaked_pub_key}};
-use bech32m::get_address;
-use types::{{I768, sqrt_secp256k}};
+use p2tr_lib::merkle_root::{{hex_to_bytes, hash_from_script, get_branch}};
+use p2tr_lib::keys::{{Point, get_tweaked_pub_key}};
+use p2tr_lib::bech32m::get_address;
+use p2tr_lib::types::{{I768, sqrt_secp256k}};
 use std::ops::{{Mul, Add}};
-
-mod merkle_root;
-mod keys;
-mod types;
-mod bech32m;
                    
 global N: u32 = {len(config['script'])};
 
@@ -38,8 +33,7 @@ fn main(
         for i in range(1, len(config['merklePath']) + 1):
             file.write(f"\tnode = get_branch(node, hex_to_bytes(node{i}));\n")
 
-        file.write("""
-                   
+        file.write("""  
     let modulo: U768 = U768::from_be_bytes([
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,

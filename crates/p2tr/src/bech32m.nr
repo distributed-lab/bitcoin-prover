@@ -2,7 +2,7 @@ use super::merkle_root::hex_to_bytes;
 
 global bech32m: [u8; 32] = "qpzry9x8gf2tvdw0s3jn54khce6mua7l".as_bytes();
 
-pub(crate) fn get_address(value: [u8; 32]) -> str<62> {
+pub fn get_address(value: [u8; 32]) -> str<62> {
     let mut res = [0; 0].as_slice();
 
     let data = bytes_to_bits(value).as_slice().append([0, 0, 0, 0]);

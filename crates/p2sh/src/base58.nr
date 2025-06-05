@@ -4,14 +4,14 @@ use std::ops::Mul;
 
 global base58: [u8; 58] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz".as_bytes();
 
-pub(crate) fn check_script<let LEN: u32, let ADR: u32>(script: str<LEN>, addr: str<ADR>) -> bool {
+pub fn check_script<let LEN: u32, let ADR: u32>(script: str<LEN>, addr: str<ADR>) -> bool {
     let script = script_to_bytes(script);
     let hash = ripemd160::<32>(sha256::digest(script));
 
     get_address::<ADR>(hash) == addr
 }
 
-pub(crate) fn script_to_bytes<let LEN: u32>(script: str<LEN>) -> [u8; LEN / 2] {
+pub fn script_to_bytes<let LEN: u32>(script: str<LEN>) -> [u8; LEN / 2] {
     let raw_bytes = script.as_bytes();
     let mut res = [0; LEN / 2];
 

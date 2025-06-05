@@ -33,7 +33,7 @@ use dep::bignum::{BigNum, U256};
 //     scrs[0]
 // }
 
-pub(crate) fn get_branch(leaf1: [u8; 32], leaf2: [u8; 32]) -> [u8; 32] {
+pub fn get_branch(leaf1: [u8; 32], leaf2: [u8; 32]) -> [u8; 32] {
     let concat: [u8; 64] = if (
         U256::from_be_bytes(leaf1.as_slice().push_front(0).as_array())
             < U256::from_be_bytes(leaf2.as_slice().push_front(0).as_array())
@@ -49,7 +49,7 @@ pub(crate) fn get_branch(leaf1: [u8; 32], leaf2: [u8; 32]) -> [u8; 32] {
     sha256::digest(dstringHash.as_slice().append(concat).as_array::<128>())
 }
 
-pub(crate) fn hash_from_script<let N: u32>(script: str<N>) -> [u8; 32] {
+pub fn hash_from_script<let N: u32>(script: str<N>) -> [u8; 32] {
     // SHA256( SHA256(string) || SHA256(string) || data )
     let stringHash = sha256::digest("TapLeaf".as_bytes());
     let dstringHash = stringHash.as_slice().append(stringHash).as_array::<64>();
@@ -88,7 +88,7 @@ pub(crate) fn hash_from_script<let N: u32>(script: str<N>) -> [u8; 32] {
     }
 }
 
-pub(crate) fn hex_to_bytes<let LEN: u32>(script: str<LEN>) -> [u8; LEN / 2] {
+pub fn hex_to_bytes<let LEN: u32>(script: str<LEN>) -> [u8; LEN / 2] {
     let raw_bytes = script.as_bytes();
     let mut res = [0; LEN / 2];
 

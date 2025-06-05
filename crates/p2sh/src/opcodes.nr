@@ -4,7 +4,7 @@ use super::base58::script_to_bytes;
 global error: [u8; 15] =
     [126, 127, 128, 129, 131, 132, 133, 134, 141, 142, 149, 150, 151, 152, 153];
 
-pub(crate) fn check_opcodes<let LEN: u32>(script: [u8; LEN]) -> bool {
+pub fn check_opcodes<let LEN: u32>(script: [u8; LEN]) -> bool {
     let mut res = true;
     let mut ignore_to = 0;
     let mut size = 0;

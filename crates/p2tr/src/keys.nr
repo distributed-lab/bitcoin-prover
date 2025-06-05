@@ -72,7 +72,7 @@ fn gcd(a: I768, b: I768) -> (I768, I768) {
     }
 }
 
-pub(crate) fn get_pub_key(mut priv_key: U256, modulo: U768) -> Point {
+pub fn get_pub_key(mut priv_key: U256, modulo: U768) -> Point {
     let mut res1 = Point { x: I768::from(0), y: I768::from(0), is_O: true };
 
     // Base point
@@ -119,7 +119,7 @@ pub(crate) fn get_pub_key(mut priv_key: U256, modulo: U768) -> Point {
     //add_point(res1, res2)
 }
 
-pub(crate) fn get_tweaked_pub_key(pub_key: Point, merkle_root: [u8; 32]) -> U256 {
+pub fn get_tweaked_pub_key(pub_key: Point, merkle_root: [u8; 32]) -> U256 {
     let stringHash = sha256::digest("TapTweak".as_bytes());
     let dstringHash = stringHash.as_slice().append(stringHash).as_array::<64>();
 
