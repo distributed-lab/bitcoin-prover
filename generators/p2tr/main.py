@@ -21,6 +21,7 @@ global N: u32 = {len(config['script'])};
 fn main(
     address: pub str<62>, 
     pub_key: str<64>,
+    is_odd: bool,
     script: str<N>,
 """)
         
@@ -50,7 +51,7 @@ fn main(
     };
                    
     // y^2 = x^3 + 7
-    let pub_y = sqrt_secp256k(pub_x.mul(pub_x).umod(modulo).mul(pub_x).add(I768::from(7)).umod(modulo));
+    let pub_y = sqrt_secp256k(pub_x.mul(pub_x).umod(modulo).mul(pub_x).add(I768::from(7)).umod(modulo), is_odd);
                    
     let pub_key_point = Point { x: pub_x, y: pub_y, is_O: false};
     
@@ -63,7 +64,7 @@ fn main(
     print("main.nr was generated")
 
     with open(config["path"] + "/Prover.toml", "w") as file:
-        file.write(f'address = "{config["address"]}"\npub_key = "{config["pub_key"]}"\nscript = "{config["script"]}"\n')
+        file.write(f'address = "{config["address"]}"\npub_key = "{config["pub_key"]}"\nis_odd = {config["odd"]}\nscript = "{config["script"]}"\n')
 
         for idx, script in enumerate(config['merklePath']):
             file.write(f'node{idx + 1} = "{script}"\n')

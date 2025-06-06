@@ -7,7 +7,7 @@ use std::ops::{Add, Mul};
 
 global N: u32 = 4;
 
-fn main(address: pub str<62>, pub_key: str<64>, script: str<N>) -> pub bool {
+fn main(address: pub str<62>, pub_key: str<64>, is_odd: bool, script: str<N>) -> pub bool {
     let mut node: [u8; 32] = hash_from_script(script);
 
     let modulo: U768 = U768::from_be_bytes([
@@ -28,9 +28,10 @@ fn main(address: pub str<62>, pub_key: str<64>, script: str<N>) -> pub bool {
     };
 
     // y^2 = x^3 + 7
-    let pub_y = sqrt_secp256k(pub_x.mul(pub_x).umod(modulo).mul(pub_x).add(I768::from(7)).umod(
-        modulo,
-    ));
+    let pub_y = sqrt_secp256k(
+        pub_x.mul(pub_x).umod(modulo).mul(pub_x).add(I768::from(7)).umod(modulo),
+        is_odd,
+    );
 
     let pub_key_point = Point { x: pub_x, y: pub_y, is_O: false };
 

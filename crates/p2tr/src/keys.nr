@@ -116,8 +116,6 @@ pub fn get_pub_key(mut priv_key: U256, modulo: U768) -> Point {
     }
 
     res1
-
-    //add_point(res1, res2)
 }
 
 pub fn get_tweaked_pub_key(pub_key: Point, merkle_root: [u8; 32]) -> U256 {
@@ -130,9 +128,6 @@ pub fn get_tweaked_pub_key(pub_key: Point, merkle_root: [u8; 32]) -> U256 {
         .append(merkle_root)
         .as_array::<128>());
 
-    println("tweak: ");
-    println(tweak);
-
     let modulo: U768 = U768::from_be_bytes([
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -143,13 +138,10 @@ pub fn get_tweaked_pub_key(pub_key: Point, merkle_root: [u8; 32]) -> U256 {
         0xFF, 0xFF, 0xFE, 0xFF, 0xFF, 0xFC, 0x2F,
     ]);
 
-    let tweak_point = get_pub_key(
+    let mut tweak_point = get_pub_key(
         U256::from_be_bytes(tweak.as_slice().push_front(0).as_array::<33>()),
         modulo,
     );
-
-    println("tweaked point: ");
-    println(tweak_point);
 
     get_256_bits_from_768(add_point(pub_key, tweak_point, modulo).x.num)
 }
@@ -194,19 +186,26 @@ fn get_tweaked_pub_key_test() {
     ]);
 
     // y^2 = x^3 + 7
-    let pub_y = sqrt_secp256k(pub_x.mul(pub_x).umod(modulo).mul(pub_x).add(I768::from(7)).umod(
-        modulo,
-    ));
+    let pub_y = sqrt_secp256k(
+        pub_x.mul(pub_x).umod(modulo).mul(pub_x).add(I768::from(7)).umod(modulo),
+        false,
+    );
 
     let pub_key_point = Point { x: pub_x, y: pub_y, is_O: false };
 
-    println("tweaked pub key: ");
-    println(get_tweaked_pub_key(
-        pub_key_point,
-        hex_to_bytes(
-            "b5b72eea07b3e338962944a752a98772bbe1f1b6550e6fb6ab8c6e6adb152e7c",
-        ),
-    ));
+    assert(
+        get_tweaked_pub_key(
+            pub_key_point,
+            hex_to_bytes(
+                "b5b72eea07b3e338962944a752a98772bbe1f1b6550e6fb6ab8c6e6adb152e7c",
+            ),
+        )
+            == U256::from_be_bytes([
+                0x00, 0x56, 0x25, 0x29, 0x04, 0x7f, 0x47, 0x6b, 0x9a, 0x83, 0x3a, 0x5a, 0x78, 0x0a,
+                0x75, 0x84, 0x5e, 0xc3, 0x29, 0x80, 0x33, 0x0d, 0x76, 0xd1, 0xac, 0x9f, 0x35, 0x1d,
+                0xc7, 0x6b, 0xce, 0x5d, 0x72,
+            ]),
+    );
 }
 
 #[test]
