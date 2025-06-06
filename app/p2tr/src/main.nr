@@ -37,5 +37,13 @@ fn main(address: pub str<62>, pub_key: str<64>, is_odd: bool, script: str<N>) ->
 
     let twpk = get_tweaked_pub_key(pub_key_point, node);
 
+    println("Pub key point: ");
+    println("X: ");
+    println(pub_key_point.x.num.to_be_bytes());
+    println("Y: ");
+    println(pub_key_point.y.num.to_be_bytes());
+    println("twpk: ");
+    println(twpk.to_be_bytes());
+
     get_address(twpk.to_be_bytes().as_slice().pop_front().1.as_array()) == address
 }

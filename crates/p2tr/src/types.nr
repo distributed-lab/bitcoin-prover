@@ -124,5 +124,6 @@ unconstrained fn _sqrt_secp256k(value: I768, modulo: U768) -> I768 {
 #[test]
 fn sqrt_test() {
     // We don't need to check the result because of assert into this function
-    let _ = I768::from(34);
+    let num = I768::from(34);
+    sqrt_secp256k(num, true);
 }

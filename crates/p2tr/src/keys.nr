@@ -128,6 +128,9 @@ pub fn get_tweaked_pub_key(pub_key: Point, merkle_root: [u8; 32]) -> U256 {
         .append(merkle_root)
         .as_array::<128>());
 
+    println("tweak: ");
+    println(tweak);
+
     let modulo: U768 = U768::from_be_bytes([
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -142,6 +145,12 @@ pub fn get_tweaked_pub_key(pub_key: Point, merkle_root: [u8; 32]) -> U256 {
         U256::from_be_bytes(tweak.as_slice().push_front(0).as_array::<33>()),
         modulo,
     );
+
+    println("Tweak point: ");
+    println("X: ");
+    println(tweak_point.x.num.to_be_bytes());
+    println("Y: ");
+    println(tweak_point.y.num.to_be_bytes());
 
     get_256_bits_from_768(add_point(pub_key, tweak_point, modulo).x.num)
 }

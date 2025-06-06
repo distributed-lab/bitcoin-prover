@@ -64,7 +64,7 @@ fn main(
     print("main.nr was generated")
 
     with open(config["path"] + "/Prover.toml", "w") as file:
-        file.write(f'address = "{config["address"]}"\npub_key = "{config["pub_key"]}"\nis_odd = {config["odd"]}\nscript = "{config["script"]}"\n')
+        file.write(f'address = "{config["address"]}"\npub_key = "{config["pub_key"]}"\nis_odd = {str(config["odd"]).lower()}\nscript = "{config["script"]}"\n')
 
         for idx, script in enumerate(config['merklePath']):
             file.write(f'node{idx + 1} = "{script}"\n')
