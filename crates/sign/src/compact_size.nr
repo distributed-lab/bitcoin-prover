@@ -1,6 +1,6 @@
 pub struct CompactSize<let N: u32> {
     /// Number of bytes in the compact size
-    /// Can be 1 (FC), 2 (FD), 4 (FE), 8 (FF)
+    /// Can be 1 (FC), 3 (FD), 5 (FE), 9 (FF)
     bytes: [u8; N]
 }
 
