@@ -195,10 +195,9 @@ fn get_tweaked_pub_key_test() {
     ]);
 
     // y^2 = x^3 + 7
-    let pub_y = sqrt_secp256k(
-        pub_x.mul(pub_x).umod(modulo).mul(pub_x).add(I768::from(7)).umod(modulo),
-        false,
-    );
+    let pub_y = sqrt_secp256k(pub_x.mul(pub_x).umod(modulo).mul(pub_x).add(I768::from(7)).umod(
+        modulo,
+    ));
 
     let pub_key_point = Point { x: pub_x, y: pub_y, is_O: false };
 

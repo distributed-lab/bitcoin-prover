@@ -79,7 +79,7 @@ impl Div for I768 {
     }
 }
 
-pub fn sqrt_secp256k(value: I768, is_odd: bool) -> I768 {
+pub fn sqrt_secp256k(value: I768) -> I768 {
     let modulo: U768 = U768::from_be_bytes([
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -94,7 +94,7 @@ pub fn sqrt_secp256k(value: I768, is_odd: bool) -> I768 {
     let mut res = unsafe { _sqrt_secp256k(value, modulo) };
     assert(res.mul(res).umod(modulo).num == value.num);
 
-    if (is_odd as u128) != res.num.get_limb(0) % 2 {
+    if res.num.get_limb(0) % 2 == 1 {
         res.num = modulo - res.num;
     }
 
@@ -123,7 +123,7 @@ unconstrained fn _sqrt_secp256k(value: I768, modulo: U768) -> I768 {
 
 #[test]
 fn sqrt_test() {
-    // We don't need to check the result because of assert into this function
-    let num = I768::from(34);
-    sqrt_secp256k(num, true);
+    // We don't need to check the result (check only odd or even) because of assert into this function
+    let num = sqrt_secp256k(I768::from(34));
+    assert(num.num.get_limb(0) % 2 == 0);
 }
