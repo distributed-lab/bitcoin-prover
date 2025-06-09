@@ -154,10 +154,6 @@ fn get_branch_test() {
     let mut script1 = "5187";
     let script2 = "7ac458a397826e4e6bec35c43548f8a9c39c3b29eb97c185e4555b55f82fc83c35f8a64865c0f9fdb42a64541690dd28a83dc85db1052ded4ddb0fee704ded8c044f508f1bec090c10cd47c8033931f90e4990473044015c245aff7db7d22d44";
 
-    println(
-        get_branch(hash_from_script(script1), hash_from_script(script2)),
-    );
-
     assert(
         get_branch(hash_from_script(script1), hash_from_script(script2))
             == [
