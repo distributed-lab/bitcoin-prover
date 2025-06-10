@@ -1,4 +1,4 @@
-use blocks_lib::{BlockHeader, get_block_hash, check_chain};
+use blocks_lib::{BlockHeader, check_chain, get_block_hash};
 
 fn main(blocks: [BlockHeader; 3], last_block_hash: pub str<64>) -> pub bool {
     assert(
