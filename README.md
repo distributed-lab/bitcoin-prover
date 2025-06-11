@@ -1,12 +1,12 @@
 # Wrapless Noir Prover
 
-This project contains a collection of Noir circuits and their corresponding Rust implementations.
+This project contains a collection of Noir circuits and their corresponding Noir implementations.
 
 ## Directory Structure
 
 This structure separates concerns nicely:
 - `app/` - Contains the core Noir code
-- `crates/` - Contains Rust implementations
+- `crates/` - Contains Noir implementations
 - `generators/` - Contains Python scripts for configuration generation
 - `scripts/` - Contains shell scripts for execution orchestration
 - `target/` - Contains build outputs and generated files
@@ -22,6 +22,8 @@ This structure separates concerns nicely:
   - `blocks/` – Noir implementation for blocks functionality
   - `p2sh/` – Noir implementation for P2SH functionality
   - `p2tr/` – Noir implementation for P2TR functionality
+  - `utils` – Noir utils
+  - `crypto` – Noir implementation for crypto algorithms
 
 - `generators/` – Contains Python scripts for generating configuration files
   - `blocks/` – Python code to generate blocks-related configuration
@@ -52,7 +54,6 @@ The typical workflow is:
 ## Requirements
 
 - [Noir](https://noir-lang.org/)
-- [Rust](https://www.rust-lang.org/)
 - Python 3
 - [bb](https://github.com/zkcrypto/bb) tool
 
