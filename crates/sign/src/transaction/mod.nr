@@ -1,0 +1,231 @@
+use std::hash::poseidon2::Poseidon2Hasher;
+use std::hash::BuildHasherDefault;
+use std::collections::map::HashMap;
+
+pub mod compact_size;
+
+pub struct PositionField {
+    offset: u32,
+    size: u32,
+}
+
+pub struct Input {
+    txid: PositionField,
+    vout: PositionField,
+    script_sig_size: PositionField,
+    script_sig: PositionField,
+    sequence: PositionField,
+}
+
+pub struct Output {
+    amount: PositionField,
+    script_pub_key_size: PositionField,
+    script_pub_key: PositionField,
+}
+
+pub struct WitnessItem {
+    size: PositionField,
+    item: PositionField,
+}
+
+pub struct Witness {
+    stack_size: PositionField,
+    items: HashMap<u32, WitnessItem, 100, BuildHasherDefault<Poseidon2Hasher>>,
+}
+
+pub struct Transaction<let N: u32> {
+    data: [u8; N],
+    version: PositionField,
+    marker: Option<PositionField>,
+    flag: Option<PositionField>,
+    input_count: PositionField,
+    inputs: HashMap<u32, Input, 100, BuildHasherDefault<Poseidon2Hasher>>,
+    output_count: PositionField,
+    outputs: HashMap<u32, Output, 100, BuildHasherDefault<Poseidon2Hasher>>,
+    witness: Option<HashMap<u32, Witness, 100, BuildHasherDefault<Poseidon2Hasher>>>,
+    lock_time: PositionField,
+}
+
+impl<let N: u32> Transaction<N> {
+    fn new(data: [u8; N], segwit: bool) -> Self {
+        let mut cur_pos: u32 = 0;
+
+        let version = PositionField { offset: cur_pos, size: 4 };
+        cur_pos += 4;
+
+        let mut marker = Option::none();
+        if segwit {
+            marker = Option::some(PositionField { offset: cur_pos, size: 1 });
+            cur_pos += 1;
+        }
+
+        let mut flag = Option::none();
+        if segwit {
+            flag = Option::some(PositionField { offset: cur_pos, size: 1 });
+            cur_pos += 1;
+        }
+
+        let input_count = compact_size::get_compact_size(data, cur_pos);
+        cur_pos += input_count.size;
+
+        let input_count_u32 = compact_size::compact_size_to_u32(data, input_count);
+        let mut inputs: HashMap<u32, Input, 100, BuildHasherDefault<Poseidon2Hasher>> = HashMap::default();
+        for i in 0..N {
+            if i < input_count_u32 {
+                let txid = PositionField { offset: cur_pos, size: 32 };
+                cur_pos += 32;
+
+                let vout = PositionField { offset: cur_pos, size: 4 };
+                cur_pos += 4;
+
+                let script_sig_size = compact_size::get_compact_size(data, cur_pos);
+                cur_pos += script_sig_size.size;
+
+                let script_sig_size_u32 = compact_size::compact_size_to_u32(data, script_sig_size);
+                let script_sig = PositionField { offset: cur_pos, size: script_sig_size_u32 };
+                cur_pos += script_sig_size_u32;
+
+                let sequence = PositionField { offset: cur_pos, size: 4 };
+                cur_pos += 4;
+
+                inputs.insert(i, Input {
+                    txid,
+                    vout,
+                    script_sig_size,
+                    script_sig,
+                    sequence,
+                });
+            }
+        }
+
+        let output_count = compact_size::get_compact_size(data, cur_pos);
+        cur_pos += output_count.size;
+
+        let output_count_u32 = compact_size::compact_size_to_u32(data, output_count);
+        let mut outputs: HashMap<u32, Output, 100, BuildHasherDefault<Poseidon2Hasher>> = HashMap::default();
+        for i in 0..N {
+            if i < output_count_u32 {
+                let amount = PositionField { offset: cur_pos, size: 8 };
+                cur_pos += 8;
+
+                let script_pub_key_size = compact_size::get_compact_size(data, cur_pos);
+                cur_pos += script_pub_key_size.size;
+
+                let script_pub_key_size_u32 = compact_size::compact_size_to_u32(data, script_pub_key_size);
+                let script_pub_key = PositionField { offset: cur_pos, size: script_pub_key_size_u32 };
+                cur_pos += script_pub_key_size_u32;
+
+                outputs.insert(i, Output {
+                    amount,
+                    script_pub_key_size,
+                    script_pub_key,
+                });
+            }
+        }
+
+        let mut witness = Option::none();
+        if segwit {
+            let mut all_witness: HashMap<u32, Witness, 100, BuildHasherDefault<Poseidon2Hasher>> = HashMap::default();
+            for i in 0..N {
+                if i < input_count_u32 {
+                    let stack_size = compact_size::get_compact_size(data, cur_pos);
+                    cur_pos += stack_size.size;
+
+                    let stack_size_u32 = compact_size::compact_size_to_u32(data, stack_size);
+                    let mut items: HashMap<u32, WitnessItem, 100, BuildHasherDefault<Poseidon2Hasher>> = HashMap::default();
+                    for j in 0..stack_size_u32 {
+                        let size = compact_size::get_compact_size(data, cur_pos);
+                        cur_pos += size.size;
+
+                        let size_u32 = compact_size::compact_size_to_u32(data, size);
+                        let item = PositionField { offset: cur_pos, size: size_u32 };
+                        cur_pos += size_u32;
+
+                        items.insert(j, WitnessItem {
+                            size,
+                            item,
+                        });
+                    }
+
+                    all_witness.insert(i, Witness {
+                        stack_size,
+                        items,
+                    });
+                }
+            }
+
+            witness = Option::some(all_witness);
+        }
+
+        let lock_time = PositionField { offset: cur_pos, size: 4 };
+        cur_pos += 4;
+
+        Self {
+            data,
+            version,
+            marker,
+            flag,
+            input_count,
+            inputs,
+            output_count,
+            outputs,
+            witness,
+            lock_time,
+        }
+    }
+}
+
+pub(crate) fn hex_symbol_to_byte(value: u8) -> u8 {
+    if value < 58 {
+        value - 48
+    } else {
+        value - 87
+    }
+}
+
+pub(crate) fn byte_to_hex_symbol(value: u8) -> u8 {
+    if value <= 9 {
+        value + 48
+    } else {
+        value + 87
+    }
+}
+
+pub(crate) fn hex_to_bytes<let N: u32>(value: str<2*N>) -> [u8; N] {
+    let mut res = [0; N];
+    let value = value.as_bytes();
+    for i in 0..N {
+        res[i] = hex_symbol_to_byte(value[i << 1]) << 4 + hex_symbol_to_byte(value[(i << 1) + 1]);
+    }
+    res
+}
+
+pub(crate) fn bytes_to_hex<let N: u32>(bytes: [u8; N]) -> str<2*N> {
+    let mut res = [0; 2*N];
+    for i in 0..N {
+        res[i << 1] = byte_to_hex_symbol(bytes[i] >> 4);
+        res[(i << 1) + 1] = byte_to_hex_symbol(bytes[i] & 0xf);
+    }
+    res.as_str_unchecked()
+}
+
+#[test]
+fn test_transaction_creation() {
+    let string: str<446> = "0100000001a77618edf4b1b47885f643ea7c6349598053eb1b1b879dd698085aa97bc03fb4010000006a473044022000dc119d89dc8499dbfb7e0361e78a450013bfadc20ef8e011a444750c467aaa02200637fe44dd4950f16f4fea64b59fcc2980eb4650c582b5da5bf4b2134474dcd2012102d20b39b3b90f53677e953f39ad3a61655a1c57f98635ea70933839ce3e4e416affffffff02a08601000000000017a91499b5a29770085fc856f717cc7e52a46b2361aa9a8786960c00000000001976a91440a64639e2fbcbc593e7c257c33ea615c83c8c6788ac00000000";
+
+    let bytes = hex_to_bytes(string);
+    let transaction = Transaction::new(bytes, true);
+
+    let txid_offset = transaction.inputs.get(0).unwrap().txid.offset;
+    let txid_size = transaction.inputs.get(0).unwrap().txid.size;
+    
+    assert(txid_size == 4);
+    let mut txid_bytes = [0; 32];
+    for i in 0..32 {
+        txid_bytes[i] = bytes[txid_offset + i];
+    }
+
+    let txid = bytes_to_hex(txid_bytes);
+
+    assert(txid == "a77618edf4b1b47885f643ea7c6349598053eb1b1b879dd698085aa97bc03fb4");
+}
