@@ -1,8 +1,6 @@
-use bignum::{BigNumTrait, fields::U256::U256};
-use block::{BlockHeader, get_block_hash};
-use chain::{check_chain, cut};
+use bignum::{BigNum, fields::U256::U256};
+use chain::cut;
 use std::ops::Mul;
-use target::lt;
 
 pub mod block;
 pub mod target;
@@ -22,19 +20,13 @@ fn test() {
     );
     let mut target = targ.mul(U256::from(actual_time as Field)).udiv(U256::from(expected_time));
 
-    if lt(
-        target.get_limbs_slice(),
-        targ.udiv(U256::from(4)).get_limbs_slice(),
-    ) {
+    if target < targ.udiv(U256::from(4)) {
         target = targ.udiv(U256::from(4));
-    } else if lt(
-        targ.mul(U256::from(4)).get_limbs_slice(),
-        target.get_limbs_slice(),
-    ) {
+    } else if targ.mul(U256::from(4)) < target {
         target = targ.mul(U256::from(4));
     }
 
-    target = if lt(max_target.get_limbs_slice(), target.get_limbs_slice()) {
+    target = if max_target < target {
         max_target
     } else {
         target
