@@ -5,7 +5,6 @@ use std::ops::Mul;
 use target::lt;
 
 pub mod block;
-pub mod convert;
 pub mod target;
 pub mod chain;
 

@@ -1,8 +1,6 @@
-use super::{
-    block::{BlockHeader, get_block_hash},
-    convert::{reverse_bytes, sha256_to_le_bytes, u32_to_be_bytes},
-};
+use super::block::{BlockHeader, get_block_hash};
 use dep::bignum::{BigNumTrait, U256};
+use convert::convert::{reverse_bytes, sha256_to_le_bytes, u32_to_be_bytes};
 use std::ops::Mul;
 
 pub(crate) fn lt(val1: [u128], val2: [u128]) -> bool {

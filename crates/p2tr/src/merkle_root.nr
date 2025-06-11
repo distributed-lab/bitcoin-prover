@@ -1,4 +1,5 @@
 use dep::bignum::{BigNum, U256};
+use utils::convert::hex_to_bytes;
 
 // pub(crate) fn get_mercle_root<let N: u32>(scripts: [[u8; 32]; N]) -> [u8; 32] {
 //     let mut scrs = scripts.as_slice();
@@ -85,26 +86,6 @@ pub fn hash_from_script<let N: u32>(script: str<N>) -> [u8; 32] {
                 .append(((N / 2) as Field).to_le_bytes::<8>())
                 .append(hex_to_bytes(script)))
             .as_array())
-    }
-}
-
-pub fn hex_to_bytes<let LEN: u32>(script: str<LEN>) -> [u8; LEN / 2] {
-    let raw_bytes = script.as_bytes();
-    let mut res = [0; LEN / 2];
-
-    for i in 0..(LEN / 2) {
-        res[i] = (hex_symbol_to_byte(raw_bytes[i * 2]) * 16)
-            + hex_symbol_to_byte(raw_bytes[(i * 2) + 1]);
-    }
-
-    res
-}
-
-fn hex_symbol_to_byte(value: u8) -> u8 {
-    if value < 58 {
-        value - 48
-    } else {
-        value - 87
     }
 }
 

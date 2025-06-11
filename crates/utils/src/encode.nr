@@ -1,8 +1,37 @@
-use super::merkle_root::hex_to_bytes;
+use dep::bignum::{BigNum, U256};
+use std::ops::Mul;
+
+global base58: [u8; 58] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz".as_bytes();
+
+pub fn encode_base58<let LEN: u32>(ripemd: [u8; 20]) -> str<LEN> {
+    let mut res = [0; LEN];
+    let mut bytes = [5; 1].as_slice();
+    bytes = bytes.append(ripemd);
+    let checksum = sha256::digest(sha256::digest(bytes.as_array::<21>()));
+    for i in 0..4 {
+        bytes = bytes.push_back(checksum[i]);
+    }
+
+    let divider = U256::from(58);
+    let mut divided = U256::from_be_bytes([0; 8].as_slice().append(bytes).as_array::<33>());
+
+    let mut quotient = U256::zero();
+    let mut remainder = U256::zero();
+
+    for i in 0..LEN {
+        quotient = divided.udiv(divider);
+        remainder = divided - quotient.mul(divider);
+        res[LEN - i - 1] = base58[remainder.get_limb(0)];
+
+        divided = quotient;
+    }
+
+    res.as_str_unchecked()
+}
 
 global bech32m: [u8; 32] = "qpzry9x8gf2tvdw0s3jn54khce6mua7l".as_bytes();
 
-pub fn get_address(value: [u8; 32]) -> str<62> {
+pub fn encode_bech32m(value: [u8; 32]) -> str<62> {
     let mut res = [0; 0].as_slice();
 
     let data = bytes_to_bits(value).as_slice().append([0, 0, 0, 0]);
@@ -84,11 +113,32 @@ fn bech32m_hrp_expand_test() {
 fn bech32m_test() {
     // 3e2a04301a44f3e709011a24112deca591412a97d9c673acb15ceac031779f42
     assert(
-        get_address([
+        encode_bech32m([
             0x3e, 0x2a, 0x04, 0x30, 0x1a, 0x44, 0xf3, 0xe7, 0x09, 0x01, 0x1a, 0x24, 0x11, 0x2d,
             0xec, 0xa5, 0x91, 0x41, 0x2a, 0x97, 0xd9, 0xc6, 0x73, 0xac, 0xb1, 0x5c, 0xea, 0xc0,
             0x31, 0x77, 0x9f, 0x42,
         ])
             == "bc1p8c4qgvq6gne7wzgprgjpzt0v5kg5z25hm8r88t93tn4vqvthnapqhffa0r",
+    );
+}
+
+#[test]
+fn base58_test() {
+    assert(encode_base58::<34>([0; 20]) == "31h1vYVSYuKP6AhS86fbRdMw9XHieotbST");
+
+    assert(
+        encode_base58::<34>([
+            184, 144, 114, 199, 223, 158, 97, 157, 0, 164, 89, 62, 138, 251, 161, 231, 184, 186, 30,
+            168,
+        ])
+            == "3JWuJHhVg3s84J2JfMcA59doNqdCFvH6jb",
+    );
+
+    assert(
+        encode_base58::<34>([
+            216, 5, 100, 220, 11, 49, 60, 93, 156, 161, 35, 216, 193, 131, 186, 222, 82, 255, 17,
+            65,
+        ])
+            == "3MPELm1Zt83sMD63zBDUioX4AY6W4nFB1q",
     );
 }

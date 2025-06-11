@@ -1,9 +1,10 @@
 use dep::bignum::{BigNum, U768};
-use p2tr_lib::bech32m::get_address;
-use p2tr_lib::keys::{get_tweaked_pub_key, Point};
-use p2tr_lib::merkle_root::{get_branch, hash_from_script, hex_to_bytes};
-use p2tr_lib::types::{I768, sqrt_secp256k};
+use crypto::point::Point;
+use crypto::types::{I768, sqrt_secp256k};
+use p2tr_lib::keys::get_tweaked_pub_key;
+use p2tr_lib::merkle_root::{get_branch, hash_from_script};
 use std::ops::{Add, Mul};
+use utils::{convert::hex_to_bytes, encode::encode_bech32m};
 
 global N: u32 = 4;
 
@@ -36,5 +37,5 @@ fn main(address: pub str<62>, pub_key: str<64>, script: str<N>) -> pub bool {
 
     let twpk = get_tweaked_pub_key(pub_key_point, node);
 
-    get_address(twpk.to_be_bytes().as_slice().pop_front().1.as_array()) == address
+    encode_bech32m(twpk.to_be_bytes().as_slice().pop_front().1.as_array()) == address
 }

@@ -37,7 +37,6 @@ impl Add for I768 {
 }
 
 impl Sub for I768 {
-
     fn sub(self, other: Self) -> Self {
         if self.is_neg & other.is_neg {
             if self.num > other.num {
