@@ -1,0 +1,9 @@
+[package]
+name = "p2tr_bin"
+type = "bin"
+
+[dependencies]
+p2tr_lib = { path = "../../crates/p2tr" }
+bignum = { tag = "v0.7.1", git = "https://github.com/noir-lang/noir-bignum" }
+utils = { path = "../../crates/utils" }
+crypto = { path = "../../crates/crypto" }

@@ -1,4 +1,4 @@
-use super::convert::{bytes_to_hex_string, reverse_bytes, sha256_to_le_bytes, u32_to_le_bytes};
+use convert::convert::{bytes_to_hex_string, reverse_bytes, sha256_to_le_bytes, u32_to_le_bytes};
 
 pub struct BlockHeader {
     pub version: u32,
@@ -10,7 +10,7 @@ pub struct BlockHeader {
 }
 
 impl BlockHeader {
-    pub(crate) fn to_byte_array(self) -> [u8; 80] {
+    pub fn to_byte_array(self) -> [u8; 80] {
         let mut res = u32_to_le_bytes(self.version).as_slice();
 
         res = res.append(sha256_to_le_bytes(self.prev_block));
@@ -27,7 +27,7 @@ impl BlockHeader {
     }
 }
 
-pub(crate) fn get_block_hash(value: BlockHeader) -> str<64> {
+pub fn get_block_hash(value: BlockHeader) -> str<64> {
     bytes_to_hex_string(
         reverse_bytes(sha256::digest(sha256::digest(value.to_byte_array()))),
     )

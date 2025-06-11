@@ -1,5 +1,5 @@
-use super::{block::{BlockHeader, get_block_hash}, target::{check_target, lt, uncompres_target}};
-use dep::bignum::{BigNumTrait, U256};
+use super::{block::{BlockHeader, get_block_hash}, target::{check_target, uncompres_target}};
+use dep::bignum::{BigNum, U256};
 use std::ops::Mul;
 
 global expected_time: Field = 1209600;
@@ -37,22 +37,13 @@ pub fn check_chain<let SIZE: u32>(blocks: [BlockHeader; SIZE]) -> bool {
             let mut target =
                 targ.mul(U256::from((actual_time) as Field)).udiv(U256::from(expected_time));
 
-            if lt(
-                target.get_limbs_slice(),
-                targ.udiv(U256::from(4)).get_limbs_slice(),
-            ) {
+            if target < targ.udiv(U256::from(4)) {
                 target = targ.udiv(U256::from(4));
-            } else if lt(
-                targ.mul(U256::from(4)).get_limbs_slice(),
-                target.get_limbs_slice(),
-            ) {
+            } else if targ.mul(U256::from(4)) < target {
                 target = targ.mul(U256::from(4));
             }
 
-            target = if lt(
-                U256::from(max_target).get_limbs_slice(),
-                target.get_limbs_slice(),
-            ) {
+            target = if U256::from(max_target) < target {
                 U256::from(max_target)
             } else {
                 // Safety: the target will be cut using shift and compared to the res
@@ -111,12 +102,7 @@ pub(crate) unconstrained fn cut(mut value: U256) -> (U256, u8) {
         count += 8;
     }
 
-    if (
-        lt(
-            U256::from(7).get_limbs_slice(),
-            value.udiv(U256::from(2.pow_32(20))).get_limbs_slice(),
-        )
-    ) {
+    if U256::from(7) < value.udiv(U256::from(2.pow_32(20))) {
         value = value.udiv(U256::from(2.pow_32(8)));
         count += 8;
     }

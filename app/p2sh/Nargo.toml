@@ -4,3 +4,4 @@ type = "bin"
 
 [dependencies]
 p2sh_lib = { path = "../../crates/p2sh" }
+utils = { path = "../../crates/utils" }

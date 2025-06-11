@@ -9,6 +9,6 @@
     },
     "nargo": {
         "struct_name": "blocks",
-        "file_path": "app/blocks/Prover.toml"
+        "file_path": "app/blocks"
     }
 }
