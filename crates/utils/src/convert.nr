@@ -27,9 +27,9 @@ pub fn sha256_to_le_bytes(value: str<64>) -> [u8; 32] {
     res
 }
 
-pub fn bytes_to_hex_string(value: [u8; 32]) -> str<64> {
-    let mut res = [0; 64];
-    for i in 0..32 {
+pub fn bytes_to_hex_string<let N: u32>(value: [u8; N]) -> str<N * 2> {
+    let mut res = [0; N * 2];
+    for i in 0..N {
         res[i << 1] = byte_to_hex_symbol(value[i] >> 4);
         res[(i << 1) + 1] = byte_to_hex_symbol(value[i] & 0xf);
     }
