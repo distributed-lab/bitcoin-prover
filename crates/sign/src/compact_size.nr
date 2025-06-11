@@ -1,4 +1,4 @@
-use super::PositionField;
+use crate::transaction::PositionField;
 
 pub fn compact_size_to_u32<let N: u32>(data: [u8; N], position: PositionField) -> u32 {
     let mut result: u32 = 0;

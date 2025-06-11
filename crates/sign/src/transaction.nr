@@ -2,11 +2,12 @@ use std::hash::poseidon2::Poseidon2Hasher;
 use std::hash::BuildHasherDefault;
 use std::collections::map::HashMap;
 
-pub mod compact_size;
+use utils::convert::{hex_to_bytes, bytes_to_hex_string};
+use crate::compact_size;
 
 pub struct PositionField {
-    offset: u32,
-    size: u32,
+    pub offset: u32,
+    pub size: u32,
 }
 
 pub struct Input {
@@ -18,7 +19,7 @@ pub struct Input {
 }
 
 impl Input {
-    fn default() -> Self {
+    pub fn default() -> Self {
         Self {
             txid: PositionField { offset: 0, size: 0 },
             vout: PositionField { offset: 0, size: 0 },
@@ -36,7 +37,7 @@ pub struct Output {
 }
 
 impl Output {
-    fn default() -> Self {
+    pub fn default() -> Self {
         Self {
             amount: PositionField { offset: 0, size: 0 },
             script_pub_key_size: PositionField { offset: 0, size: 0 },
@@ -51,7 +52,7 @@ pub struct WitnessItem {
 }
 
 impl WitnessItem {
-    fn default() -> Self {
+    pub fn default() -> Self {
         Self {
             size: PositionField { offset: 0, size: 0 },
             item: PositionField { offset: 0, size: 0 },
@@ -65,7 +66,7 @@ pub struct Witness {
 }
 
 impl Witness {
-    fn default() -> Self {
+    pub fn default() -> Self {
         Self {
             stack_size: PositionField { offset: 0, size: 0 },
             items: HashMap::default(),
@@ -102,7 +103,7 @@ impl<
     OUTPUT_COUNT,
     MAX_WITNESS_STACK_SIZE,
 > {
-    fn new(data: [u8; TRANSACTION_SIZE], segwit: bool) -> Self {
+    pub fn new(data: [u8; TRANSACTION_SIZE], segwit: bool) -> Self {
         let mut cur_pos: u32 = 0;
 
         let version = PositionField { offset: cur_pos, size: 4 };
@@ -230,41 +231,6 @@ impl<
     }
 }
 
-pub(crate) fn hex_symbol_to_byte(value: u8) -> u8 {
-    if value < 58 {
-        value - 48
-    } else {
-        value - 87
-    }
-}
-
-pub(crate) fn byte_to_hex_symbol(value: u8) -> u8 {
-    if value <= 9 {
-        value + 48
-    } else {
-        value + 87
-    }
-}
-
-pub(crate) fn hex_to_bytes<let N: u32>(value: str<2*N>) -> [u8; N] {
-    let mut res = [0; N];
-    let value = value.as_bytes();
-    for i in 0..N {
-        let left =  hex_symbol_to_byte(value[i << 1]);
-        let right = hex_symbol_to_byte(value[(i << 1) + 1]);
-        res[i] = (left << 4) + right;
-    }
-    res
-}
-
-pub(crate) fn bytes_to_hex<let N: u32>(bytes: [u8; N]) -> str<2*N> {
-    let mut res = [0; 2*N];
-    for i in 0..N {
-        res[i << 1] = byte_to_hex_symbol(bytes[i] >> 4);
-        res[(i << 1) + 1] = byte_to_hex_symbol(bytes[i] & 0xf);
-    }
-    res.as_str_unchecked()
-}
 
 #[test]
 fn test_transaction_creation_legacy() {
@@ -284,7 +250,7 @@ fn test_transaction_creation_legacy() {
         txid_bytes[i] = bytes[txid_offset + i];
     }
 
-    let txid = bytes_to_hex(txid_bytes);
+    let txid = bytes_to_hex_string(txid_bytes);
 
     assert(txid == "a77618edf4b1b47885f643ea7c6349598053eb1b1b879dd698085aa97bc03fb4");
 }
@@ -306,6 +272,6 @@ fn test_transaction_creation_segwit() {
         witness_stack_item_bytes[i] = bytes[witness_stack_item_position.offset + i];
     }
 
-    let witness_stack_item = bytes_to_hex(witness_stack_item_bytes);
+    let witness_stack_item = bytes_to_hex_string(witness_stack_item_bytes);
     assert(witness_stack_item == "02c2f3e2a446815b7cb8f0b0390fada48fefc4bc45026414cc8d1aec33574afcd5");
 }
