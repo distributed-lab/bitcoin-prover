@@ -10,11 +10,12 @@ def main():
 
     with open(config["path"] + "/src/main.nr", "w") as file:
         file.write(f"""use dep::bignum::{{BigNum, U768}};
-use p2tr_lib::merkle_root::{{hex_to_bytes, hash_from_script, get_branch}};
-use p2tr_lib::keys::{{Point, get_tweaked_pub_key}};
-use p2tr_lib::bech32m::get_address;
-use p2tr_lib::types::{{I768, sqrt_secp256k}};
-use std::ops::{{Mul, Add}};
+use utils::{{encode::encode_bech32m, convert::hex_to_bytes}};
+use p2tr_lib::keys::{{get_tweaked_pub_key}};
+use p2tr_lib::merkle_root::{{get_branch, hash_from_script}};
+use crypto::types::{{I768, sqrt_secp256k}};
+use crypto::point::Point;
+use std::ops::{{Add, Mul}};
                    
 global N: u32 = {len(config['script'])};
 
@@ -56,7 +57,7 @@ fn main(
     
     let twpk = get_tweaked_pub_key(pub_key_point, node);
                
-    get_address(twpk.to_be_bytes().as_slice().pop_front().1.as_array()) == address
+    encode_bech32m(twpk.to_be_bytes().as_slice().pop_front().1.as_array()) == address
 }
 """)
         
