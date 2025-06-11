@@ -224,6 +224,10 @@ impl<
             lock_time,
         }
     }
+
+    fn is_segwit(self) -> bool {
+        self.marker.is_some()
+    }
 }
 
 pub(crate) fn hex_symbol_to_byte(value: u8) -> u8 {
@@ -269,6 +273,8 @@ fn test_transaction_creation_legacy() {
     let bytes = hex_to_bytes(string);
     let transaction = Transaction::<223, 1, 2, 2>::new(bytes, false);
 
+    assert(transaction.is_segwit() == false);
+
     let txid_offset = transaction.inputs[0].txid.offset;
     let txid_size = transaction.inputs[0].txid.size;
     
@@ -289,6 +295,8 @@ fn test_transaction_creation_segwit() {
 
     let bytes = hex_to_bytes(string);
     let transaction = Transaction::<351, 2, 1, 2>::new(bytes, true);
+
+    assert(transaction.is_segwit() == true);
 
     let witness_stack_item_position = transaction.witness.unwrap()[0].items.get(1).unwrap().item;
     
