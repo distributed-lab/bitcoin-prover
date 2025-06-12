@@ -11,11 +11,11 @@ pub struct PositionField {
 }
 
 pub struct Input {
-    txid: PositionField,
-    vout: PositionField,
-    script_sig_size: PositionField,
-    script_sig: PositionField,
-    sequence: PositionField,
+    pub txid: PositionField,
+    pub vout: PositionField,
+    pub script_sig_size: PositionField,
+    pub script_sig: PositionField,
+    pub sequence: PositionField,
 }
 
 impl Input {
@@ -31,9 +31,9 @@ impl Input {
 }
 
 pub struct Output {
-    amount: PositionField,
-    script_pub_key_size: PositionField,
-    script_pub_key: PositionField,
+    pub amount: PositionField,
+    pub script_pub_key_size: PositionField,
+    pub script_pub_key: PositionField,
 }
 
 impl Output {
@@ -47,8 +47,8 @@ impl Output {
 }
 
 pub struct WitnessItem {
-    size: PositionField,
-    item: PositionField,
+    pub size: PositionField,
+    pub item: PositionField,
 }
 
 impl WitnessItem {
@@ -61,8 +61,8 @@ impl WitnessItem {
 }
 
 pub struct Witness {
-    stack_size: PositionField,
-    items: HashMap<u32, WitnessItem, 100, BuildHasherDefault<Poseidon2Hasher>>,
+    pub stack_size: PositionField,
+    pub items: HashMap<u32, WitnessItem, 100, BuildHasherDefault<Poseidon2Hasher>>,
 }
 
 impl Witness {
@@ -80,16 +80,16 @@ pub struct Transaction<
     let OUTPUT_COUNT: u32,
     let MAX_WITNESS_STACK_SIZE: u32,
 > {
-    data: [u8; TRANSACTION_SIZE],
-    version: PositionField,
-    marker: Option<PositionField>,
-    flag: Option<PositionField>,
-    input_count: PositionField,
-    inputs: [Input; INPUT_COUNT],
-    output_count: PositionField,
-    outputs: [Output; OUTPUT_COUNT],
-    witness: Option<[Witness; INPUT_COUNT]>,
-    lock_time: PositionField,
+    pub data: [u8; TRANSACTION_SIZE],
+    pub version: PositionField,
+    pub marker: Option<PositionField>,
+    pub flag: Option<PositionField>,
+    pub input_count: PositionField,
+    pub inputs: [Input; INPUT_COUNT],
+    pub output_count: PositionField,
+    pub outputs: [Output; OUTPUT_COUNT],
+    pub witness: Option<[Witness; INPUT_COUNT]>,
+    pub lock_time: PositionField,
 }
 
 impl<
@@ -226,7 +226,7 @@ impl<
         }
     }
 
-    fn is_segwit(self) -> bool {
+    pub fn is_segwit(self) -> bool {
         self.marker.is_some()
     }
 }
