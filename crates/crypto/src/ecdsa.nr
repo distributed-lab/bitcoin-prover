@@ -42,8 +42,8 @@ pub fn ecdsa_sign(message: [u8; 32], priv_key: U256, nonce: U256) -> (U256, U256
     };
 
     // Safety: num * num^-1 = 1 modulo
-    let inv_nonce = unsafe { inv_mod(nonce, modulo_p) };
-    assert((inv_nonce * nonce).umod(modulo_p).num == U768::from(1));
+    let inv_nonce = unsafe { inv_mod(nonce, modulo_n) };
+    assert((inv_nonce * nonce).umod(modulo_n).num == U768::from(1));
 
     let r = rand_point.x.umod(modulo_n);
     let mut s = (inv_nonce * (message_num + r * priv_key).umod(modulo_n)).umod(modulo_n);
