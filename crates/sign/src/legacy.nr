@@ -5,11 +5,14 @@ use utils::convert::{hex_to_bytes, bytes_to_hex_string};
 fn insert_script_pub_key_and_hash_type<
     let TRANSACTION_SIZE: u32,
     let INPUT_COUNT: u32,
+    let INPUT_SIZE: u32,
     let OUTPUT_COUNT: u32,
+    let OUTPUT_SIZE: u32,
     let MAX_WITNESS_STACK_SIZE: u32,
+    let WITNESS_SIZE: u32,
     let SCRIPT_PUB_KEY_SIZE: u32,
 > (
-    transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, OUTPUT_COUNT, MAX_WITNESS_STACK_SIZE>,
+    transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
     input_to_sign: u32,
     script_pub_key: [u8; SCRIPT_PUB_KEY_SIZE],
     hash_type: u8,
@@ -47,11 +50,14 @@ fn insert_script_pub_key_and_hash_type<
 fn serialize_sighash_all_legacy_transaction<
     let TRANSACTION_SIZE: u32,
     let INPUT_COUNT: u32,
+    let INPUT_SIZE: u32,
     let OUTPUT_COUNT: u32,
+    let OUTPUT_SIZE: u32,
     let MAX_WITNESS_STACK_SIZE: u32,
+    let WITNESS_SIZE: u32,
     let SCRIPT_PUB_KEY_SIZE: u32,
 > (
-    transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, OUTPUT_COUNT, MAX_WITNESS_STACK_SIZE>,
+    transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
     input_to_sign: u32,
     // script_pub_key should contain script_pub_key_size along with the script_pub_key
     script_pub_key: [u8; SCRIPT_PUB_KEY_SIZE],
@@ -71,7 +77,7 @@ fn serialize_sighash_all_legacy_transaction<
 fn test_sign_legacy_transaction() {
     let string = "0100000001b7994a0db2f373a29227e1d90da883c6ce1cb0dd2d6812e4558041ebbbcfa54b0000000000ffffffff01983a0000000000001976a914b3e2819b6262e0b1f19fc7229d75677f347c91ac88ac00000000";
     let bytes = hex_to_bytes(string);
-    let transaction = Transaction::<85, 1, 1, 1>::new(bytes, false);
+    let transaction = Transaction::<85, 1, 41, 1, 34, 1, 0>::new(bytes, false);
 
     let script_pub_key = "1976a9144299ff317fcd12ef19047df66d72454691797bfc88ac";
     let script_pub_key_bytes = hex_to_bytes(script_pub_key);

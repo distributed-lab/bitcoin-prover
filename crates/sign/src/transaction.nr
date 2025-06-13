@@ -77,8 +77,11 @@ impl Witness {
 pub struct Transaction<
     let TRANSACTION_SIZE: u32,
     let INPUT_COUNT: u32,
+    let INPUT_SIZE: u32,
     let OUTPUT_COUNT: u32,
+    let OUTPUT_SIZE: u32,
     let MAX_WITNESS_STACK_SIZE: u32,
+    let WITNESS_SIZE: u32,
 > {
     pub data: [u8; TRANSACTION_SIZE],
     pub version: PositionField,
@@ -95,13 +98,19 @@ pub struct Transaction<
 impl<
     let TRANSACTION_SIZE: u32,
     let INPUT_COUNT: u32,
+    let INPUT_SIZE: u32,
     let OUTPUT_COUNT: u32,
+    let OUTPUT_SIZE: u32,
     let MAX_WITNESS_STACK_SIZE: u32,
+    let WITNESS_SIZE: u32,
 > Transaction<
     TRANSACTION_SIZE,
     INPUT_COUNT,
+    INPUT_SIZE,
     OUTPUT_COUNT,
+    OUTPUT_SIZE,
     MAX_WITNESS_STACK_SIZE,
+    WITNESS_SIZE,
 > {
     pub fn new(data: [u8; TRANSACTION_SIZE], segwit: bool) -> Self {
         let mut cur_pos: u32 = 0;
@@ -151,6 +160,8 @@ impl<
             };
         }
 
+        assert(INPUT_SIZE == cur_pos - (input_count.offset + input_count.size));
+
         let output_count = compact_size::get_compact_size(data, cur_pos);
         cur_pos += output_count.size;
 
@@ -172,6 +183,8 @@ impl<
                 script_pub_key,
             };
         }
+
+        assert(OUTPUT_SIZE == cur_pos - (output_count.offset + output_count.size));
 
         let mut witness = Option::none();
         if segwit {
@@ -209,6 +222,12 @@ impl<
             witness = Option::some(all_witness);
         }
 
+        if segwit {
+            assert(WITNESS_SIZE == (cur_pos - witness.unwrap()[0].stack_size.offset));
+        } else {
+            assert(WITNESS_SIZE == 0);
+        }
+
         let lock_time = PositionField { offset: cur_pos, size: 4 };
         cur_pos += 4;
 
@@ -237,7 +256,7 @@ fn test_transaction_creation_legacy() {
     let string: str<446> = "0100000001a77618edf4b1b47885f643ea7c6349598053eb1b1b879dd698085aa97bc03fb4010000006a473044022000dc119d89dc8499dbfb7e0361e78a450013bfadc20ef8e011a444750c467aaa02200637fe44dd4950f16f4fea64b59fcc2980eb4650c582b5da5bf4b2134474dcd2012102d20b39b3b90f53677e953f39ad3a61655a1c57f98635ea70933839ce3e4e416affffffff02a08601000000000017a91499b5a29770085fc856f717cc7e52a46b2361aa9a8786960c00000000001976a91440a64639e2fbcbc593e7c257c33ea615c83c8c6788ac00000000";
 
     let bytes = hex_to_bytes(string);
-    let transaction = Transaction::<223, 1, 2, 2>::new(bytes, false);
+    let transaction = Transaction::<223, 1, 147, 2, 66, 2, 0>::new(bytes, false);
 
     assert(transaction.is_segwit() == false);
 
@@ -260,7 +279,7 @@ fn test_transaction_creation_segwit() {
     let string: str<702> = "0100000000010248fc3350b6d46da2b1a9f686bce993fe9c4e99e20dec6bf535e2b0451c89edff0100000000ffffffff00a3291c04a983fd0dd888442315b1eca0ae90e338e03bd95c89e8b858213fe90100000000ffffffff017a8b3b0000000000220020e2d0744b20aa3319d5e7a6220296fb7fd2f73ac934456f155ec98da41f4918030247304402207980264b54284b4b762e3284d70477d19e5156d27603c2b4a54669dbc0b4c62d0220488ca70a5892f0fbc915f9b26e987d30151710ab295bc88c4ff824dfc73f3990012102c2f3e2a446815b7cb8f0b0390fada48fefc4bc45026414cc8d1aec33574afcd50247304402203724093d7d059f65a6bcec1d4dc85620f2cdc24824c9b9897aa34d1d2c76f7a4022073ef3d58c106e50431df3f103aa045edafe4d5c7e300546752fcde2f64bb705f012102317fbf9a0f8e2b0071879850b5c703f3c22e926ae3c36d7bf2236e49701718f800000000";
 
     let bytes = hex_to_bytes(string);
-    let transaction = Transaction::<351, 2, 1, 2>::new(bytes, true);
+    let transaction = Transaction::<351, 2, 82, 1, 43, 2, 214>::new(bytes, true);
 
     assert(transaction.is_segwit() == true);
 
