@@ -1,6 +1,6 @@
 use super::{point::{inv_mod, mul_point}, types::I768};
 use dep::bignum::{BigNum, U256, U768};
-use std::{ecdsa_secp256k1, ops::Div};
+use std::ecdsa_secp256k1;
 use utils::convert::get_256_bits_from_768;
 
 pub fn ecdsa_sign(message: [u8; 32], priv_key: U256, nonce: U256) -> (U256, U256) {
@@ -48,7 +48,7 @@ pub fn ecdsa_sign(message: [u8; 32], priv_key: U256, nonce: U256) -> (U256, U256
     let r = rand_point.x.umod(modulo_n);
     let mut s = (inv_nonce * (message_num + r * priv_key).umod(modulo_n)).umod(modulo_n);
 
-    if s.num > (modulo_n.div(U768::from(2))) {
+    if s.num > (modulo_n.udiv(U768::from(2))) {
         s.num = modulo_n - s.num;
     }
 
