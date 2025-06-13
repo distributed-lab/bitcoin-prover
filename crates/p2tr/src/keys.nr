@@ -1,7 +1,7 @@
 use dep::bignum::{BigNum, U256, U768};
 use crypto::{point::{add_point, mul_point, Point}, types::{I768, sqrt_secp256k}};
 use std::ops::{Add, Mul};
-use utils::convert::hex_to_bytes;
+use utils::convert::{get_256_bits_from_768, hex_to_bytes};
 
 pub fn get_tweaked_pub_key(pub_key: Point, merkle_root: [u8; 32]) -> U256 {
     let stringHash = sha256::digest("TapTweak".as_bytes());
@@ -29,18 +29,6 @@ pub fn get_tweaked_pub_key(pub_key: Point, merkle_root: [u8; 32]) -> U256 {
     );
 
     get_256_bits_from_768(add_point(pub_key, tweak_point, modulo).x.num)
-}
-
-fn get_256_bits_from_768(value: U768) -> U256 {
-    let mut res = [0; 0].as_slice();
-    let val = value.to_le_bytes();
-    for i in 0..32 {
-        res = res.push_back(val[i]);
-    }
-
-    res = res.push_back(0);
-
-    U256::from_le_bytes(res.as_array::<33>())
 }
 
 #[test]

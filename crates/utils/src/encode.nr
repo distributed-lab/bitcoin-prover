@@ -105,7 +105,7 @@ fn bits_5_to_num(value: [u1]) -> u8 {
     res
 }
 
-// Always return array with 72 elements, if it should be less - cut zeros from the end of array 
+// Always return array with 72 elements, if it should be less - cut zeros from the end of array
 // First return parameter - der encoding, second - actual len of encoded data
 pub fn encode_der(r: U256, s: U256) -> ([u8; 72], u8) {
     let res = [48].as_slice();

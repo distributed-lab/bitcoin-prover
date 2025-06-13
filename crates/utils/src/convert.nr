@@ -1,3 +1,5 @@
+use dep::bignum::{BigNum, U256, U768};
+
 pub fn u32_to_le_bytes(value: u32) -> [u8; 4] {
     let mut res = [0; 4];
     for i in 0..4 {
@@ -71,4 +73,16 @@ pub fn hex_to_bytes<let LEN: u32>(hex: str<LEN>) -> [u8; LEN / 2] {
     }
 
     res
+}
+
+pub fn get_256_bits_from_768(value: U768) -> U256 {
+    let mut res = [0; 0].as_slice();
+    let val = value.to_le_bytes();
+    for i in 0..32 {
+        res = res.push_back(val[i]);
+    }
+
+    res = res.push_back(0);
+
+    U256::from_le_bytes(res.as_array::<33>())
 }

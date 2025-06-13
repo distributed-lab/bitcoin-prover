@@ -56,7 +56,7 @@ pub fn double_point(p: Point, modulo: U768) -> Point {
     }
 }
 
-unconstrained fn inv_mod(num: I768, modulo: U768) -> I768 {
+pub unconstrained fn inv_mod(num: I768, modulo: U768) -> I768 {
     gcd(num, I768 { num: modulo, is_neg: false }).0.umod(modulo)
 }
 
