@@ -1,0 +1,14 @@
+{
+    "gateway": {
+        "host": "bolt.schulzemic.net",
+        "port": 50001
+    },
+    "blocks": {
+        "start": 0,
+        "count": 3
+    },
+    "nargo": {
+        "struct_name": "blocks",
+        "file_path": "app/blocks"
+    }
+}

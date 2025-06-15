@@ -1,0 +1,12 @@
+[workspace]
+name = "wrapless-prover"
+members = [
+    "crates/blocks",
+    "crates/p2sh",
+    "crates/p2tr",
+    "crates/utils",
+    "crates/crypto",
+    "app/blocks",
+    "app/p2sh",
+    "app/p2tr",
+]
