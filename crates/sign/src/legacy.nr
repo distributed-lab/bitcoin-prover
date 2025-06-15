@@ -2,7 +2,7 @@ use crate::transaction::Transaction;
 use utils::convert::{hex_to_bytes, bytes_to_hex_string};
 
 
-fn insert_script_pub_key_and_hash_type<
+fn prepare_legacy_preimage_hash_for_sighash_all<
     let TRANSACTION_SIZE: u32,
     let INPUT_COUNT: u32,
     let INPUT_SIZE: u32,
@@ -15,15 +15,16 @@ fn insert_script_pub_key_and_hash_type<
     transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
     input_to_sign: u32,
     script_pub_key: [u8; SCRIPT_PUB_KEY_SIZE],
-    hash_type: u8,
-) -> [u8; TRANSACTION_SIZE - 1 + SCRIPT_PUB_KEY_SIZE + 4] {
+) -> [u8; TRANSACTION_SIZE + (SCRIPT_PUB_KEY_SIZE - 1) + 4] {
+    assert(transaction.is_segwit() == false);
+
     let input = transaction.inputs[input_to_sign];
     let left_part = input.script_sig_size.offset;
 
     // The transaction should contain empty script_sigs
     assert(input.script_sig.size == 0);
     
-    let mut data = [0; TRANSACTION_SIZE - 1 + SCRIPT_PUB_KEY_SIZE + 4];
+    let mut data = [0; TRANSACTION_SIZE + (SCRIPT_PUB_KEY_SIZE - 1) + 4];
 
     for i in 0..TRANSACTION_SIZE {
         if i < left_part {
@@ -38,7 +39,7 @@ fn insert_script_pub_key_and_hash_type<
         data[left_part + i] = script_pub_key[i];
     }
 
-    data[TRANSACTION_SIZE - 1 + SCRIPT_PUB_KEY_SIZE + 0] = hash_type;
+    data[TRANSACTION_SIZE - 1 + SCRIPT_PUB_KEY_SIZE + 0] = 0x01;
     data[TRANSACTION_SIZE - 1 + SCRIPT_PUB_KEY_SIZE + 1] = 0x00;
     data[TRANSACTION_SIZE - 1 + SCRIPT_PUB_KEY_SIZE + 2] = 0x00;
     data[TRANSACTION_SIZE - 1 + SCRIPT_PUB_KEY_SIZE + 3] = 0x00;
@@ -46,8 +47,75 @@ fn insert_script_pub_key_and_hash_type<
     data
 }
 
+fn prepare_segwit_preimage_hash_for_sighash_all<
+    let TRANSACTION_SIZE: u32,
+    let INPUT_COUNT: u32,
+    let INPUT_SIZE: u32,
+    let OUTPUT_COUNT: u32,
+    let OUTPUT_SIZE: u32,
+    let MAX_WITNESS_STACK_SIZE: u32,
+    let WITNESS_SIZE: u32,
+    let SCRIPT_PUB_KEY_SIZE: u32,
+> (
+    transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
+    input_to_sign: u32,
+    script_pub_key: [u8; SCRIPT_PUB_KEY_SIZE],
+) -> [u8; TRANSACTION_SIZE - 1 - 1 - WITNESS_SIZE + (SCRIPT_PUB_KEY_SIZE - 1) + 4] {
+    assert(transaction.is_segwit() == true);
 
-fn serialize_sighash_all_legacy_transaction<
+    let mut data = [0; TRANSACTION_SIZE - 1 - 1 - WITNESS_SIZE + (SCRIPT_PUB_KEY_SIZE - 1) + 4];
+    let mut data_pos: u32 = 0;
+    
+    for i in 0..4 {
+        data[data_pos] = transaction.data[i];
+        data_pos += 1;
+    }
+
+    let mut transaction_offset = transaction.input_count.offset;
+    let i_when_change_offset = transaction.inputs[input_to_sign].script_sig_size.offset;
+    let i_change_offset = transaction.inputs[input_to_sign].script_sig_size.size;
+
+    for i in 0..(INPUT_SIZE - 1) {
+        if transaction_offset + i == i_when_change_offset {
+            for j in 0..SCRIPT_PUB_KEY_SIZE {
+                data[data_pos] = script_pub_key[j];
+                data_pos += 1;
+            }
+
+            transaction_offset += i_change_offset;
+        } 
+
+        data[data_pos] = transaction.data[transaction_offset + i];
+        data_pos += 1;
+    }
+
+    transaction_offset = transaction.output_count.offset;
+
+    for i in 0..OUTPUT_SIZE {
+        data[data_pos] = transaction.data[transaction_offset + i];
+        data_pos += 1;
+    }
+
+    transaction_offset = transaction.output_count.offset + OUTPUT_SIZE + WITNESS_SIZE;
+
+    for i in 0..4 {
+        data[data_pos] = transaction.data[transaction_offset + i];
+        data_pos += 1;
+    }
+
+    data[data_pos] = 0x01;
+    data[data_pos + 1] = 0x00;
+    data[data_pos + 2] = 0x00;
+    data[data_pos + 3] = 0x00;
+
+    data_pos += 4;
+
+    assert(data_pos == TRANSACTION_SIZE - 1 - 1 - WITNESS_SIZE + (SCRIPT_PUB_KEY_SIZE - 1) + 4);
+    
+    data
+}
+
+pub fn serialize_sighash_all<
     let TRANSACTION_SIZE: u32,
     let INPUT_COUNT: u32,
     let INPUT_SIZE: u32,
@@ -61,30 +129,58 @@ fn serialize_sighash_all_legacy_transaction<
     input_to_sign: u32,
     // script_pub_key should contain script_pub_key_size along with the script_pub_key
     script_pub_key: [u8; SCRIPT_PUB_KEY_SIZE],
-    hash_type: u8,
 ) -> [u8; 32] {
-    assert(transaction.is_segwit() == false);
     assert(input_to_sign < INPUT_COUNT);
 
-    let transaction_data = insert_script_pub_key_and_hash_type(transaction, input_to_sign, script_pub_key, hash_type);
+    // The transaction should contain empty script_sigs
+    for i in 0..INPUT_COUNT {
+        assert(transaction.inputs[i].script_sig.size == 0);
+    }
 
-    let hashed_transaction = sha256::digest(sha256::digest(transaction_data));
+    if transaction.is_segwit() {
+        let transaction_data = prepare_segwit_preimage_hash_for_sighash_all(transaction, input_to_sign, script_pub_key);
 
-    hashed_transaction
+        let hashed_transaction = sha256::digest(sha256::digest(transaction_data));
+
+        hashed_transaction
+    }
+    else {
+        let transaction_data = prepare_legacy_preimage_hash_for_sighash_all(transaction, input_to_sign, script_pub_key);
+
+        let hashed_transaction = sha256::digest(sha256::digest(transaction_data));
+
+        hashed_transaction
+    }
 }
 
 #[test]
-fn test_sign_legacy_transaction() {
+fn test_legacy_serialize_algorithm_legacy_transaction_sighash_all() {
     let string = "0100000001b7994a0db2f373a29227e1d90da883c6ce1cb0dd2d6812e4558041ebbbcfa54b0000000000ffffffff01983a0000000000001976a914b3e2819b6262e0b1f19fc7229d75677f347c91ac88ac00000000";
     let bytes = hex_to_bytes(string);
-    let transaction = Transaction::<85, 1, 41, 1, 34, 1, 0>::new(bytes, false);
+    let transaction = Transaction::<85, 1, 42, 1, 35, 1, 0>::new(bytes, false);
 
     let script_pub_key = "1976a9144299ff317fcd12ef19047df66d72454691797bfc88ac";
     let script_pub_key_bytes = hex_to_bytes(script_pub_key);
 
-    let sighash_all_transaction_bytes = serialize_sighash_all_legacy_transaction(transaction, 0, script_pub_key_bytes, 0x01);
+    let sighash_all_transaction_bytes = serialize_sighash_all(transaction, 0, script_pub_key_bytes);
 
     let sighash_all_transaction = bytes_to_hex_string(sighash_all_transaction_bytes);
 
     assert(sighash_all_transaction == "a6b4103f527dfe43dfbadf530c247bac8a98b7463c7c6ad38eed97021d18ffcb");
+}
+
+#[test]
+fn test_legacy_serialize_algorithm_segwit_transaction_sighash_all() {
+    let string = "0200000000010192f29384a956361b9b9ebc667d01489cb360068c22c7b89396e5fdc3ece0305a0100000000ffffffff023d0500000000000016001464193f85b629823f114c9d997ee68627d7395d5fe7a1000000000000160014d0446764c4f16f78ca0ce0b7f487cc5fe205835e024730440220598ef97f63f7648e39d03ff58383056322fa13effaee8d11c9c9e8789a72522002204dda5bbc9cba008682d62820395a2c43b9abae52d6ad81835e72bda09468fa21012103d9a4d0bbe47d58b68e366a380107ba3470f6893764a2d020127d36c169df850100000000";
+    let bytes = hex_to_bytes(string);
+    let transaction = Transaction::<222, 1, 42, 2, 63, 2, 107>::new(bytes, true);
+
+    let script_pub_key = "1976a9144299ff317fcd12ef19047df66d72454691797bfc88ac";
+    let script_pub_key_bytes = hex_to_bytes(script_pub_key);
+
+    let sighash_all_transaction_bytes = serialize_sighash_all(transaction, 0, script_pub_key_bytes);
+
+    let sighash_all_transaction = bytes_to_hex_string(sighash_all_transaction_bytes);
+
+    assert(sighash_all_transaction == "39e3884c3761427b3a7eee244fc1495036a9f2dad35cfbfc0abbac2455f6bf26");
 }

@@ -160,7 +160,7 @@ impl<
             };
         }
 
-        assert(INPUT_SIZE == cur_pos - (input_count.offset + input_count.size));
+        assert(INPUT_SIZE == cur_pos - input_count.offset);
 
         let output_count = compact_size::get_compact_size(data, cur_pos);
         cur_pos += output_count.size;
@@ -184,7 +184,7 @@ impl<
             };
         }
 
-        assert(OUTPUT_SIZE == cur_pos - (output_count.offset + output_count.size));
+        assert(OUTPUT_SIZE == cur_pos - output_count.offset);
 
         let mut witness = Option::none();
         if segwit {
@@ -230,6 +230,8 @@ impl<
 
         let lock_time = PositionField { offset: cur_pos, size: 4 };
         cur_pos += 4;
+
+        assert(TRANSACTION_SIZE == cur_pos);
 
         Self {
             data,
