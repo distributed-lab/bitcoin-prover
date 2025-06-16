@@ -1,5 +1,0 @@
-[package]
-name = "bvm"
-type = "bin"
-authors = ["Distributed Lab"]
-

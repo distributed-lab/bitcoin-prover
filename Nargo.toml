@@ -6,6 +6,7 @@ members = [
     "crates/p2tr",
     "crates/utils",
     "crates/crypto",
+    "crates/bvm",
     "app/blocks",
     "app/p2sh",
     "app/p2tr",

@@ -1,4 +1,4 @@
-use convert::convert::{bytes_to_hex_string, reverse_bytes, sha256_to_le_bytes, u32_to_le_bytes};
+use convert::convert::{bytes_to_hex, reverse_bytes, sha256_to_le_bytes, u32_to_le_bytes};
 
 pub struct BlockHeader {
     pub version: u32,
@@ -28,7 +28,7 @@ impl BlockHeader {
 }
 
 pub fn get_block_hash(value: BlockHeader) -> str<64> {
-    bytes_to_hex_string(
+    bytes_to_hex(
         reverse_bytes(sha256::digest(sha256::digest(value.to_byte_array()))),
     )
 }

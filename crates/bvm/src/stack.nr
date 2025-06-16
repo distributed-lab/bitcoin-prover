@@ -3,11 +3,7 @@ use std::hash::BuildHasherDefault;
 use std::collections::map::HashMap;
 use std::collections::bounded_vec::BoundedVec;
 
-use crate::utils::{
-    bytes_to_vec,
-    vec_to_int,
-    int_to_vec,
-};
+use utils::convert::{bytes_to_vec, vec_to_i32, i32_to_vec};
 
 pub struct Stack {
     data: HashMap<u32, BoundedVec<u8, 520>, 1000, BuildHasherDefault<Poseidon2Hasher>>
@@ -51,8 +47,8 @@ impl Stack {
         let value1 = self.pop();
         let value2 = self.pop();
 
-        let value3 = vec_to_int(value1) + vec_to_int(value2);
-        self.push(int_to_vec(value3));
+        let value3 = vec_to_i32(value1) + vec_to_i32(value2);
+        self.push(i32_to_vec(value3));
     }
 
     pub fn verify(&mut self) -> bool {
