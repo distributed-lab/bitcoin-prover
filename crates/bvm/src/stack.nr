@@ -3,7 +3,7 @@ use std::hash::BuildHasherDefault;
 use std::collections::map::HashMap;
 use std::collections::bounded_vec::BoundedVec;
 
-use utils::convert::{bytes_to_vec, vec_to_i32, i32_to_vec};
+use utils::convert::{bytes_to_vec, vec_to_i32, i32_to_vec, i32_to_le_bytes};
 
 pub struct Stack {
     data: HashMap<u32, BoundedVec<u8, 520>, 1000, BuildHasherDefault<Poseidon2Hasher>>
@@ -40,7 +40,11 @@ impl Stack {
     pub fn op_equal(&mut self) {
         let value1 = self.pop();
         let value2 = self.pop();
-        assert(value1 == value2);
+        if value1 == value2 {
+            self.push(bytes_to_vec([1]));
+        } else {
+            self.push(bytes_to_vec([0]));
+        }
     }
 
     pub fn op_add(&mut self) {
@@ -60,4 +64,28 @@ impl Stack {
             true
         }
     }
+}
+
+#[test]
+fn test_addition() {
+    let mut stack = Stack::new();
+
+    let a = 12345;
+    let b = 4648;
+    let c = a + b;
+
+    let a_bytes = i32_to_le_bytes(a);
+    let b_bytes = i32_to_le_bytes(b);
+    let c_bytes = i32_to_le_bytes(c);
+
+    stack.op_pushbytes(a_bytes);
+    stack.op_pushbytes(b_bytes);
+    stack.op_add();
+    stack.op_pushbytes(c_bytes);
+
+    stack.op_equal();
+
+    let bool_vec = stack.pop();
+    let bool_value = vec_to_i32(bool_vec);
+    assert(bool_value == 1);
 }

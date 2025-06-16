@@ -100,7 +100,7 @@ pub fn i32_to_vec<let N: u32>(number: i32) -> BoundedVec<u8, 520> {
     bytes_to_vec(bytes)
 }
 
-fn i32_to_le_bytes(number: i32) -> [u8; 4] {
+pub fn i32_to_le_bytes(number: i32) -> [u8; 4] {
     let mut unsigned_number: u32 = 0;
     if number < 0 {
         unsigned_number = (number + 2147483647 as i32 + 1 as i32) as u32;
