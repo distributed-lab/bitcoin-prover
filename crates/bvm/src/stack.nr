@@ -264,8 +264,9 @@ impl<
         let OUTPUT_SIZE: u32,
         let MAX_WITNESS_STACK_SIZE: u32,
         let WITNESS_SIZE: u32,
-    >(&mut self, 
-        cur_transaction: Transaction<
+    >(
+        &mut self, 
+        prev_transaction: Transaction<
             TRANSACTION_SIZE,
             INPUT_COUNT,
             INPUT_SIZE,
@@ -280,6 +281,7 @@ impl<
 
         let sig_bytes = sig.storage();
         let pubkey_bytes = pubkey.storage();
+        
     }
 }
 
