@@ -1,5 +1,5 @@
 use crate::transaction::Transaction;
-use utils::convert::{hex_to_bytes, bytes_to_hex_string};
+use utils::convert::{hex_to_bytes, bytes_to_hex};
 
 fn prepare_preimage_hash_for_sighash_all<
     let TRANSACTION_SIZE: u32,
@@ -108,7 +108,7 @@ fn test_serialize_legacy_transaction_sighash_all() {
 
     let sighash_all_transaction_bytes = serialize_sighash_all(transaction, 0, script_pub_key_bytes);
 
-    let sighash_all_transaction = bytes_to_hex_string(sighash_all_transaction_bytes);
+    let sighash_all_transaction = bytes_to_hex(sighash_all_transaction_bytes);
 
     assert(sighash_all_transaction == "a6b4103f527dfe43dfbadf530c247bac8a98b7463c7c6ad38eed97021d18ffcb");
 }
@@ -124,7 +124,7 @@ fn test_serialize_segwit_transaction_sighash_all() {
 
     let sighash_all_transaction_bytes = serialize_sighash_all(transaction, 0, script_pub_key_bytes);
 
-    let sighash_all_transaction = bytes_to_hex_string(sighash_all_transaction_bytes);
+    let sighash_all_transaction = bytes_to_hex(sighash_all_transaction_bytes);
 
     assert(sighash_all_transaction == "39e3884c3761427b3a7eee244fc1495036a9f2dad35cfbfc0abbac2455f6bf26");
 }

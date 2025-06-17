@@ -1,23 +1,84 @@
 use std::collections::bounded_vec::BoundedVec;
+use sign::transaction::Transaction;
 
 use utils::convert::{
     bytes_to_vec, i32_to_le_bytes, i32_to_vec, u32_to_le_bytes, vec_to_i32, vec_to_u32,
 };
 
-pub struct Stack<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32> {
+pub struct Stack<
+    let MAX_STACK_ELEMENT_SIZE: u32, 
+    let MAX_STACK_SIZE: u32,
+    let CURRENT_TRANSACTION_SIZE: u32,
+    let CURRENT_INPUT_COUNT: u32,
+    let CURRENT_INPUT_SIZE: u32,
+    let CURRENT_OUTPUT_COUNT: u32,
+    let CURRENT_OUTPUT_SIZE: u32,
+    let CURRENT_MAX_WITNESS_STACK_SIZE: u32,
+    let CURRENT_WITNESS_SIZE: u32,
+> {
     data: [BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>; MAX_STACK_SIZE],
     stack_size: u32,
     alt_data: [BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>; MAX_STACK_SIZE],
     alt_stack_size: u32,
+    cur_transaction: Transaction<
+        CURRENT_TRANSACTION_SIZE,
+        CURRENT_INPUT_COUNT,
+        CURRENT_INPUT_SIZE,
+        CURRENT_OUTPUT_COUNT,
+        CURRENT_OUTPUT_SIZE,
+        CURRENT_MAX_WITNESS_STACK_SIZE,
+        CURRENT_WITNESS_SIZE,
+    >,
 }
 
-impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32> Stack<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE> {
-    pub fn new() -> Self {
+impl<
+    let MAX_STACK_ELEMENT_SIZE: u32, 
+    let MAX_STACK_SIZE: u32,
+    let CURRENT_TRANSACTION_SIZE: u32,
+    let CURRENT_INPUT_COUNT: u32,
+    let CURRENT_INPUT_SIZE: u32,
+    let CURRENT_OUTPUT_COUNT: u32,
+    let CURRENT_OUTPUT_SIZE: u32,
+    let CURRENT_MAX_WITNESS_STACK_SIZE: u32,
+    let CURRENT_WITNESS_SIZE: u32,
+> Stack<
+    MAX_STACK_ELEMENT_SIZE,
+    MAX_STACK_SIZE,
+    CURRENT_TRANSACTION_SIZE,
+    CURRENT_INPUT_COUNT,
+    CURRENT_INPUT_SIZE,
+    CURRENT_OUTPUT_COUNT,
+    CURRENT_OUTPUT_SIZE,
+    CURRENT_MAX_WITNESS_STACK_SIZE,
+    CURRENT_WITNESS_SIZE,
+> {
+    pub fn new(
+        cur_transaction: Transaction<
+            CURRENT_TRANSACTION_SIZE,
+            CURRENT_INPUT_COUNT,
+            CURRENT_INPUT_SIZE,
+            CURRENT_OUTPUT_COUNT,
+            CURRENT_OUTPUT_SIZE,
+            CURRENT_MAX_WITNESS_STACK_SIZE,
+            CURRENT_WITNESS_SIZE,
+        >
+    ) -> Self {
         Stack {
             data: [BoundedVec::new(); MAX_STACK_SIZE],
             stack_size: 0,
             alt_data: [BoundedVec::new(); MAX_STACK_SIZE],
             alt_stack_size: 0,
+            cur_transaction: cur_transaction,
+        }
+    }
+
+    pub fn new_test_stack() -> Self {
+        Stack {
+            data: [BoundedVec::new(); MAX_STACK_SIZE],
+            stack_size: 0,
+            alt_data: [BoundedVec::new(); MAX_STACK_SIZE],
+            alt_stack_size: 0,
+            cur_transaction: Transaction::new_empty_transaction(),
         }
     }
 
@@ -194,11 +255,37 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32> Stack<MAX_STACK_E
         self.op_num(3);
         self.op_roll();
     }
+
+    pub fn op_checksig<
+        let TRANSACTION_SIZE: u32,
+        let INPUT_COUNT: u32,
+        let INPUT_SIZE: u32,
+        let OUTPUT_COUNT: u32,
+        let OUTPUT_SIZE: u32,
+        let MAX_WITNESS_STACK_SIZE: u32,
+        let WITNESS_SIZE: u32,
+    >(&mut self, 
+        cur_transaction: Transaction<
+            TRANSACTION_SIZE,
+            INPUT_COUNT,
+            INPUT_SIZE,
+            OUTPUT_COUNT,
+            OUTPUT_SIZE,
+            MAX_WITNESS_STACK_SIZE,
+            WITNESS_SIZE,
+        >
+    ) {
+        let mut sig = self.pop();
+        let mut pubkey = self.pop();
+
+        let sig_bytes = sig.storage();
+        let pubkey_bytes = pubkey.storage();
+    }
 }
 
 #[test]
 fn test_addition() {
-    let mut stack = Stack::<10, 4>::new();
+    let mut stack = Stack::<10, 4, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
 
     let a = 12345;
     let b = 4648;
@@ -220,7 +307,7 @@ fn test_addition() {
 
 #[test]
 fn test_op_num() {
-    let mut stack = Stack::<10, 4>::new();
+    let mut stack = Stack::<10, 4, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
     stack.op_num(2);
     stack.op_num(5);
     stack.op_add();
@@ -238,7 +325,7 @@ fn test_op_num() {
 
 #[test]
 fn test_dups() {
-    let mut stack = Stack::<10, 6>::new();
+    let mut stack = Stack::<10, 6, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
     stack.op_num(2);
     stack.op_ifdup();
     assert(stack.stack_size == 2);
@@ -268,7 +355,7 @@ fn test_dups() {
 
 #[test]
 fn test_alt_stack() {
-    let mut stack = Stack::<10, 4>::new();
+    let mut stack = Stack::<10, 4, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
     stack.op_num(2);
     stack.op_toaltstack();
     assert(stack.stack_size == 0);
@@ -280,7 +367,7 @@ fn test_alt_stack() {
 
 #[test]
 fn test_depth_drops() {
-    let mut stack = Stack::<10, 4>::new();
+    let mut stack = Stack::<10, 4, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
     stack.op_num(2);
     stack.op_num(5);
     stack.op_depth();
@@ -292,7 +379,7 @@ fn test_depth_drops() {
 
 #[test]
 fn test_nip_overs() {
-    let mut stack = Stack::<10, 6>::new();
+    let mut stack = Stack::<10, 6, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
     stack.op_num(2);
     stack.op_num(5);
     stack.op_over();
@@ -315,7 +402,7 @@ fn test_nip_overs() {
 
 #[test]
 fn test_pick() {
-    let mut stack = Stack::<10, 4>::new();
+    let mut stack = Stack::<10, 4, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
     stack.op_num(2);
     stack.op_num(5);
     stack.op_num(3);
@@ -326,7 +413,7 @@ fn test_pick() {
 
 #[test]
 fn test_roll() {
-    let mut stack = Stack::<10, 4>::new();
+    let mut stack = Stack::<10, 4, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
     stack.op_num(2);
     stack.op_num(5);
     stack.op_num(3);
@@ -337,7 +424,7 @@ fn test_roll() {
 
 #[test]
 fn test_swaps() {
-    let mut stack = Stack::<10, 5>::new();
+    let mut stack = Stack::<10, 5, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
     stack.op_num(2);
     stack.op_num(5);
     stack.op_swap();
@@ -355,7 +442,7 @@ fn test_swaps() {
 
 #[test]
 fn test_tuck() {
-    let mut stack = Stack::<10, 5>::new();
+    let mut stack = Stack::<10, 5, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
     stack.op_num(2);
     stack.op_num(5);
     stack.op_tuck();
@@ -366,7 +453,7 @@ fn test_tuck() {
 
 #[test]
 fn test_rots() {
-    let mut stack = Stack::<10, 7>::new();
+    let mut stack = Stack::<10, 7, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
     stack.op_num(1);
     stack.op_num(2);
     stack.op_num(3);
