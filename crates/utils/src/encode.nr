@@ -1,3 +1,4 @@
+use super::convert::bytes_to_hex;
 use dep::bignum::{BigNum, U256};
 use std::ops::Mul;
 
@@ -104,6 +105,56 @@ fn bits_5_to_num(value: [u1]) -> u8 {
     res
 }
 
+// Always return array with 72 elements, if it should be less - cut zeros from the end of array
+// First return parameter - der encoding, second - actual len of encoded data
+pub fn encode_der(r: U256, s: U256) -> ([u8; 72], u8) {
+    let res = [48].as_slice();
+    // First bytes of r and s
+    let rf = r.to_be_bytes()[1];
+    let sf = s.to_be_bytes()[1];
+
+    if (rf >= 128) & (sf >= 128) {
+        (
+            res
+                .append([70, 2, 33])
+                .append(r.to_be_bytes())
+                .append([2, 33])
+                .append(s.to_be_bytes())
+                .as_array(), 72,
+        )
+    } else if rf >= 128 {
+        (
+            res
+                .append([69, 2, 33])
+                .append(r.to_be_bytes())
+                .append([2, 32])
+                .append(s.to_be_bytes().as_slice().pop_front().1)
+                .push_back(0)
+                .as_array(), 71,
+        )
+    } else if sf >= 128 {
+        (
+            res
+                .append([69, 2, 32])
+                .append(r.to_be_bytes().as_slice().pop_front().1)
+                .append([2, 33])
+                .append(s.to_be_bytes())
+                .push_back(0)
+                .as_array(), 71,
+        )
+    } else {
+        (
+            res
+                .append([68, 2, 32])
+                .append(r.to_be_bytes().as_slice().pop_front().1)
+                .append([2, 32])
+                .append(s.to_be_bytes().as_slice().pop_front().1)
+                .append([0, 0])
+                .as_array(), 70,
+        )
+    }
+}
+
 #[test]
 fn bech32m_hrp_expand_test() {
     assert(bech32m_hrp_expand("bc") == [3, 3, 0, 2, 3]);
@@ -140,5 +191,25 @@ fn base58_test() {
             65,
         ])
             == "3MPELm1Zt83sMD63zBDUioX4AY6W4nFB1q",
+    );
+}
+
+#[test]
+fn der_test() {
+    let r = U256::from_be_bytes([
+        0x00, 0xD9, 0x2D, 0xB2, 0x0B, 0xF9, 0xF8, 0xBD, 0xB4, 0xF7, 0x41, 0xBD, 0x33, 0x35, 0x7B,
+        0x3A, 0xC0, 0x26, 0x90, 0xDA, 0x19, 0xED, 0x7F, 0xF3, 0xCC, 0x3F, 0x50, 0x70, 0x15, 0x16,
+        0x90, 0x77, 0xE3,
+    ]);
+
+    let s = U256::from_be_bytes([
+        0x00, 0x01, 0x9B, 0xC2, 0x2A, 0x3C, 0x4A, 0x0B, 0xA2, 0x36, 0x8D, 0x2F, 0x4F, 0xCC, 0xB2,
+        0xA0, 0x5A, 0x1A, 0x19, 0x24, 0xD3, 0x54, 0x12, 0x62, 0x47, 0x74, 0xC1, 0xDC, 0xAC, 0x54,
+        0xD7, 0x4A, 0x46,
+    ]);
+
+    assert(
+        bytes_to_hex(encode_der(r, s).0.as_slice().pop_back().0.as_array())
+            == "3045022100d92db20bf9f8bdb4f741bd33357b3ac02690da19ed7ff3cc3f507015169077e30220019bc22a3c4a0ba2368d2f4fccb2a05a1a1924d35412624774c1dcac54d74a46",
     );
 }
