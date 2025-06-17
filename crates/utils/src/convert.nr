@@ -75,7 +75,9 @@ pub fn hex_to_bytes<let LEN: u32>(hex: str<LEN>) -> [u8; LEN / 2] {
     res
 }
 
-pub fn bytes_to_vec<let N: u32, let MAX_STACK_ELEMENT_SIZE: u32>(bytes: [u8; N]) -> BoundedVec<u8, MAX_STACK_ELEMENT_SIZE> {
+pub fn bytes_to_vec<let N: u32, let MAX_STACK_ELEMENT_SIZE: u32>(
+    bytes: [u8; N],
+) -> BoundedVec<u8, MAX_STACK_ELEMENT_SIZE> {
     let mut vec = BoundedVec::new();
     for i in 0..N {
         vec.push(bytes[i]);
@@ -83,19 +85,23 @@ pub fn bytes_to_vec<let N: u32, let MAX_STACK_ELEMENT_SIZE: u32>(bytes: [u8; N])
     vec
 }
 
-pub fn vec_to_i32<let MAX_STACK_ELEMENT_SIZE: u32>(v: BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>) -> i32 {
+pub fn vec_to_i32<let MAX_STACK_ELEMENT_SIZE: u32>(
+    v: BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>,
+) -> i32 {
     assert(v.len() <= 4);
     let mut result: [u8; 4] = [0; 4];
     let N = v.len();
     for i in 0..4 {
         if i < N {
-            result[i + 4 - N] = v.get(i);
+            result[i] = v.get(i);
         }
     }
     le_bytes_to_i32(result)
 }
 
-pub fn i32_to_vec<let N: u32, let MAX_STACK_ELEMENT_SIZE: u32>(number: i32) -> BoundedVec<u8, MAX_STACK_ELEMENT_SIZE> {
+pub fn i32_to_vec<let N: u32, let MAX_STACK_ELEMENT_SIZE: u32>(
+    number: i32,
+) -> BoundedVec<u8, MAX_STACK_ELEMENT_SIZE> {
     let bytes = i32_to_le_bytes(number);
     bytes_to_vec(bytes)
 }
@@ -126,6 +132,35 @@ fn le_bytes_to_i32(bytes: [u8; 4]) -> i32 {
     }
 }
 
+pub fn vec_to_u32<let MAX_STACK_ELEMENT_SIZE: u32>(
+    v: BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>,
+) -> u32 {
+    assert(v.len() <= 4);
+    let mut result: [u8; 4] = [0; 4];
+    let N = v.len();
+    for i in 0..4 {
+        if i < N {
+            result[i] = v.get(i);
+        }
+    }
+    le_bytes_to_u32(result)
+}
+
+fn le_bytes_to_u32(bytes: [u8; 4]) -> u32 {
+    let mut result: u32 = 0;
+    for i in 0..4 {
+        result |= (bytes[i as u32] as u32) << (i * 8);
+    }
+    result
+}
+
+pub fn u32_to_vec<let N: u32, let MAX_STACK_ELEMENT_SIZE: u32>(
+    number: u32,
+) -> BoundedVec<u8, MAX_STACK_ELEMENT_SIZE> {
+    let bytes = u32_to_le_bytes(number);
+    bytes_to_vec(bytes)
+}
+
 #[test]
 fn test_bytes_to_hex() {
     let bytes: [u8; 4] = [0xab, 0x2f, 0x12, 0x34];
@@ -146,4 +181,12 @@ fn test_i32_to_vec_to_i32() {
     let vec: BoundedVec<u8, 10> = i32_to_vec(number);
     let i32_number = vec_to_i32(vec);
     assert(i32_number == number);
+}
+
+#[test]
+fn test_u32_to_vec_to_u32() {
+    let number = 123456789;
+    let vec: BoundedVec<u8, 10> = u32_to_vec(number);
+    let u32_number = vec_to_u32(vec);
+    assert(u32_number == number);
 }
