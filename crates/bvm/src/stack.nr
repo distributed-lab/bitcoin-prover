@@ -1,29 +1,38 @@
-use std::hash::poseidon2::Poseidon2Hasher;
-use std::hash::BuildHasherDefault;
 use std::collections::map::HashMap;
 use std::collections::bounded_vec::BoundedVec;
 
 use utils::convert::{bytes_to_vec, vec_to_i32, i32_to_vec, i32_to_le_bytes};
 
-pub struct Stack {
-    data: HashMap<u32, BoundedVec<u8, 520>, 1000, BuildHasherDefault<Poseidon2Hasher>>
+pub struct Stack<
+    let MAX_STACK_ELEMENT_SIZE: u32,
+    let MAX_STACK_SIZE: u32
+> {
+    data: [BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>; MAX_STACK_SIZE],
+    stack_size: u32,
 }
 
-impl Stack {
+impl<
+    let MAX_STACK_ELEMENT_SIZE: u32,
+    let MAX_STACK_SIZE: u32
+> Stack<
+    MAX_STACK_ELEMENT_SIZE,
+    MAX_STACK_SIZE
+> {
     pub fn new() -> Self {
         Stack {
-            data: HashMap::default()
+            data: [BoundedVec::new(); MAX_STACK_SIZE],
+            stack_size: 0,
         }
     }
-    
-    fn push(&mut self, value: BoundedVec<u8, 520>) {
-        self.data.insert(self.data.len(), value);
+
+    fn push(&mut self, value: BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>) {
+        self.data[self.stack_size] = value;
+        self.stack_size += 1;
     }
 
-    fn pop(&mut self) -> BoundedVec<u8, 520> {
-        let value = self.data.get(self.data.len() - 1).unwrap();
-        self.data.remove(self.data.len() - 1);
-        value
+    fn pop(&mut self) -> BoundedVec<u8, MAX_STACK_ELEMENT_SIZE> {
+        self.stack_size -= 1;
+        self.data[self.stack_size]
     }
 
     pub fn op_1(&mut self) {
@@ -68,7 +77,7 @@ impl Stack {
 
 #[test]
 fn test_addition() {
-    let mut stack = Stack::new();
+    let mut stack = Stack::<10, 4>::new();
 
     let a = 12345;
     let b = 4648;
