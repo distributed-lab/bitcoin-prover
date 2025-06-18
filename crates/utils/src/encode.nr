@@ -1,4 +1,4 @@
-use super::convert::bytes_to_hex_string;
+use super::convert::bytes_to_hex;
 use dep::bignum::{BigNum, U256};
 use std::ops::Mul;
 
@@ -209,7 +209,7 @@ fn der_test() {
     ]);
 
     assert(
-        bytes_to_hex_string(encode_der(r, s).0.as_slice().pop_back().0.as_array())
+        bytes_to_hex(encode_der(r, s).0.as_slice().pop_back().0.as_array())
             == "3045022100d92db20bf9f8bdb4f741bd33357b3ac02690da19ed7ff3cc3f507015169077e30220019bc22a3c4a0ba2368d2f4fccb2a05a1a1924d35412624774c1dcac54d74a46",
     );
 }

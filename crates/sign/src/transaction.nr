@@ -2,7 +2,7 @@ use std::hash::poseidon2::Poseidon2Hasher;
 use std::hash::BuildHasherDefault;
 use std::collections::map::HashMap;
 
-use utils::convert::{hex_to_bytes, bytes_to_hex_string};
+use utils::convert::{hex_to_bytes, bytes_to_hex};
 use crate::compact_size;
 
 pub struct PositionField {
@@ -250,6 +250,29 @@ impl<
     pub fn is_segwit(self) -> bool {
         self.marker.is_some()
     }
+
+    pub fn new_empty_transaction() -> Self {
+        assert(TRANSACTION_SIZE == 0);
+        assert(INPUT_COUNT == 0);
+        assert(INPUT_SIZE == 0);
+        assert(OUTPUT_COUNT == 0);
+        assert(OUTPUT_SIZE == 0);
+        assert(MAX_WITNESS_STACK_SIZE == 0);
+        assert(WITNESS_SIZE == 0);
+
+        Self {
+            data: [0; TRANSACTION_SIZE],
+            version: PositionField { offset: 0, size: 0 },
+            marker: Option::none(),
+            flag: Option::none(),
+            input_count: PositionField { offset: 0, size: 0 },
+            inputs: [Input::default(); INPUT_COUNT],
+            output_count: PositionField { offset: 0, size: 0 },
+            outputs: [Output::default(); OUTPUT_COUNT],
+            witness: Option::none(),
+            lock_time: PositionField { offset: 0, size: 0 },
+        }
+    }
 }
 
 
@@ -271,7 +294,7 @@ fn test_transaction_creation_legacy() {
         txid_bytes[i] = bytes[txid_offset + i];
     }
 
-    let txid = bytes_to_hex_string(txid_bytes);
+    let txid = bytes_to_hex(txid_bytes);
 
     assert(txid == "a77618edf4b1b47885f643ea7c6349598053eb1b1b879dd698085aa97bc03fb4");
 }
@@ -293,6 +316,6 @@ fn test_transaction_creation_segwit() {
         witness_stack_item_bytes[i] = bytes[witness_stack_item_position.offset + i];
     }
 
-    let witness_stack_item = bytes_to_hex_string(witness_stack_item_bytes);
+    let witness_stack_item = bytes_to_hex(witness_stack_item_bytes);
     assert(witness_stack_item == "02c2f3e2a446815b7cb8f0b0390fada48fefc4bc45026414cc8d1aec33574afcd5");
 }

@@ -1,0 +1,8 @@
+[package]
+name = "bvm"
+type = "lib"
+authors = ["Distributed Lab"]
+
+[dependencies]
+utils = { path = "../utils" }
+sign = { path = "../sign" }
