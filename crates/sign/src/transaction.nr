@@ -1,9 +1,9 @@
-use std::hash::poseidon2::Poseidon2Hasher;
-use std::hash::BuildHasherDefault;
 use std::collections::map::HashMap;
+use std::hash::BuildHasherDefault;
+use std::hash::poseidon2::Poseidon2Hasher;
 
-use utils::convert::{hex_to_bytes, bytes_to_hex};
 use crate::compact_size;
+use utils::convert::{bytes_to_hex, hex_to_bytes};
 
 pub struct PositionField {
     pub offset: u32,
@@ -67,22 +67,11 @@ pub struct Witness {
 
 impl Witness {
     pub fn default() -> Self {
-        Self {
-            stack_size: PositionField { offset: 0, size: 0 },
-            items: HashMap::default(),
-        }
+        Self { stack_size: PositionField { offset: 0, size: 0 }, items: HashMap::default() }
     }
 }
 
-pub struct Transaction<
-    let TRANSACTION_SIZE: u32,
-    let INPUT_COUNT: u32,
-    let INPUT_SIZE: u32,
-    let OUTPUT_COUNT: u32,
-    let OUTPUT_SIZE: u32,
-    let MAX_WITNESS_STACK_SIZE: u32,
-    let WITNESS_SIZE: u32,
-> {
+pub struct Transaction<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32> {
     pub data: [u8; TRANSACTION_SIZE],
     pub version: PositionField,
     pub marker: Option<PositionField>,
@@ -95,23 +84,7 @@ pub struct Transaction<
     pub lock_time: PositionField,
 }
 
-impl<
-    let TRANSACTION_SIZE: u32,
-    let INPUT_COUNT: u32,
-    let INPUT_SIZE: u32,
-    let OUTPUT_COUNT: u32,
-    let OUTPUT_SIZE: u32,
-    let MAX_WITNESS_STACK_SIZE: u32,
-    let WITNESS_SIZE: u32,
-> Transaction<
-    TRANSACTION_SIZE,
-    INPUT_COUNT,
-    INPUT_SIZE,
-    OUTPUT_COUNT,
-    OUTPUT_SIZE,
-    MAX_WITNESS_STACK_SIZE,
-    WITNESS_SIZE,
-> {
+impl<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32> Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE> {
     pub fn new(data: [u8; TRANSACTION_SIZE], segwit: bool) -> Self {
         let mut cur_pos: u32 = 0;
 
@@ -151,13 +124,7 @@ impl<
             let sequence = PositionField { offset: cur_pos, size: 4 };
             cur_pos += 4;
 
-            inputs[i] = Input {
-                txid,
-                vout,
-                script_sig_size,
-                script_sig,
-                sequence,
-            };
+            inputs[i] = Input { txid, vout, script_sig_size, script_sig, sequence };
         }
 
         assert(INPUT_SIZE == cur_pos - input_count.offset);
@@ -173,15 +140,12 @@ impl<
             let script_pub_key_size = compact_size::get_compact_size(data, cur_pos);
             cur_pos += script_pub_key_size.size;
 
-            let script_pub_key_size_u32 = compact_size::compact_size_to_u32(data, script_pub_key_size);
+            let script_pub_key_size_u32 =
+                compact_size::compact_size_to_u32(data, script_pub_key_size);
             let script_pub_key = PositionField { offset: cur_pos, size: script_pub_key_size_u32 };
             cur_pos += script_pub_key_size_u32;
 
-            outputs[i] = Output {
-                amount,
-                script_pub_key_size,
-                script_pub_key,
-            };
+            outputs[i] = Output { amount, script_pub_key_size, script_pub_key };
         }
 
         assert(OUTPUT_SIZE == cur_pos - output_count.offset);
@@ -194,7 +158,8 @@ impl<
                 cur_pos += stack_size.size;
 
                 let stack_size_u32 = compact_size::compact_size_to_u32(data, stack_size);
-                let mut items: HashMap<u32, WitnessItem, 100, BuildHasherDefault<Poseidon2Hasher>> = HashMap::default();
+                let mut items: HashMap<u32, WitnessItem, 100, BuildHasherDefault<Poseidon2Hasher>> =
+                    HashMap::default();
 
                 assert(stack_size_u32 <= MAX_WITNESS_STACK_SIZE);
                 for j in 0..MAX_WITNESS_STACK_SIZE {
@@ -206,17 +171,11 @@ impl<
                         let item = PositionField { offset: cur_pos, size: size_u32 };
                         cur_pos += size_u32;
 
-                        items.insert(j, WitnessItem {
-                            size,
-                            item,
-                        });
+                        items.insert(j, WitnessItem { size, item });
                     }
                 }
 
-                all_witness[i] = Witness {
-                    stack_size,
-                    items,
-                };
+                all_witness[i] = Witness { stack_size, items };
             }
 
             witness = Option::some(all_witness);
@@ -275,7 +234,6 @@ impl<
     }
 }
 
-
 #[test]
 fn test_transaction_creation_legacy() {
     let string: str<446> = "0100000001a77618edf4b1b47885f643ea7c6349598053eb1b1b879dd698085aa97bc03fb4010000006a473044022000dc119d89dc8499dbfb7e0361e78a450013bfadc20ef8e011a444750c467aaa02200637fe44dd4950f16f4fea64b59fcc2980eb4650c582b5da5bf4b2134474dcd2012102d20b39b3b90f53677e953f39ad3a61655a1c57f98635ea70933839ce3e4e416affffffff02a08601000000000017a91499b5a29770085fc856f717cc7e52a46b2361aa9a8786960c00000000001976a91440a64639e2fbcbc593e7c257c33ea615c83c8c6788ac00000000";
@@ -287,7 +245,7 @@ fn test_transaction_creation_legacy() {
 
     let txid_offset = transaction.inputs[0].txid.offset;
     let txid_size = transaction.inputs[0].txid.size;
-    
+
     assert(txid_size == 32);
     let mut txid_bytes = [0; 32];
     for i in 0..32 {
@@ -309,7 +267,7 @@ fn test_transaction_creation_segwit() {
     assert(transaction.is_segwit() == true);
 
     let witness_stack_item_position = transaction.witness.unwrap()[0].items.get(1).unwrap().item;
-    
+
     assert(witness_stack_item_position.size == 33);
     let mut witness_stack_item_bytes = [0; 33];
     for i in 0..33 {
@@ -317,5 +275,7 @@ fn test_transaction_creation_segwit() {
     }
 
     let witness_stack_item = bytes_to_hex(witness_stack_item_bytes);
-    assert(witness_stack_item == "02c2f3e2a446815b7cb8f0b0390fada48fefc4bc45026414cc8d1aec33574afcd5");
+    assert(
+        witness_stack_item == "02c2f3e2a446815b7cb8f0b0390fada48fefc4bc45026414cc8d1aec33574afcd5",
+    );
 }
