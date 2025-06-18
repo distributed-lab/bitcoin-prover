@@ -1,10 +1,16 @@
+use dep::bignum::{BigNum, U768};
 use ripemd160::ripemd160;
 use sha1::sha1;
-use sign::transaction::Transaction;
-use std::collections::bounded_vec::BoundedVec;
+use sign::{legacy::serialize_sighash_all, transaction::Transaction};
+use std::{collections::bounded_vec::BoundedVec, ecdsa_secp256k1, ops::{Add, Mul}};
 
-use utils::convert::{
-    bytes_to_vec, cut_array, i32_to_le_bytes, i32_to_vec, u32_to_le_bytes, vec_to_i32, vec_to_u32,
+use crypto::types::{I768, sqrt_secp256k1};
+use utils::{
+    convert::{
+        bytes_to_vec, cut_array, get_256_bits_from_768, hex_to_bytes, i32_to_le_bytes, i32_to_vec,
+        u32_to_le_bytes, vec_to_i32, vec_to_u32,
+    },
+    decode::decode_der,
 };
 
 pub struct Stack<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANSACTION_SIZE: u32, let CURRENT_INPUT_COUNT: u32, let CURRENT_INPUT_SIZE: u32, let CURRENT_OUTPUT_COUNT: u32, let CURRENT_OUTPUT_SIZE: u32, let CURRENT_MAX_WITNESS_STACK_SIZE: u32, let CURRENT_WITNESS_SIZE: u32> {
@@ -434,15 +440,68 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         //
     }
 
-    pub fn op_checksig<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32>(
+    // todo: implement this opcode
+    pub fn op_size() {
+        //
+    }
+
+    // !only for sighash_all
+    pub fn op_checksig<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32, let SCRIPT_LEN: u32>(
         &mut self,
         prev_transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
-    ) {
-        let mut sig = self.pop();
+        input_to_sign: u32,
+        script_pub_key: [u8; SCRIPT_LEN],
+    ) -> bool {
         let mut pubkey = self.pop();
+        let mut sig = self.pop();
 
-        let sig_bytes = sig.storage();
-        let pubkey_bytes = pubkey.storage();
+        let sig_bytes = cut_array::<MAX_STACK_ELEMENT_SIZE, 72>(sig.storage());
+        let mut pubkey_bytes = cut_array::<MAX_STACK_ELEMENT_SIZE, 33>(pubkey.storage());
+
+        let sign = pubkey_bytes[0];
+        pubkey_bytes[0] = 0;
+
+        let pub_x = I768 {
+            num: U768::from_be_bytes([0; 64].as_slice().append(pubkey_bytes).as_array::<97>()),
+            is_neg: false,
+        };
+
+        let modulo: U768 = U768::from_be_bytes([
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE, 0xFF, 0xFF, 0xFC, 0x2F,
+        ]);
+
+        let mut pub_y = sqrt_secp256k1(pub_x
+            .mul(pub_x)
+            .umod(modulo)
+            .mul(pub_x)
+            .add(I768::from(7))
+            .umod(modulo));
+
+        if sign == 3 {
+            pub_y.num = modulo - pub_y.num;
+        }
+
+        let sig = decode_der(sig_bytes);
+
+        ecdsa_secp256k1::verify_signature(
+            pubkey_bytes.as_slice().pop_front().1.as_array::<32>(),
+            get_256_bits_from_768(pub_y.num).to_be_bytes().as_slice().pop_front().1.as_array::<32>(),
+            sig
+                .0
+                .to_be_bytes()
+                .as_slice()
+                .pop_front()
+                .1
+                .append(sig.1.to_be_bytes().as_slice().pop_front().1)
+                .as_array::<64>(),
+            serialize_sighash_all(prev_transaction, input_to_sign, script_pub_key),
+        )
     }
 }
 
@@ -794,4 +853,26 @@ fn test_max_min_range() {
     stack.op_num(15);
     stack.op_within();
     assert(vec_to_i32(stack.pop()) == 1);
+}
+
+#[test]
+fn test_checksig() {
+    let tx_hex = "0100000001b7994a0db2f373a29227e1d90da883c6ce1cb0dd2d6812e4558041ebbbcfa54b0000000000ffffffff01983a0000000000001976a914b3e2819b6262e0b1f19fc7229d75677f347c91ac88ac00000000";
+
+    let tx_bytes = hex_to_bytes(tx_hex);
+
+    let tx = Transaction::<85, 1, 42, 1, 35, 1, 0>::new(tx_bytes, false);
+
+    let sign = "3044022065e2e6a0cc94ce2bc0b48961a2ab0364a732cef116c594283ff8a5d9dfabaa69022027a898b9c7159a11dc2c0f1798599a6da43e4f603a8812c6a6c1782b9ad4231d";
+
+    let pub_key = "02c5330899d9ff11280fe0d419d5e1ea3f17b6b5625ce77c10e9d4b79867b2966a";
+
+    let script_pub_key = "1976a9144299ff317fcd12ef19047df66d72454691797bfc88ac";
+
+    let mut stack = Stack::<80, 7, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+
+    stack.push(bytes_to_vec(hex_to_bytes(sign)));
+    stack.push(bytes_to_vec(hex_to_bytes(pub_key)));
+
+    assert(stack.op_checksig(tx, 0, hex_to_bytes(script_pub_key)));
 }
