@@ -56,10 +56,10 @@ pub fn hex_symbol_to_byte(value: u8) -> u8 {
     }
 }
 
-pub fn reverse_bytes(bytes: [u8; 32]) -> [u8; 32] {
-    let mut res = [0; 32];
-    for i in 0..32 {
-        res[i] = bytes[31 - i];
+pub fn reverse_bytes<let N: u32>(bytes: [u8; N]) -> [u8; N] {
+    let mut res = [0; N];
+    for i in 0..N {
+        res[i] = bytes[N - 1 - i];
     }
     res
 }

@@ -3,7 +3,7 @@ use std::hash::BuildHasherDefault;
 use std::hash::poseidon2::Poseidon2Hasher;
 
 use crate::compact_size;
-use utils::convert::{bytes_to_hex, hex_to_bytes};
+use utils::convert::{bytes_to_hex, hex_to_bytes, reverse_bytes};
 
 pub struct PositionField {
     pub offset: u32,
@@ -232,6 +232,37 @@ impl<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_SIZE: u32, let O
             lock_time: PositionField { offset: 0, size: 0 },
         }
     }
+
+    // transaction hash (what is used in txid)
+    pub fn txid(self) -> [u8; 32] {
+        let mut preimage_hash = [0; 4 + INPUT_SIZE + OUTPUT_SIZE + 4];
+        
+        // version
+        for i in 0..4 {
+            preimage_hash[i] = self.data[i];
+        }
+
+        let mut transaction_data_offset = self.input_count.offset;
+        let mut preimage_hash_offset = 4;
+
+        // input and output
+        for i in 0..(INPUT_SIZE + OUTPUT_SIZE) {
+            preimage_hash[preimage_hash_offset + i] = self.data[transaction_data_offset + i];
+        }
+
+        transaction_data_offset = self.lock_time.offset;
+        preimage_hash_offset += INPUT_SIZE + OUTPUT_SIZE;
+
+        // lock time
+        for i in 0..4 {
+            preimage_hash[preimage_hash_offset + i] = self.data[transaction_data_offset + i];
+        }
+
+        let hex = bytes_to_hex(preimage_hash);
+        println(hex);
+
+        sha256::digest(sha256::digest(preimage_hash))
+    }
 }
 
 #[test]
@@ -278,4 +309,16 @@ fn test_transaction_creation_segwit() {
     assert(
         witness_stack_item == "02c2f3e2a446815b7cb8f0b0390fada48fefc4bc45026414cc8d1aec33574afcd5",
     );
+}
+
+#[test]
+fn test_transaction_hash() {
+    let string: str<634> = "020000000001016d16731b9e16c2b8ac3499935af3f4f02a3e5b2bcb22376ef48e9fea5987fc052e00000000fdffffff012202000000000000225120079041570ca421321409eb2a3f9dab81e4445ea73004467170660ba890eafc680340d118072a8ff004a87c607d1e7042cc8b624d8132d143d9d86d24a09ec6df66080842916d7bebce70611627d536519c630a3306ebaafbf1531aca28e4fe84ce0a78202cea7e08b4a583bc246c332aa00e79c1150e798e0b197a4462b42181b47f2a1cac0063036f7264010118746578742f706c61696e3b636861727365743d7574662d3800327b2270223a226272632d3230222c226f70223a226d696e74222c227469636b223a2275666f78222c22616d74223a2233227d6821c12cea7e08b4a583bc246c332aa00e79c1150e798e0b197a4462b42181b47f2a1c00000000";
+    let bytes = hex_to_bytes(string);
+    let transaction = Transaction::<317, 1, 42, 1, 44, 3, 221>::new(bytes, true);
+
+    let txid = transaction.txid();
+    let txid_hex = bytes_to_hex(txid);
+    println(txid_hex);
+    assert(txid_hex == "9f7af38feb87c8ea7a5f572ea44fde9378b1d188eee4fd5f5f1e0aa15d8eccd5");
 }
