@@ -263,6 +263,18 @@ impl<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_SIZE: u32, let O
 
         sha256::digest(sha256::digest(preimage_hash))
     }
+
+    pub fn get_input_txid(self, input_index: u32) -> [u8; 32] {
+        let txid_offset = self.inputs[input_index].txid.offset;
+        let txid_size = self.inputs[input_index].txid.size;
+
+        let mut txid_bytes = [0; 32];
+        for i in 0..32 {
+            txid_bytes[i] = self.data[txid_offset + i];
+        }
+
+        txid_bytes
+    }
 }
 
 #[test]
