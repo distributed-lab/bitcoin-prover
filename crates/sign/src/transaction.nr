@@ -127,6 +127,10 @@ impl<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_SIZE: u32, let O
             inputs[i] = Input { txid, vout, script_sig_size, script_sig, sequence };
         }
 
+        println(cur_pos);
+        println(input_count.offset);
+        println(INPUT_SIZE);
+
         assert(INPUT_SIZE == cur_pos - input_count.offset);
 
         let output_count = compact_size::get_compact_size(data, cur_pos);
@@ -259,7 +263,6 @@ impl<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_SIZE: u32, let O
         }
 
         let hex = bytes_to_hex(preimage_hash);
-        println(hex);
 
         sha256::digest(sha256::digest(preimage_hash))
     }
@@ -331,6 +334,6 @@ fn test_transaction_hash() {
 
     let txid = transaction.txid();
     let txid_hex = bytes_to_hex(txid);
-    println(txid_hex);
+
     assert(txid_hex == "9f7af38feb87c8ea7a5f572ea44fde9378b1d188eee4fd5f5f1e0aa15d8eccd5");
 }

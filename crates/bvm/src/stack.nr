@@ -8,8 +8,8 @@ use crate::utils::split_raw_signature;
 use crypto::types::{I768, sqrt_secp256k1};
 use utils::{
     convert::{
-        bytes_to_vec, cut_array, get_256_bits_from_768, hex_to_bytes, i32_to_le_bytes, i32_to_vec,
-        u32_to_le_bytes, vec_to_i32, vec_to_u32,
+        reverse_bytes, bytes_to_vec, cut_array, get_256_bits_from_768, hex_to_bytes, i32_to_le_bytes, i32_to_vec,
+        u32_to_le_bytes, vec_to_i32, vec_to_u32, bytes_to_hex, vec_to_array,
     },
     decode::decode_der,
 };
@@ -493,51 +493,24 @@ impl<
     }
 
     pub fn op_checksig_sighash_all<
-        let PREV_TRANSACTION_SIZE: u32,
-        let PREV_INPUT_COUNT: u32,
-        let PREV_INPUT_SIZE: u32,
-        let PREV_OUTPUT_COUNT: u32,
-        let PREV_OUTPUT_SIZE: u32,
-        let PREV_MAX_WITNESS_STACK_SIZE: u32,
-        let PREV_WITNESS_SIZE: u32,
-        let PREV_SCRIPT_LEN: u32,
         let SIGNATURE_LEN: u32,
         let SCRIPT_PUB_KEY_LEN: u32,
     >(
         &mut self,
-        prev_transaction: Transaction<
-            PREV_TRANSACTION_SIZE,
-            PREV_INPUT_COUNT,
-            PREV_INPUT_SIZE,
-            PREV_OUTPUT_COUNT,
-            PREV_OUTPUT_SIZE,
-            PREV_MAX_WITNESS_STACK_SIZE,
-            PREV_WITNESS_SIZE,
-        >,
         input_to_sign: u32,
-        output_to_unlock: u32,
+        script_pub_key: [u8; SCRIPT_PUB_KEY_LEN],
     ) -> bool {
-        // ensure that the input txid is the same as the previous transaction txid
-        assert(self.cur_transaction.get_input_txid(input_to_sign) == prev_transaction.txid());
+        let mut pubkey_vec = self.pop();
+        let mut raw_signature_vec = self.pop();
 
-        let mut pubkey = self.pop();
-        let mut raw_sig = self.pop();
-
-        let sig_bytes = cut_array::<MAX_STACK_ELEMENT_SIZE, SIGNATURE_LEN>(raw_sig.storage());
-        let (encoded_sig, hash_type) = split_raw_signature(sig_bytes);
-        let mut pubkey_bytes = cut_array::<MAX_STACK_ELEMENT_SIZE, 33>(pubkey.storage());
+        let signature_bytes = vec_to_array::<MAX_STACK_ELEMENT_SIZE, SIGNATURE_LEN>(raw_signature_vec);
+        let (encoded_signature, hash_type) = split_raw_signature(signature_bytes);
+        let mut pubkey_bytes = vec_to_array::<MAX_STACK_ELEMENT_SIZE, 33>(pubkey_vec);
 
         // ensure that the hash type is sighash_all
         assert(hash_type == 0x01);
 
-        let mut script_pub_key = [0; SCRIPT_PUB_KEY_LEN];
-        let script_pub_key_position = prev_transaction.outputs[output_to_unlock].script_pub_key;
-        assert(script_pub_key_position.size == SCRIPT_PUB_KEY_LEN);
-        for i in 0..SCRIPT_PUB_KEY_LEN {
-            script_pub_key[i] = prev_transaction.data[script_pub_key_position.offset + i];
-        }
-
-        let signature_point = decode_der(encoded_sig);
+        let signature_point = decode_der(encoded_signature);
 
         //------- TODO: move to crypto crate ---------//
 
@@ -581,7 +554,7 @@ impl<
                 .1
                 .append(signature_point.1.to_be_bytes().as_slice().pop_front().1)
                 .as_array::<64>(),
-            serialize_sighash_all(prev_transaction, input_to_sign, script_pub_key),
+            serialize_sighash_all(self.cur_transaction, input_to_sign, script_pub_key),
         )
         //------- TODO: move to crypto crate ---------//
     }
@@ -939,22 +912,29 @@ fn test_max_min_range() {
 
 #[test]
 fn test_checksig() {
-    let tx_hex = "0100000001b7994a0db2f373a29227e1d90da883c6ce1cb0dd2d6812e4558041ebbbcfa54b0000000000ffffffff01983a0000000000001976a914b3e2819b6262e0b1f19fc7229d75677f347c91ac88ac00000000";
+    // From here: https://www.blockchain.com/explorer/transactions/btc/12e753ef5cc30925a6eee2c457aa7f53022443ca013ea81882a6b59b69e342a6
+    // Transaction with deleted script sigs
+    let cur_tx_hex: str<402> = "01000000030dd7891efbf67da47c651531db8aab3144ed7a524e4ae1e30b773525e27ddd7b0000000000ffffffff16851666962e37a75a246101f2e340c628b1db3c045d4d3cfb2d1c0f58f97c6f0000000000ffffffffffda5d38e91fd9a0d92872d51f83cb746fc7bf5d3ff13402f8d0d5ed60ddc79c0000000000ffffffff02c0c62d00000000001976a91417194e1bd175fb5b1b2a1f9d221f6f5c29e1928388ac00c817a8040000001976a91465bda9b05f7e9a8f96a7f4ba0996a877708ef90888ac00000000";
+    let cur_tx_bytes = hex_to_bytes(cur_tx_hex);
+    let cur_tx = Transaction::<201, 3, 124, 2, 69, 0, 0>::new(cur_tx_bytes, false);
 
-    let tx_bytes = hex_to_bytes(tx_hex);
+    let input_to_sign = 1;
 
-    let tx = Transaction::<85, 1, 42, 1, 35, 1, 0>::new(tx_bytes, false);
+    let mut stack = Stack::<80, 7, 201, 3, 124, 2, 69, 0, 0>::new(cur_tx);
 
-    let sign = "3044022065e2e6a0cc94ce2bc0b48961a2ab0364a732cef116c594283ff8a5d9dfabaa69022027a898b9c7159a11dc2c0f1798599a6da43e4f603a8812c6a6c1782b9ad4231d";
+    let signature_hex: str<144> = "304502203f004eeed0cef2715643e2f25a27a28f3c578e94c7f0f6a4df104e7d163f7f8f022100b8b248c1cfd8f77a0365107a9511d759b7544d979dd152a955c867afac0ef78601";
+    let signature_bytes = hex_to_bytes(signature_hex);
 
-    let pub_key = "02c5330899d9ff11280fe0d419d5e1ea3f17b6b5625ce77c10e9d4b79867b2966a";
+    // From here: https://www.blockchain.com/explorer/transactions/btc/6f7cf9580f1c2dfb3c4d5d043cdbb128c640e3f20161245aa7372e9666168516
+    let script_pub_key_hex: str<50> = "76a91412ab8dc588ca9d5787dde7eb29569da63c3a238c88ac";
+    let script_pub_key_bytes = hex_to_bytes(script_pub_key_hex);
 
-    let script_pub_key = "1976a9144299ff317fcd12ef19047df66d72454691797bfc88ac";
+    // original used uncompressed pubkey: 044d05240cfbd8a2786eda9dadd520c1609b8593ff8641018d57703d02ba687cf2f187f0cee2221c3afb1b5ff7888caced2423916b61444666ca1216f26181398c
+    let pubkey_hex: str<66> = "024d05240cfbd8a2786eda9dadd520c1609b8593ff8641018d57703d02ba687cf2";
+    let pubkey_bytes = hex_to_bytes(pubkey_hex);
 
-    let mut stack = Stack::<80, 7, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    stack.push(bytes_to_vec(signature_bytes));
+    stack.push(bytes_to_vec(pubkey_bytes));
 
-    stack.push(bytes_to_vec(hex_to_bytes(sign)));
-    stack.push(bytes_to_vec(hex_to_bytes(pub_key)));
-
-    assert(stack.op_checksig(tx, 0, hex_to_bytes(script_pub_key)));
+    assert(stack.op_checksig_sighash_all::<72, 25>(input_to_sign, script_pub_key_bytes));
 }

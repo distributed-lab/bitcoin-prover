@@ -177,6 +177,20 @@ pub fn cut_array<let N: u32, let NEW_LEN: u32>(array: [u8; N]) -> [u8; NEW_LEN] 
     cut
 }
 
+pub fn vec_to_array<let MAX_STACK_ELEMENT_SIZE: u32, let NEW_LEN: u32>(
+    v: BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>,
+) -> [u8; NEW_LEN] {
+    // TODO: ideally we want to check ==, not >=
+    assert(v.len() >= NEW_LEN);
+
+    let mut res = [0; NEW_LEN];
+    for i in 0..NEW_LEN {
+        res[i] = v.get(i);
+    }
+
+    res
+}
+
 #[test]
 fn test_bytes_to_hex() {
     let bytes: [u8; 4] = [0xab, 0x2f, 0x12, 0x34];
