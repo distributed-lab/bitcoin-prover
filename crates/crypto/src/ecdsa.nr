@@ -1,4 +1,4 @@
-use super::{point::{inv_mod, mul_point}, types::I768};
+use super::{point::{get_y_from_x, inv_mod, mul_point}, types::I768};
 use dep::bignum::{BigNum, U256, U768};
 use std::ecdsa_secp256k1;
 use utils::convert::get_256_bits_from_768;
@@ -55,6 +55,21 @@ pub fn ecdsa_sign(message: [u8; 32], priv_key: U256, nonce: U256) -> (U256, U256
     (get_256_bits_from_768(r.num), get_256_bits_from_768(s.num))
 }
 
+pub fn ecdsa_verify(
+    x: [u8; 32],
+    y: [u8; 32],
+    sign_r: [u8; 32],
+    sign_s: [u8; 32],
+    message_hash: [u8; 32],
+) -> bool {
+    ecdsa_secp256k1::verify_signature(
+        x,
+        y,
+        sign_r.as_slice().append(sign_s).as_array::<64>(),
+        message_hash,
+    )
+}
+
 #[test]
 fn ecdsa_sign_test() {
     let message = [
@@ -89,17 +104,11 @@ fn ecdsa_sign_test() {
 
     let sign = ecdsa_sign(message, priv_key, nonce);
 
-    assert(ecdsa_secp256k1::verify_signature(
+    assert(ecdsa_verify(
         pub_key_x,
         pub_key_y,
-        sign
-            .0
-            .to_be_bytes()
-            .as_slice()
-            .pop_front()
-            .1
-            .append(sign.1.to_be_bytes().as_slice().pop_front().1)
-            .as_array::<64>(),
+        sign.0.to_be_bytes().as_slice().pop_front().1.as_array::<32>(),
+        sign.1.to_be_bytes().as_slice().pop_front().1.as_array::<32>(),
         message,
     ));
 }

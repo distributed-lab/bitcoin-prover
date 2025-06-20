@@ -1,76 +1,30 @@
+use crate::utils::split_raw_signature;
 use dep::bignum::{BigNum, U768};
 use ripemd160::ripemd160;
 use sha1::sha1;
 use sign::{legacy::serialize_sighash_all, transaction::Transaction};
 use std::{collections::bounded_vec::BoundedVec, ecdsa_secp256k1, ops::{Add, Mul}};
-use crate::utils::split_raw_signature;
 
-use crypto::types::{I768, sqrt_secp256k1};
+use crypto::{ecdsa::ecdsa_verify, point::get_y_from_x, types::{I768, sqrt_secp256k1}};
 use utils::{
     convert::{
-        reverse_bytes, bytes_to_vec, cut_array, get_256_bits_from_768, hex_to_bytes, i32_to_le_bytes, i32_to_vec,
-        u32_to_le_bytes, vec_to_i32, vec_to_u32, bytes_to_hex, vec_to_array,
+        bytes_to_hex, bytes_to_vec, cut_array, get_256_bits_from_768, hex_to_bytes, i32_to_le_bytes,
+        i32_to_vec, reverse_bytes, u32_to_le_bytes, vec_to_array, vec_to_i32, vec_to_u32,
     },
     decode::decode_der,
 };
 
-pub struct Stack<
-    let MAX_STACK_ELEMENT_SIZE: u32, 
-    let MAX_STACK_SIZE: u32, 
-    let CURRENT_TRANSACTION_SIZE: u32, 
-    let CURRENT_INPUT_COUNT: u32, 
-    let CURRENT_INPUT_SIZE: u32, 
-    let CURRENT_OUTPUT_COUNT: u32, 
-    let CURRENT_OUTPUT_SIZE: u32, 
-    let CURRENT_MAX_WITNESS_STACK_SIZE: u32, 
-    let CURRENT_WITNESS_SIZE: u32
-> {
+pub struct Stack<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANSACTION_SIZE: u32, let CURRENT_INPUT_COUNT: u32, let CURRENT_INPUT_SIZE: u32, let CURRENT_OUTPUT_COUNT: u32, let CURRENT_OUTPUT_SIZE: u32, let CURRENT_MAX_WITNESS_STACK_SIZE: u32, let CURRENT_WITNESS_SIZE: u32> {
     data: [BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>; MAX_STACK_SIZE],
     stack_size: u32,
     alt_data: [BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>; MAX_STACK_SIZE],
     alt_stack_size: u32,
-    cur_transaction: Transaction<
-        CURRENT_TRANSACTION_SIZE,
-        CURRENT_INPUT_COUNT,
-        CURRENT_INPUT_SIZE,
-        CURRENT_OUTPUT_COUNT,
-        CURRENT_OUTPUT_SIZE,
-        CURRENT_MAX_WITNESS_STACK_SIZE,
-        CURRENT_WITNESS_SIZE,
-    >,
+    cur_transaction: Transaction<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE>,
 }
 
-impl<
-    let MAX_STACK_ELEMENT_SIZE: u32, 
-    let MAX_STACK_SIZE: u32, 
-    let CURRENT_TRANSACTION_SIZE: u32, 
-    let CURRENT_INPUT_COUNT: u32, 
-    let CURRENT_INPUT_SIZE: u32, 
-    let CURRENT_OUTPUT_COUNT: u32, 
-    let CURRENT_OUTPUT_SIZE: u32, 
-    let CURRENT_MAX_WITNESS_STACK_SIZE: u32, 
-    let CURRENT_WITNESS_SIZE: u32
-> Stack<
-    MAX_STACK_ELEMENT_SIZE, 
-    MAX_STACK_SIZE, 
-    CURRENT_TRANSACTION_SIZE, 
-    CURRENT_INPUT_COUNT, 
-    CURRENT_INPUT_SIZE, 
-    CURRENT_OUTPUT_COUNT, 
-    CURRENT_OUTPUT_SIZE, 
-    CURRENT_MAX_WITNESS_STACK_SIZE, 
-    CURRENT_WITNESS_SIZE
-> {
+impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANSACTION_SIZE: u32, let CURRENT_INPUT_COUNT: u32, let CURRENT_INPUT_SIZE: u32, let CURRENT_OUTPUT_COUNT: u32, let CURRENT_OUTPUT_SIZE: u32, let CURRENT_MAX_WITNESS_STACK_SIZE: u32, let CURRENT_WITNESS_SIZE: u32> Stack<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE> {
     pub fn new(
-        cur_transaction: Transaction<
-            CURRENT_TRANSACTION_SIZE,
-            CURRENT_INPUT_COUNT,
-            CURRENT_INPUT_SIZE,
-            CURRENT_OUTPUT_COUNT,
-            CURRENT_OUTPUT_SIZE,
-            CURRENT_MAX_WITNESS_STACK_SIZE,
-            CURRENT_WITNESS_SIZE,
-        >,
+        cur_transaction: Transaction<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE>,
     ) -> Self {
         Stack {
             data: [BoundedVec::new(); MAX_STACK_SIZE],
@@ -492,10 +446,7 @@ impl<
         //
     }
 
-    pub fn op_checksig_sighash_all<
-        let SIGNATURE_LEN: u32,
-        let SCRIPT_PUB_KEY_LEN: u32,
-    >(
+    pub fn op_checksig_sighash_all<let SIGNATURE_LEN: u32, let SCRIPT_PUB_KEY_LEN: u32>(
         &mut self,
         input_to_sign: u32,
         script_pub_key: [u8; SCRIPT_PUB_KEY_LEN],
@@ -503,60 +454,29 @@ impl<
         let mut pubkey_vec = self.pop();
         let mut raw_signature_vec = self.pop();
 
-        let signature_bytes = vec_to_array::<MAX_STACK_ELEMENT_SIZE, SIGNATURE_LEN>(raw_signature_vec);
+        let signature_bytes =
+            vec_to_array::<MAX_STACK_ELEMENT_SIZE, SIGNATURE_LEN>(raw_signature_vec);
         let (encoded_signature, hash_type) = split_raw_signature(signature_bytes);
         let mut pubkey_bytes = vec_to_array::<MAX_STACK_ELEMENT_SIZE, 33>(pubkey_vec);
+
+        let pub_y = get_y_from_x(pubkey_bytes);
+        let pub_x = pubkey_bytes.as_slice().pop_front().1.as_array::<32>();
 
         // ensure that the hash type is sighash_all
         assert(hash_type == 0x01);
 
-        let signature_point = decode_der(encoded_signature);
+        let signature = decode_der(encoded_signature);
 
-        //------- TODO: move to crypto crate ---------//
+        let r = signature.0.to_be_bytes().as_slice().pop_front().1.as_array::<32>();
+        let s = signature.1.to_be_bytes().as_slice().pop_front().1.as_array::<32>();
 
-        let sign = pubkey_bytes[0];
-        pubkey_bytes[0] = 0;
-
-        let pub_x = I768 {
-            num: U768::from_be_bytes([0; 64].as_slice().append(pubkey_bytes).as_array::<97>()),
-            is_neg: false,
-        };
-
-        let modulo: U768 = U768::from_be_bytes([
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE, 0xFF, 0xFF, 0xFC, 0x2F,
-        ]);
-
-        let mut pub_y = sqrt_secp256k1(pub_x
-            .mul(pub_x)
-            .umod(modulo)
-            .mul(pub_x)
-            .add(I768::from(7))
-            .umod(modulo));
-
-        if sign == 3 {
-            pub_y.num = modulo - pub_y.num;
-        }
-
-        ecdsa_secp256k1::verify_signature(
-            pubkey_bytes.as_slice().pop_front().1.as_array::<32>(),
-            get_256_bits_from_768(pub_y.num).to_be_bytes().as_slice().pop_front().1.as_array::<32>(),
-            signature_point
-                .0
-                .to_be_bytes()
-                .as_slice()
-                .pop_front()
-                .1
-                .append(signature_point.1.to_be_bytes().as_slice().pop_front().1)
-                .as_array::<64>(),
+        ecdsa_verify(
+            pub_x,
+            pub_y,
+            r,
+            s,
             serialize_sighash_all(self.cur_transaction, input_to_sign, script_pub_key),
         )
-        //------- TODO: move to crypto crate ---------//
     }
 }
 

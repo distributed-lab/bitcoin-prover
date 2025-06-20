@@ -240,7 +240,7 @@ impl<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_SIZE: u32, let O
     // transaction hash (what is used in txid)
     pub fn txid(self) -> [u8; 32] {
         let mut preimage_hash = [0; 4 + INPUT_SIZE + OUTPUT_SIZE + 4];
-        
+
         // version
         for i in 0..4 {
             preimage_hash[i] = self.data[i];
