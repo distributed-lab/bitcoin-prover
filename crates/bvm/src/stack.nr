@@ -846,7 +846,7 @@ fn test_checksig() {
     let signature_bytes = hex_to_bytes(signature_hex);
 
     // From here: https://www.blockchain.com/explorer/transactions/btc/6f7cf9580f1c2dfb3c4d5d043cdbb128c640e3f20161245aa7372e9666168516
-    let script_pub_key_hex: str<50> = "76a91412ab8dc588ca9d5787dde7eb29569da63c3a238c88ac";
+    let script_pub_key_hex: str<52> = "1976a91412ab8dc588ca9d5787dde7eb29569da63c3a238c88ac";
     let script_pub_key_bytes = hex_to_bytes(script_pub_key_hex);
 
     // original used uncompressed pubkey: 044d05240cfbd8a2786eda9dadd520c1609b8593ff8641018d57703d02ba687cf2f187f0cee2221c3afb1b5ff7888caced2423916b61444666ca1216f26181398c
@@ -856,5 +856,5 @@ fn test_checksig() {
     stack.push(bytes_to_vec(signature_bytes));
     stack.push(bytes_to_vec(pubkey_bytes));
 
-    assert(stack.op_checksig_sighash_all::<72, 25>(input_to_sign, script_pub_key_bytes));
+    assert(stack.op_checksig_sighash_all::<72, 26>(input_to_sign, script_pub_key_bytes));
 }

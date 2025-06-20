@@ -127,10 +127,6 @@ impl<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_SIZE: u32, let O
             inputs[i] = Input { txid, vout, script_sig_size, script_sig, sequence };
         }
 
-        println(cur_pos);
-        println(input_count.offset);
-        println(INPUT_SIZE);
-
         assert(INPUT_SIZE == cur_pos - input_count.offset);
 
         let output_count = compact_size::get_compact_size(data, cur_pos);
