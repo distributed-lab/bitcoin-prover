@@ -5,7 +5,7 @@ use sha1::sha1;
 use sign::{legacy::serialize_sighash_all, transaction::Transaction};
 use std::{collections::bounded_vec::BoundedVec, ecdsa_secp256k1, ops::{Add, Mul}};
 
-use crypto::{ecdsa::ecdsa_verify, point::get_y_from_x, types::{I768, sqrt_secp256k1}};
+use crypto::{ecdsa::ecdsa_verify, point::get_y_from_x, types::{I768, sqrt_secp256k1}, point::get_low_s_if_needed};
 use utils::{
     convert::{
         bytes_to_hex, bytes_to_vec, cut_array, get_256_bits_from_768, hex_to_bytes, i32_to_le_bytes,
@@ -467,8 +467,9 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
 
         let signature = decode_der(encoded_signature);
 
+        let low_s = get_low_s_if_needed(signature.1);
         let r = signature.0.to_be_bytes().as_slice().pop_front().1.as_array::<32>();
-        let s = signature.1.to_be_bytes().as_slice().pop_front().1.as_array::<32>();
+        let s = low_s.to_be_bytes().as_slice().pop_front().1.as_array::<32>();
 
         ecdsa_verify(
             pub_x,
@@ -846,6 +847,7 @@ fn test_checksig() {
     let signature_bytes = hex_to_bytes(signature_hex);
 
     // From here: https://www.blockchain.com/explorer/transactions/btc/6f7cf9580f1c2dfb3c4d5d043cdbb128c640e3f20161245aa7372e9666168516
+    // script_pub_key includes the length of the script
     let script_pub_key_hex: str<52> = "1976a91412ab8dc588ca9d5787dde7eb29569da63c3a238c88ac";
     let script_pub_key_bytes = hex_to_bytes(script_pub_key_hex);
 
