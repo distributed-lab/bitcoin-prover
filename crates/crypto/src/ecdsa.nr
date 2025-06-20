@@ -1,7 +1,10 @@
-use super::{point::{get_y_from_x, inv_mod, mul_point}, types::I768};
+use super::{point::{get_low_s_if_needed, inv_mod, mul_point, get_y_from_x}, types::I768};
 use dep::bignum::{BigNum, U256, U768};
 use std::ecdsa_secp256k1;
-use utils::convert::get_256_bits_from_768;
+use utils::{
+    convert::get_256_bits_from_768,
+    decode::decode_der,
+};
 
 pub fn ecdsa_sign(message: [u8; 32], priv_key: U256, nonce: U256) -> (U256, U256) {
     let modulo_p = U768::from_be_bytes([
@@ -55,17 +58,55 @@ pub fn ecdsa_sign(message: [u8; 32], priv_key: U256, nonce: U256) -> (U256, U256
     (get_256_bits_from_768(r.num), get_256_bits_from_768(s.num))
 }
 
-pub fn ecdsa_verify(
-    x: [u8; 32],
-    y: [u8; 32],
-    sign_r: [u8; 32],
-    sign_s: [u8; 32],
+fn get_xy_from_pubkey<let PUBKEY_LEN: u32>(pubkey: [u8; PUBKEY_LEN]) -> ([u8; 32], [u8; 32]) {
+    let mut pub_x = [0; 32];
+    let mut pub_y = [0; 32];
+
+    if PUBKEY_LEN == 33 {
+        if (pubkey[0] != 0x02) & (pubkey[0] != 0x03)  {
+            assert(false, "Invalid pubkey");
+        }
+        pub_y = get_y_from_x(pubkey.as_slice().as_array());
+        pub_x = pubkey.as_slice().pop_front().1.as_array::<32>();
+    } else if PUBKEY_LEN == 65 {
+        if pubkey[0] != 0x04 {
+            assert(false, "Invalid pubkey");
+        }
+        for i in 0..32 {
+            pub_x[i] = pubkey[i + 1];
+        }
+        for i in 0..32 {
+            pub_y[i] = pubkey[i + 33];
+        }
+    } else {
+        assert(false, "Invalid pubkey length");
+    }
+
+    (pub_x, pub_y)
+}
+
+pub fn ecdsa_verify<
+    let DER_SIGNATURE_LEN: u32,
+    let PUBKEY_LEN: u32,
+>(
+    der_encoded_signature: [u8; DER_SIGNATURE_LEN],
+    pubkey: [u8; PUBKEY_LEN],
     message_hash: [u8; 32],
 ) -> bool {
+    let (pub_x, pub_y) = get_xy_from_pubkey(pubkey);
+
+    let (sign_r, sign_s) = decode_der(der_encoded_signature);
+    let sign_s = get_low_s_if_needed(sign_s);
+
+    let sign_r = sign_r.to_be_bytes().as_slice().pop_front().1.as_array::<32>();
+    let sign_s = sign_s.to_be_bytes().as_slice().pop_front().1.as_array::<32>();
+
+    let signature = sign_r.as_slice().append(sign_s).as_array::<64>();
+
     ecdsa_secp256k1::verify_signature(
-        x,
-        y,
-        sign_r.as_slice().append(sign_s).as_array::<64>(),
+        pub_x,
+        pub_y,
+        signature,
         message_hash,
     )
 }
@@ -102,13 +143,14 @@ fn ecdsa_sign_test() {
         0xF7, 0x72,
     ];
 
-    let sign = ecdsa_sign(message, priv_key, nonce);
+    let (r, s) = ecdsa_sign(message, priv_key, nonce);
 
-    assert(ecdsa_verify(
+    let signature = r.to_be_bytes().as_slice().append(s.to_be_bytes()).as_array::<64>();
+
+    assert(ecdsa_secp256k1::verify_signature(
         pub_key_x,
         pub_key_y,
-        sign.0.to_be_bytes().as_slice().pop_front().1.as_array::<32>(),
-        sign.1.to_be_bytes().as_slice().pop_front().1.as_array::<32>(),
+        signature,
         message,
     ));
 }

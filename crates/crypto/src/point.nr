@@ -35,6 +35,8 @@ pub fn get_y_from_x(mut x: [u8; 33]) -> [u8; 32] {
 
     if sign == 3 {
         pub_y.num = modulo - pub_y.num;
+    } else if sign != 2 {
+        assert(false, "Invalid sign");
     }
 
     let mut res = [0; 32];
