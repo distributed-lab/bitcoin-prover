@@ -1,5 +1,5 @@
-use std::collections::bounded_vec::BoundedVec;
 use dep::bignum::{BigNum, U256, U768};
+use std::collections::bounded_vec::BoundedVec;
 
 pub fn u32_to_le_bytes(value: u32) -> [u8; 4] {
     let mut res = [0; 4];
@@ -56,10 +56,10 @@ pub fn hex_symbol_to_byte(value: u8) -> u8 {
     }
 }
 
-pub fn reverse_bytes(bytes: [u8; 32]) -> [u8; 32] {
-    let mut res = [0; 32];
-    for i in 0..32 {
-        res[i] = bytes[31 - i];
+pub fn reverse_bytes<let N: u32>(bytes: [u8; N]) -> [u8; N] {
+    let mut res = [0; N];
+    for i in 0..N {
+        res[i] = bytes[N - 1 - i];
     }
     res
 }
@@ -108,12 +108,7 @@ pub fn i32_to_vec<let N: u32, let MAX_STACK_ELEMENT_SIZE: u32>(
 }
 
 pub fn i32_to_le_bytes(number: i32) -> [u8; 4] {
-    let mut unsigned_number: u32 = 0;
-    if number < 0 {
-        unsigned_number = (number + 2147483647 as i32 + 1 as i32) as u32;
-    } else {
-        unsigned_number = number as u32;
-    }
+    let unsigned_number: u32 = number as u32;
     let mut bytes = [0; 4];
     for i in 0..4 {
         bytes[i as u32] = ((unsigned_number >> (i * 8)) & 0xff) as u8;
@@ -126,11 +121,8 @@ fn le_bytes_to_i32(bytes: [u8; 4]) -> i32 {
     for i in 0..4 {
         result |= (bytes[i as u32] as u32) << (i * 8);
     }
-    if result > 2147483647 {
-        (result - 2147483648) as i32
-    } else {
-        result as i32
-    }
+
+    result as i32
 }
 
 pub fn vec_to_u32<let MAX_STACK_ELEMENT_SIZE: u32>(
@@ -172,6 +164,30 @@ pub fn get_256_bits_from_768(value: U768) -> U256 {
     res = res.push_back(0);
 
     U256::from_le_bytes(res.as_array::<33>())
+}
+
+pub fn cut_array<let N: u32, let NEW_LEN: u32>(array: [u8; N]) -> [u8; NEW_LEN] {
+    assert(N >= NEW_LEN);
+
+    let mut cut = [0; NEW_LEN];
+    for i in 0..NEW_LEN {
+        cut[i] = array[i];
+    }
+
+    cut
+}
+
+pub fn vec_to_array<let MAX_STACK_ELEMENT_SIZE: u32, let NEW_LEN: u32>(
+    v: BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>,
+) -> [u8; NEW_LEN] {
+    assert(v.len() == NEW_LEN);
+
+    let mut res = [0; NEW_LEN];
+    for i in 0..NEW_LEN {
+        res[i] = v.get(i);
+    }
+
+    res
 }
 
 #[test]

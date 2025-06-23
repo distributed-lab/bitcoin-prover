@@ -1,5 +1,5 @@
 use dep::bignum::{BigNum, U256, U768};
-use crypto::{point::{add_point, mul_point, Point}, types::{I768, sqrt_secp256k}};
+use crypto::{point::{add_point, mul_point, Point}, types::{I768, sqrt_secp256k1}};
 use std::ops::{Add, Mul};
 use utils::convert::{get_256_bits_from_768, hex_to_bytes};
 
@@ -59,7 +59,7 @@ fn get_tweaked_pub_key_test() {
     ]);
 
     // y^2 = x^3 + 7
-    let pub_y = sqrt_secp256k(pub_x.mul(pub_x).umod(modulo).mul(pub_x).add(I768::from(7)).umod(
+    let pub_y = sqrt_secp256k1(pub_x.mul(pub_x).umod(modulo).mul(pub_x).add(I768::from(7)).umod(
         modulo,
     ));
 

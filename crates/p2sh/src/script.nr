@@ -9,8 +9,8 @@ pub fn check_script<let LEN: u32, let ADR: u32>(script: str<LEN>, addr: str<ADR>
 }
 
 // All opcodes from 0 to 186 except [error] exists.
-global error: [u8; 15] =
-    [126, 127, 128, 129, 131, 132, 133, 134, 141, 142, 149, 150, 151, 152, 153];
+global error: [u8; 17] =
+    [101, 102, 126, 127, 128, 129, 131, 132, 133, 134, 141, 142, 149, 150, 151, 152, 153];
 
 pub fn check_opcodes<let LEN: u32>(script: [u8; LEN]) -> bool {
     let mut res = true;

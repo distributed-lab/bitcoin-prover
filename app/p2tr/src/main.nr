@@ -1,6 +1,6 @@
 use dep::bignum::{BigNum, U768};
 use crypto::point::Point;
-use crypto::types::{I768, sqrt_secp256k};
+use crypto::types::{I768, sqrt_secp256k1};
 use p2tr_lib::keys::get_tweaked_pub_key;
 use p2tr_lib::merkle_root::{get_branch, hash_from_script};
 use std::ops::{Add, Mul};
@@ -29,7 +29,7 @@ fn main(address: pub str<62>, pub_key: str<64>, script: str<N>) -> pub bool {
     };
 
     // y^2 = x^3 + 7
-    let pub_y = sqrt_secp256k(pub_x.mul(pub_x).umod(modulo).mul(pub_x).add(I768::from(7)).umod(
+    let pub_y = sqrt_secp256k1(pub_x.mul(pub_x).umod(modulo).mul(pub_x).add(I768::from(7)).umod(
         modulo,
     ));
 

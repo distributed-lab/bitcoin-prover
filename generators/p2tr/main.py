@@ -13,7 +13,7 @@ def main():
 use utils::{{encode::encode_bech32m, convert::hex_to_bytes}};
 use p2tr_lib::keys::{{get_tweaked_pub_key}};
 use p2tr_lib::merkle_root::{{get_branch, hash_from_script}};
-use crypto::types::{{I768, sqrt_secp256k}};
+use crypto::types::{{I768, sqrt_secp256k1}};
 use crypto::point::Point;
 use std::ops::{{Add, Mul}};
                    
@@ -51,7 +51,7 @@ fn main(
     };
                    
     // y^2 = x^3 + 7
-    let pub_y = sqrt_secp256k(pub_x.mul(pub_x).umod(modulo).mul(pub_x).add(I768::from(7)).umod(modulo));
+    let pub_y = sqrt_secp256k1(pub_x.mul(pub_x).umod(modulo).mul(pub_x).add(I768::from(7)).umod(modulo));
                    
     let pub_key_point = Point { x: pub_x, y: pub_y, is_O: false};
     

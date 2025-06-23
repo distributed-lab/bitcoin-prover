@@ -1,24 +1,14 @@
 use crate::transaction::Transaction;
-use utils::convert::{hex_to_bytes, bytes_to_hex};
+use utils::convert::{bytes_to_hex, hex_to_bytes};
 
-fn prepare_preimage_hash_for_sighash_all<
-    let TRANSACTION_SIZE: u32,
-    let INPUT_COUNT: u32,
-    let INPUT_SIZE: u32,
-    let OUTPUT_COUNT: u32,
-    let OUTPUT_SIZE: u32,
-    let MAX_WITNESS_STACK_SIZE: u32,
-    let WITNESS_SIZE: u32,
-    let SCRIPT_PUB_KEY_SIZE: u32,
-> (
+fn prepare_preimage_hash_for_sighash_all<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32, let SCRIPT_PUB_KEY_SIZE: u32>(
     transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
     input_to_sign: u32,
     script_pub_key: [u8; SCRIPT_PUB_KEY_SIZE],
 ) -> [u8; 4 + INPUT_SIZE + OUTPUT_SIZE + 4 + (SCRIPT_PUB_KEY_SIZE - 1) + 4] {
-
     let mut data = [0; 4 + INPUT_SIZE + OUTPUT_SIZE + 4 + (SCRIPT_PUB_KEY_SIZE - 1) + 4];
     let mut data_pos: u32 = 0;
-    
+
     for i in 0..4 {
         data[data_pos] = transaction.data[i];
         data_pos += 1;
@@ -36,7 +26,7 @@ fn prepare_preimage_hash_for_sighash_all<
             }
 
             transaction_offset += i_change_offset;
-        } 
+        }
 
         data[data_pos] = transaction.data[transaction_offset + i];
         data_pos += 1;
@@ -64,20 +54,11 @@ fn prepare_preimage_hash_for_sighash_all<
     data_pos += 4;
 
     assert(data_pos == 4 + INPUT_SIZE + OUTPUT_SIZE + 4 + (SCRIPT_PUB_KEY_SIZE - 1) + 4);
-    
+
     data
 }
 
-pub fn serialize_sighash_all<
-    let TRANSACTION_SIZE: u32,
-    let INPUT_COUNT: u32,
-    let INPUT_SIZE: u32,
-    let OUTPUT_COUNT: u32,
-    let OUTPUT_SIZE: u32,
-    let MAX_WITNESS_STACK_SIZE: u32,
-    let WITNESS_SIZE: u32,
-    let SCRIPT_PUB_KEY_SIZE: u32,
-> (
+pub fn serialize_sighash_all<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32, let SCRIPT_PUB_KEY_SIZE: u32>(
     transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
     input_to_sign: u32,
     // script_pub_key should contain script_pub_key_size along with the script_pub_key
@@ -90,7 +71,8 @@ pub fn serialize_sighash_all<
         assert(transaction.inputs[i].script_sig.size == 0);
     }
 
-    let transaction_data = prepare_preimage_hash_for_sighash_all(transaction, input_to_sign, script_pub_key);
+    let transaction_data =
+        prepare_preimage_hash_for_sighash_all(transaction, input_to_sign, script_pub_key);
 
     let hashed_transaction = sha256::digest(sha256::digest(transaction_data));
 
@@ -110,7 +92,10 @@ fn test_serialize_legacy_transaction_sighash_all() {
 
     let sighash_all_transaction = bytes_to_hex(sighash_all_transaction_bytes);
 
-    assert(sighash_all_transaction == "a6b4103f527dfe43dfbadf530c247bac8a98b7463c7c6ad38eed97021d18ffcb");
+    assert(
+        sighash_all_transaction
+            == "a6b4103f527dfe43dfbadf530c247bac8a98b7463c7c6ad38eed97021d18ffcb",
+    );
 }
 
 #[test]
@@ -126,5 +111,8 @@ fn test_serialize_segwit_transaction_sighash_all() {
 
     let sighash_all_transaction = bytes_to_hex(sighash_all_transaction_bytes);
 
-    assert(sighash_all_transaction == "39e3884c3761427b3a7eee244fc1495036a9f2dad35cfbfc0abbac2455f6bf26");
+    assert(
+        sighash_all_transaction
+            == "39e3884c3761427b3a7eee244fc1495036a9f2dad35cfbfc0abbac2455f6bf26",
+    );
 }

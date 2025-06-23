@@ -1,9 +1,9 @@
-use std::hash::poseidon2::Poseidon2Hasher;
-use std::hash::BuildHasherDefault;
 use std::collections::map::HashMap;
+use std::hash::BuildHasherDefault;
+use std::hash::poseidon2::Poseidon2Hasher;
 
-use utils::convert::{hex_to_bytes, bytes_to_hex};
 use crate::compact_size;
+use utils::convert::{bytes_to_hex, hex_to_bytes, reverse_bytes};
 
 pub struct PositionField {
     pub offset: u32,
@@ -67,22 +67,11 @@ pub struct Witness {
 
 impl Witness {
     pub fn default() -> Self {
-        Self {
-            stack_size: PositionField { offset: 0, size: 0 },
-            items: HashMap::default(),
-        }
+        Self { stack_size: PositionField { offset: 0, size: 0 }, items: HashMap::default() }
     }
 }
 
-pub struct Transaction<
-    let TRANSACTION_SIZE: u32,
-    let INPUT_COUNT: u32,
-    let INPUT_SIZE: u32,
-    let OUTPUT_COUNT: u32,
-    let OUTPUT_SIZE: u32,
-    let MAX_WITNESS_STACK_SIZE: u32,
-    let WITNESS_SIZE: u32,
-> {
+pub struct Transaction<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32> {
     pub data: [u8; TRANSACTION_SIZE],
     pub version: PositionField,
     pub marker: Option<PositionField>,
@@ -95,23 +84,7 @@ pub struct Transaction<
     pub lock_time: PositionField,
 }
 
-impl<
-    let TRANSACTION_SIZE: u32,
-    let INPUT_COUNT: u32,
-    let INPUT_SIZE: u32,
-    let OUTPUT_COUNT: u32,
-    let OUTPUT_SIZE: u32,
-    let MAX_WITNESS_STACK_SIZE: u32,
-    let WITNESS_SIZE: u32,
-> Transaction<
-    TRANSACTION_SIZE,
-    INPUT_COUNT,
-    INPUT_SIZE,
-    OUTPUT_COUNT,
-    OUTPUT_SIZE,
-    MAX_WITNESS_STACK_SIZE,
-    WITNESS_SIZE,
-> {
+impl<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32> Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE> {
     pub fn new(data: [u8; TRANSACTION_SIZE], segwit: bool) -> Self {
         let mut cur_pos: u32 = 0;
 
@@ -151,13 +124,7 @@ impl<
             let sequence = PositionField { offset: cur_pos, size: 4 };
             cur_pos += 4;
 
-            inputs[i] = Input {
-                txid,
-                vout,
-                script_sig_size,
-                script_sig,
-                sequence,
-            };
+            inputs[i] = Input { txid, vout, script_sig_size, script_sig, sequence };
         }
 
         assert(INPUT_SIZE == cur_pos - input_count.offset);
@@ -173,15 +140,12 @@ impl<
             let script_pub_key_size = compact_size::get_compact_size(data, cur_pos);
             cur_pos += script_pub_key_size.size;
 
-            let script_pub_key_size_u32 = compact_size::compact_size_to_u32(data, script_pub_key_size);
+            let script_pub_key_size_u32 =
+                compact_size::compact_size_to_u32(data, script_pub_key_size);
             let script_pub_key = PositionField { offset: cur_pos, size: script_pub_key_size_u32 };
             cur_pos += script_pub_key_size_u32;
 
-            outputs[i] = Output {
-                amount,
-                script_pub_key_size,
-                script_pub_key,
-            };
+            outputs[i] = Output { amount, script_pub_key_size, script_pub_key };
         }
 
         assert(OUTPUT_SIZE == cur_pos - output_count.offset);
@@ -194,7 +158,8 @@ impl<
                 cur_pos += stack_size.size;
 
                 let stack_size_u32 = compact_size::compact_size_to_u32(data, stack_size);
-                let mut items: HashMap<u32, WitnessItem, 100, BuildHasherDefault<Poseidon2Hasher>> = HashMap::default();
+                let mut items: HashMap<u32, WitnessItem, 100, BuildHasherDefault<Poseidon2Hasher>> =
+                    HashMap::default();
 
                 assert(stack_size_u32 <= MAX_WITNESS_STACK_SIZE);
                 for j in 0..MAX_WITNESS_STACK_SIZE {
@@ -206,17 +171,11 @@ impl<
                         let item = PositionField { offset: cur_pos, size: size_u32 };
                         cur_pos += size_u32;
 
-                        items.insert(j, WitnessItem {
-                            size,
-                            item,
-                        });
+                        items.insert(j, WitnessItem { size, item });
                     }
                 }
 
-                all_witness[i] = Witness {
-                    stack_size,
-                    items,
-                };
+                all_witness[i] = Witness { stack_size, items };
             }
 
             witness = Option::some(all_witness);
@@ -273,8 +232,49 @@ impl<
             lock_time: PositionField { offset: 0, size: 0 },
         }
     }
-}
 
+    // transaction hash (what is used in txid)
+    pub fn txid(self) -> [u8; 32] {
+        let mut preimage_hash = [0; 4 + INPUT_SIZE + OUTPUT_SIZE + 4];
+
+        // version
+        for i in 0..4 {
+            preimage_hash[i] = self.data[i];
+        }
+
+        let mut transaction_data_offset = self.input_count.offset;
+        let mut preimage_hash_offset = 4;
+
+        // input and output
+        for i in 0..(INPUT_SIZE + OUTPUT_SIZE) {
+            preimage_hash[preimage_hash_offset + i] = self.data[transaction_data_offset + i];
+        }
+
+        transaction_data_offset = self.lock_time.offset;
+        preimage_hash_offset += INPUT_SIZE + OUTPUT_SIZE;
+
+        // lock time
+        for i in 0..4 {
+            preimage_hash[preimage_hash_offset + i] = self.data[transaction_data_offset + i];
+        }
+
+        let hex = bytes_to_hex(preimage_hash);
+
+        sha256::digest(sha256::digest(preimage_hash))
+    }
+
+    pub fn get_input_txid(self, input_index: u32) -> [u8; 32] {
+        let txid_offset = self.inputs[input_index].txid.offset;
+        let txid_size = self.inputs[input_index].txid.size;
+
+        let mut txid_bytes = [0; 32];
+        for i in 0..32 {
+            txid_bytes[i] = self.data[txid_offset + i];
+        }
+
+        txid_bytes
+    }
+}
 
 #[test]
 fn test_transaction_creation_legacy() {
@@ -287,7 +287,7 @@ fn test_transaction_creation_legacy() {
 
     let txid_offset = transaction.inputs[0].txid.offset;
     let txid_size = transaction.inputs[0].txid.size;
-    
+
     assert(txid_size == 32);
     let mut txid_bytes = [0; 32];
     for i in 0..32 {
@@ -309,7 +309,7 @@ fn test_transaction_creation_segwit() {
     assert(transaction.is_segwit() == true);
 
     let witness_stack_item_position = transaction.witness.unwrap()[0].items.get(1).unwrap().item;
-    
+
     assert(witness_stack_item_position.size == 33);
     let mut witness_stack_item_bytes = [0; 33];
     for i in 0..33 {
@@ -317,5 +317,19 @@ fn test_transaction_creation_segwit() {
     }
 
     let witness_stack_item = bytes_to_hex(witness_stack_item_bytes);
-    assert(witness_stack_item == "02c2f3e2a446815b7cb8f0b0390fada48fefc4bc45026414cc8d1aec33574afcd5");
+    assert(
+        witness_stack_item == "02c2f3e2a446815b7cb8f0b0390fada48fefc4bc45026414cc8d1aec33574afcd5",
+    );
+}
+
+#[test]
+fn test_transaction_hash() {
+    let string: str<634> = "020000000001016d16731b9e16c2b8ac3499935af3f4f02a3e5b2bcb22376ef48e9fea5987fc052e00000000fdffffff012202000000000000225120079041570ca421321409eb2a3f9dab81e4445ea73004467170660ba890eafc680340d118072a8ff004a87c607d1e7042cc8b624d8132d143d9d86d24a09ec6df66080842916d7bebce70611627d536519c630a3306ebaafbf1531aca28e4fe84ce0a78202cea7e08b4a583bc246c332aa00e79c1150e798e0b197a4462b42181b47f2a1cac0063036f7264010118746578742f706c61696e3b636861727365743d7574662d3800327b2270223a226272632d3230222c226f70223a226d696e74222c227469636b223a2275666f78222c22616d74223a2233227d6821c12cea7e08b4a583bc246c332aa00e79c1150e798e0b197a4462b42181b47f2a1c00000000";
+    let bytes = hex_to_bytes(string);
+    let transaction = Transaction::<317, 1, 42, 1, 44, 3, 221>::new(bytes, true);
+
+    let txid = transaction.txid();
+    let txid_hex = bytes_to_hex(txid);
+
+    assert(txid_hex == "9f7af38feb87c8ea7a5f572ea44fde9378b1d188eee4fd5f5f1e0aa15d8eccd5");
 }
