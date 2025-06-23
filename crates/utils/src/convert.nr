@@ -116,7 +116,7 @@ pub fn i32_to_le_bytes(number: i32) -> [u8; 4] {
     bytes
 }
 
-fn le_bytes_to_i32(bytes: [u8; 4]) -> i32 {
+pub fn le_bytes_to_i32(bytes: [u8; 4]) -> i32 {
     let mut result: u32 = 0;
     for i in 0..4 {
         result |= (bytes[i as u32] as u32) << (i * 8);
@@ -139,7 +139,7 @@ pub fn vec_to_u32<let MAX_STACK_ELEMENT_SIZE: u32>(
     le_bytes_to_u32(result)
 }
 
-fn le_bytes_to_u32(bytes: [u8; 4]) -> u32 {
+pub fn le_bytes_to_u32(bytes: [u8; 4]) -> u32 {
     let mut result: u32 = 0;
     for i in 0..4 {
         result |= (bytes[i as u32] as u32) << (i * 8);
