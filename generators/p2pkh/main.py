@@ -29,17 +29,20 @@ def main():
 
     with open(config["file_path"] + "/src/main.nr", "w") as file:
         file.write(mainFile)
+
+    with open(config["file_path"] + "/Prover.toml.template", "r") as file:
+        templateProver = file.read()
         
+    proverFile = templateProver.format(
+        curTx=curTx, 
+        prevTx=prevTx,
+        signature=config["signature"],
+        pub_key=config["pub_key"],
+        input_to_sign=config["input_to_sign"]
+    )
+
     with open(config["file_path"] + "/Prover.toml", "w") as file:
-        file.write(f'''cur_tx_data = "{curTx.txData}"
-prev_tx_data = "{prevTx.txData}"
-signature = "{config["signature"]}"
-pub_key = "{config["pub_key"]}"
-input_to_sign = "{config["input_to_sign"]}"
-''')
-        
-def proverify(val: List[int]) -> str:
-    return '[' + ', '.join('"' + str(x) + '"' for x in val) + ']'
+        file.write(proverFile)
 
 if __name__ == "__main__":
     main()
