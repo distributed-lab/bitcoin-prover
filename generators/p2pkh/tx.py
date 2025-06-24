@@ -1,7 +1,5 @@
-from typing import List
-
 class Transaction:
-    def __init__(self, txData: List[int], inputCount: int, inputSize: int, outputCount: int, outputSize: int, maxWitnessStackSize: int, witnessSize):
+    def __init__(self, txData: str, inputCount: int, inputSize: int, outputCount: int, outputSize: int, maxWitnessStackSize: int, witnessSize):
         self.txData = txData
         self.inputCount = inputCount
         self.inputSize = inputSize
@@ -83,4 +81,4 @@ def get_ready_tx(tx: str) -> Transaction:
 
     pos += 4
 
-    return Transaction(byteArray, inputCount=inpCount, inputSize=(41 * inpCount + 1), outputCount=outCount, outputSize=outSize, maxWitnessStackSize=0, witnessSize=0)
+    return Transaction(byteArray.hex(), inputCount=inpCount, inputSize=(41 * inpCount + 1), outputCount=outCount, outputSize=outSize, maxWitnessStackSize=0, witnessSize=0)
