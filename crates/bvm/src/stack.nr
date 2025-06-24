@@ -13,17 +13,17 @@ use utils::{
     },
 };
 
-pub struct Stack<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANSACTION_SIZE: u32, let CURRENT_INPUT_COUNT: u32, let CURRENT_INPUT_SIZE: u32, let CURRENT_OUTPUT_COUNT: u32, let CURRENT_OUTPUT_SIZE: u32, let CURRENT_MAX_WITNESS_STACK_SIZE: u32, let CURRENT_WITNESS_SIZE: u32> {
+pub struct Stack<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANSACTION_SIZE: u32, let CURRENT_INPUT_COUNT: u32, let CURRENT_INPUT_COUNT_LEN: u32, let CURRENT_INPUT_SIZE: u32, let CURRENT_OUTPUT_COUNT: u32, let CURRENT_OUTPUT_COUNT_LEN: u32, let CURRENT_OUTPUT_SIZE: u32, let CURRENT_MAX_WITNESS_STACK_SIZE: u32, let CURRENT_WITNESS_SIZE: u32> {
     data: [BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>; MAX_STACK_SIZE],
     stack_size: u32,
     alt_data: [BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>; MAX_STACK_SIZE],
     alt_stack_size: u32,
-    cur_transaction: Transaction<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE>,
+    cur_transaction: Transaction<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE>,
 }
 
-impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANSACTION_SIZE: u32, let CURRENT_INPUT_COUNT: u32, let CURRENT_INPUT_SIZE: u32, let CURRENT_OUTPUT_COUNT: u32, let CURRENT_OUTPUT_SIZE: u32, let CURRENT_MAX_WITNESS_STACK_SIZE: u32, let CURRENT_WITNESS_SIZE: u32> Stack<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE> {
+impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANSACTION_SIZE: u32, let CURRENT_INPUT_COUNT: u32, let CURRENT_INPUT_COUNT_LEN: u32, let CURRENT_INPUT_SIZE: u32, let CURRENT_OUTPUT_COUNT: u32, let CURRENT_OUTPUT_COUNT_LEN: u32, let CURRENT_OUTPUT_SIZE: u32, let CURRENT_MAX_WITNESS_STACK_SIZE: u32, let CURRENT_WITNESS_SIZE: u32> Stack<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE> {
     pub fn new(
-        cur_transaction: Transaction<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE>,
+        cur_transaction: Transaction<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE>,
     ) -> Self {
         Stack {
             data: [BoundedVec::new(); MAX_STACK_SIZE],
@@ -471,7 +471,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
 
 #[test]
 fn test_addition() {
-    let mut stack = Stack::<10, 4, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::<10, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
 
     let a = 12345;
     let b = 4648;
@@ -493,7 +493,7 @@ fn test_addition() {
 
 #[test]
 fn test_op_num() {
-    let mut stack = Stack::<10, 4, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::<10, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
     stack.op_num(2);
     stack.op_num(5);
     stack.op_add();
@@ -514,7 +514,7 @@ fn test_op_num() {
 
 #[test]
 fn test_dups() {
-    let mut stack = Stack::<10, 6, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::<10, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
     stack.op_num(2);
     stack.op_ifdup();
     assert(stack.stack_size == 2);
@@ -544,7 +544,7 @@ fn test_dups() {
 
 #[test]
 fn test_alt_stack() {
-    let mut stack = Stack::<10, 4, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::<10, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
     stack.op_num(2);
     stack.op_toaltstack();
     assert(stack.stack_size == 0);
@@ -556,7 +556,7 @@ fn test_alt_stack() {
 
 #[test]
 fn test_depth_drops() {
-    let mut stack = Stack::<10, 4, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::<10, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
     stack.op_num(2);
     stack.op_num(5);
     stack.op_depth();
@@ -568,7 +568,7 @@ fn test_depth_drops() {
 
 #[test]
 fn test_nip_overs() {
-    let mut stack = Stack::<10, 6, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::<10, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
     stack.op_num(2);
     stack.op_num(5);
     stack.op_over();
@@ -591,7 +591,7 @@ fn test_nip_overs() {
 
 #[test]
 fn test_pick() {
-    let mut stack = Stack::<10, 4, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::<10, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
     stack.op_num(2);
     stack.op_num(5);
     stack.op_num(3);
@@ -602,7 +602,7 @@ fn test_pick() {
 
 #[test]
 fn test_roll() {
-    let mut stack = Stack::<10, 4, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::<10, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
     stack.op_num(2);
     stack.op_num(5);
     stack.op_num(3);
@@ -613,7 +613,7 @@ fn test_roll() {
 
 #[test]
 fn test_swaps() {
-    let mut stack = Stack::<10, 5, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::<10, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
     stack.op_num(2);
     stack.op_num(5);
     stack.op_swap();
@@ -631,7 +631,7 @@ fn test_swaps() {
 
 #[test]
 fn test_tuck() {
-    let mut stack = Stack::<10, 5, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::<10, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
     stack.op_num(2);
     stack.op_num(5);
     stack.op_tuck();
@@ -642,7 +642,7 @@ fn test_tuck() {
 
 #[test]
 fn test_rots() {
-    let mut stack = Stack::<10, 7, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::<10, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
     stack.op_num(1);
     stack.op_num(2);
     stack.op_num(3);
@@ -668,7 +668,7 @@ fn test_rots() {
 
 #[test]
 fn test_ripemd160() {
-    let mut stack = Stack::<20, 7, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::<20, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
     stack.op_num(1);
     stack.op_ripemd160::<1>();
     assert(
@@ -682,7 +682,7 @@ fn test_ripemd160() {
 
 #[test]
 fn test_sha1() {
-    let mut stack = Stack::<20, 7, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::<20, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
     stack.op_num(1);
     stack.op_sha1::<1>();
     assert(
@@ -696,7 +696,7 @@ fn test_sha1() {
 
 #[test]
 fn test_sha256() {
-    let mut stack = Stack::<32, 7, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::<32, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
     stack.op_num(1);
     stack.op_sha256::<1>();
     assert(
@@ -711,7 +711,7 @@ fn test_sha256() {
 
 #[test]
 fn test_hash160() {
-    let mut stack = Stack::<20, 7, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::<20, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
     stack.op_num(1);
     stack.op_hash160::<1>();
     assert(
@@ -725,7 +725,7 @@ fn test_hash160() {
 
 #[test]
 fn test_hash256() {
-    let mut stack = Stack::<32, 7, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::<32, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
     stack.op_num(1);
     stack.op_hash256::<1>();
     assert(
@@ -740,7 +740,7 @@ fn test_hash256() {
 
 #[test]
 fn test_arithmetic() {
-    let mut stack = Stack::<5, 7, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::<5, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
     stack.op_num(10);
     stack.op_num(2);
     stack.op_sub();
@@ -758,7 +758,7 @@ fn test_arithmetic() {
 
 #[test]
 fn test_logical() {
-    let mut stack = Stack::<5, 7, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::<5, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
     stack.op_num(10);
     stack.op_num(0);
     stack.op_2dup();
@@ -801,7 +801,7 @@ fn test_logical() {
 
 #[test]
 fn test_max_min_range() {
-    let mut stack = Stack::<5, 7, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::<5, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
     stack.op_num(10);
     stack.op_num(12);
     stack.op_max();
@@ -825,11 +825,11 @@ fn test_checksig() {
     // Transaction with deleted script sigs
     let cur_tx_hex: str<402> = "01000000030dd7891efbf67da47c651531db8aab3144ed7a524e4ae1e30b773525e27ddd7b0000000000ffffffff16851666962e37a75a246101f2e340c628b1db3c045d4d3cfb2d1c0f58f97c6f0000000000ffffffffffda5d38e91fd9a0d92872d51f83cb746fc7bf5d3ff13402f8d0d5ed60ddc79c0000000000ffffffff02c0c62d00000000001976a91417194e1bd175fb5b1b2a1f9d221f6f5c29e1928388ac00c817a8040000001976a91465bda9b05f7e9a8f96a7f4ba0996a877708ef90888ac00000000";
     let cur_tx_bytes = hex_to_bytes(cur_tx_hex);
-    let cur_tx = Transaction::<201, 3, 124, 2, 69, 0, 0>::new(cur_tx_bytes, false);
+    let cur_tx = Transaction::<201, 3, 1, 124, 2, 1, 69, 0, 0>::new(cur_tx_bytes, false);
 
     let input_to_sign = 1;
 
-    let mut stack = Stack::<80, 7, 201, 3, 124, 2, 69, 0, 0>::new(cur_tx);
+    let mut stack = Stack::<80, 7, 201, 3, 1, 124, 2, 1, 69, 0, 0>::new(cur_tx);
 
     let signature_hex: str<144> = "304502203f004eeed0cef2715643e2f25a27a28f3c578e94c7f0f6a4df104e7d163f7f8f022100b8b248c1cfd8f77a0365107a9511d759b7544d979dd152a955c867afac0ef78601";
     let signature_bytes = hex_to_bytes(signature_hex);
