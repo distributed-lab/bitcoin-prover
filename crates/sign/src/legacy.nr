@@ -1,8 +1,8 @@
 use crate::transaction::Transaction;
 use utils::convert::{bytes_to_hex, hex_to_bytes};
 
-fn prepare_preimage_hash_for_sighash_all<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32, let SCRIPT_PUB_KEY_SIZE: u32>(
-    transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
+fn prepare_preimage_hash_for_sighash_all<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_COUNT_LEN: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32, let SCRIPT_PUB_KEY_SIZE: u32>(
+    transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
     input_to_sign: u32,
     script_pub_key: [u8; SCRIPT_PUB_KEY_SIZE],
 ) -> [u8; 4 + INPUT_SIZE + OUTPUT_SIZE + 4 + (SCRIPT_PUB_KEY_SIZE - 1) + 4] {
@@ -58,8 +58,8 @@ fn prepare_preimage_hash_for_sighash_all<let TRANSACTION_SIZE: u32, let INPUT_CO
     data
 }
 
-pub fn serialize_sighash_all<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32, let SCRIPT_PUB_KEY_SIZE: u32>(
-    transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
+pub fn serialize_sighash_all<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_COUNT_LEN: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32, let SCRIPT_PUB_KEY_SIZE: u32>(
+    transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
     input_to_sign: u32,
     // script_pub_key should contain script_pub_key_size along with the script_pub_key
     script_pub_key: [u8; SCRIPT_PUB_KEY_SIZE],
@@ -83,8 +83,9 @@ pub fn serialize_sighash_all<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, le
 fn test_serialize_legacy_transaction_sighash_all() {
     let string = "0100000001b7994a0db2f373a29227e1d90da883c6ce1cb0dd2d6812e4558041ebbbcfa54b0000000000ffffffff01983a0000000000001976a914b3e2819b6262e0b1f19fc7229d75677f347c91ac88ac00000000";
     let bytes = hex_to_bytes(string);
-    let transaction = Transaction::<85, 1, 42, 1, 35, 1, 0>::new(bytes, false);
+    let transaction = Transaction::<85, 1, 1, 42, 1, 1, 35, 1, 0>::new(bytes, false);
 
+    // script_pub_key should contain script_pub_key_size along with the script_pub_key
     let script_pub_key = "1976a9144299ff317fcd12ef19047df66d72454691797bfc88ac";
     let script_pub_key_bytes = hex_to_bytes(script_pub_key);
 
@@ -102,7 +103,7 @@ fn test_serialize_legacy_transaction_sighash_all() {
 fn test_serialize_segwit_transaction_sighash_all() {
     let string = "0200000000010192f29384a956361b9b9ebc667d01489cb360068c22c7b89396e5fdc3ece0305a0100000000ffffffff023d0500000000000016001464193f85b629823f114c9d997ee68627d7395d5fe7a1000000000000160014d0446764c4f16f78ca0ce0b7f487cc5fe205835e024730440220598ef97f63f7648e39d03ff58383056322fa13effaee8d11c9c9e8789a72522002204dda5bbc9cba008682d62820395a2c43b9abae52d6ad81835e72bda09468fa21012103d9a4d0bbe47d58b68e366a380107ba3470f6893764a2d020127d36c169df850100000000";
     let bytes = hex_to_bytes(string);
-    let transaction = Transaction::<222, 1, 42, 2, 63, 2, 107>::new(bytes, true);
+    let transaction = Transaction::<222, 1, 1, 42, 2, 1, 63, 2, 107>::new(bytes, true);
 
     let script_pub_key = "1976a9144299ff317fcd12ef19047df66d72454691797bfc88ac";
     let script_pub_key_bytes = hex_to_bytes(script_pub_key);
