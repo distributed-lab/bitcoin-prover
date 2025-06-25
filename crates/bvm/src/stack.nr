@@ -595,7 +595,7 @@ impl<
     }
 
     // todo: implement this opcode
-    pub fn op_size() {
+    pub fn op_size(&mut self) {
         //
     }
 

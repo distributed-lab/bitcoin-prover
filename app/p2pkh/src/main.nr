@@ -20,9 +20,10 @@ fn main(
     let cur_tx_data = hex_to_bytes(cur_tx_data);
     let prev_tx_data = hex_to_bytes(prev_tx_data);
 
-    let cur_tx = Transaction::<CUR_TX_LEN / 2, 3, 124, 2, 69, 0, 0>::new(cur_tx_data, false);
-    let prev_tx = Transaction::<PREV_TX_LEN / 2, 2, 83, 1, 35, 0, 0>::new(prev_tx_data, false);
-    let mut stack = Stack::<100, 10, CUR_TX_LEN / 2, 3, 124, 2, 69, 0, 0>::new(cur_tx);
+    let cur_tx = Transaction::<CUR_TX_LEN / 2, 3, 124, 2, 69, 0, 0, 0, 0>::new(cur_tx_data, false);
+    let prev_tx =
+        Transaction::<PREV_TX_LEN / 2, 2, 83, 1, 35, 0, 0, 0, 0>::new(prev_tx_data, false);
+    let mut stack = Stack::<100, 10, CUR_TX_LEN / 2, 3, 124, 2, 69, 0, 0, 0, 0>::new(cur_tx);
     let mut script_pub_key = [0; 26];
 
     let vout_pos = cur_tx.inputs[input_to_sign].vout.offset;
