@@ -1,9 +1,11 @@
 class Transaction:
-    def __init__(self, txData: str, inputCount: int, inputSize: int, outputCount: int, outputSize: int, maxWitnessStackSize: int, witnessSize):
+    def __init__(self, txData: str, inputCount: int, inputCountLen: int, inputSize: int, outputCount: int, outputCountLen: int, outputSize: int, maxWitnessStackSize: int, witnessSize):
         self.txData = txData
         self.inputCount = inputCount
+        self.inputCountLen = inputCountLen
         self.inputSize = inputSize
         self.outputCount = outputCount
+        self.outputCountLen = outputCountLen
         self.outputSize = outputSize
         self.maxWitnessStackSize = maxWitnessStackSize
         self.witnessSize = witnessSize
@@ -81,4 +83,23 @@ def get_ready_tx(tx: str) -> Transaction:
 
     pos += 4
 
-    return Transaction(byteArray.hex(), inputCount=inpCount, inputSize=(41 * inpCount + 1), outputCount=outCount, outputSize=outSize, maxWitnessStackSize=0, witnessSize=0)
+    if inpCount <= 252 :
+        inpCountLen = 1
+    elif inpCount <= 65535:
+        inpCountLen = 3
+    elif inpCount <= 4294967295:
+        inpCountLen = 5
+    else :
+        inpCountLen = 9
+
+    if outCount <= 252 :
+        outCountLen = 1
+    elif outCount <= 65535:
+        outCountLen = 3
+    elif outCount <= 4294967295:
+        outCountLen = 5
+    else :
+        outCountLen = 9
+    
+
+    return Transaction(byteArray.hex(), inputCount=inpCount, inputCountLen=inpCountLen, inputSize=(41 * inpCount + 1), outputCount=outCount, outputCountLen=outCountLen, outputSize=outSize, maxWitnessStackSize=0, witnessSize=0)
