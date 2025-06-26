@@ -10,7 +10,7 @@ use std::{collections::bounded_vec::BoundedVec};
 use crypto::ecdsa::ecdsa_verify;
 use utils::{
     convert::{
-        bytes_to_vec, cut_array, hex_to_bytes, i32_to_le_bytes,
+        bytes_to_vec, cut_array, hex_to_bytes, i32_to_le_bytes, bytes_to_hex,
         i32_to_vec, u32_to_le_bytes, vec_to_array, vec_to_i32, vec_to_u32,
     },
 };
@@ -136,7 +136,7 @@ impl<
     PREV_MAX_WITNESS_STACK_SIZE,
     PREV_WITNESS_SIZE
 > {
-    pub fn new<let NEW_MAX_STACK_ELEMENT_SIZE: u32, let NEW_MAX_STACK_SIZE: u32>(
+    pub fn new(
         cur_transaction: Transaction<
             CURRENT_TRANSACTION_SIZE, 
             CURRENT_INPUT_COUNT, 
@@ -160,8 +160,8 @@ impl<
             PREV_WITNESS_SIZE
         >,
     ) -> Stack<
-        NEW_MAX_STACK_ELEMENT_SIZE, 
-        NEW_MAX_STACK_SIZE, 
+        MAX_STACK_ELEMENT_SIZE, 
+        MAX_STACK_SIZE, 
         CURRENT_TRANSACTION_SIZE, 
         CURRENT_INPUT_COUNT, 
         CURRENT_INPUT_COUNT_LEN, 
@@ -182,9 +182,9 @@ impl<
         PREV_WITNESS_SIZE
     > {
         Stack {
-            data: [BoundedVec::new(); NEW_MAX_STACK_SIZE],
+            data: [BoundedVec::new(); MAX_STACK_SIZE],
             stack_size: 0,
-            alt_data: [BoundedVec::new(); NEW_MAX_STACK_SIZE],
+            alt_data: [BoundedVec::new(); MAX_STACK_SIZE],
             alt_stack_size: 0,
             cur_transaction: cur_transaction,
             prev_transaction: prev_transaction,
@@ -614,7 +614,7 @@ impl<
         let mut message_hash = [0; 32];
 
         if address.is_p2pk() | address.is_p2pkh() | address.is_p2sh() {
-            let script_code = self.cur_transaction.get_script_pub_key_with_size::<SCRIPT_CODE_LEN>(output_to_unlock);
+            let script_code = self.prev_transaction.get_script_pub_key_with_size::<SCRIPT_CODE_LEN>(output_to_unlock);
             message_hash = serialize_sighash_all(self.cur_transaction, input_to_sign, script_code);
         } else if address.is_p2wpkh() {
             let amount = self.cur_transaction.get_amount(output_to_unlock);
@@ -1015,5 +1015,7 @@ fn test_checksig() {
     stack.push(bytes_to_vec(signature_bytes));
     stack.push(bytes_to_vec(pubkey_bytes));
 
-    assert(stack.op_checksig_sighash_all::<72, 26, 65>(input_to_sign, output_to_unlock, Address::new_p2pkh()));
+    let sig_result = stack.op_checksig_sighash_all::<72, 26, 65>(input_to_sign, output_to_unlock, Address::new_p2pkh());
+
+    assert(sig_result);
 }
