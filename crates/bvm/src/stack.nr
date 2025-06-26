@@ -70,6 +70,32 @@ pub struct Stack<
 impl<
     let MAX_STACK_ELEMENT_SIZE: u32, 
     let MAX_STACK_SIZE: u32, 
+> Stack<
+    MAX_STACK_ELEMENT_SIZE, 
+    MAX_STACK_SIZE, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0
+> {
+    pub fn new_test_stack() -> Stack<
+        MAX_STACK_ELEMENT_SIZE, 
+        MAX_STACK_SIZE, 
+        0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0
+    > {
+        Self {
+            data: [BoundedVec::new(); MAX_STACK_SIZE],
+            stack_size: 0,
+            alt_data: [BoundedVec::new(); MAX_STACK_SIZE],
+            alt_stack_size: 0,
+            cur_transaction: Transaction::<0, 0, 0, 0, 0, 0, 0, 0, 0>::new_empty_transaction(),
+            prev_transaction: Transaction::<0, 0, 0, 0, 0, 0, 0, 0, 0>::new_empty_transaction(),
+        }
+    }
+}
+
+impl<
+    let MAX_STACK_ELEMENT_SIZE: u32, 
+    let MAX_STACK_SIZE: u32, 
     let CURRENT_TRANSACTION_SIZE: u32, 
     let CURRENT_INPUT_COUNT: u32, 
     let CURRENT_INPUT_COUNT_LEN: u32, 
@@ -162,17 +188,6 @@ impl<
             alt_stack_size: 0,
             cur_transaction: cur_transaction,
             prev_transaction: prev_transaction,
-        }
-    }
-
-    pub fn new_test_stack<let TEST_MAX_STACK_ELEMENT_SIZE: u32, let TEST_MAX_STACK_SIZE: u32>() -> Stack<TEST_MAX_STACK_ELEMENT_SIZE, TEST_MAX_STACK_SIZE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0> {
-        Stack {
-            data: [BoundedVec::new(); TEST_MAX_STACK_SIZE],
-            stack_size: 0,
-            alt_data: [BoundedVec::new(); TEST_MAX_STACK_SIZE],
-            alt_stack_size: 0,
-            cur_transaction: Transaction::<0, 0, 0, 0, 0, 0, 0, 0, 0>::new_empty_transaction(),
-            prev_transaction: Transaction::<0, 0, 0, 0, 0, 0, 0, 0, 0>::new_empty_transaction(),
         }
     }
 
@@ -613,9 +628,18 @@ impl<
     }
 }
 
+type TestStack<
+    let MAX_STACK_ELEMENT_SIZE: u32, 
+    let MAX_STACK_SIZE: u32, 
+> = Stack<
+    MAX_STACK_ELEMENT_SIZE, 
+    MAX_STACK_SIZE, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0>;
+
 #[test]
 fn test_addition() {
-    let mut stack = Stack::new_test_stack::<100, 10>();
+    let mut stack: TestStack<100, 10> = Stack::new_test_stack();
 
     let a = 12345;
     let b = 4648;
@@ -637,7 +661,7 @@ fn test_addition() {
 
 #[test]
 fn test_op_num() {
-    let mut stack = Stack::new_test_stack();
+    let mut stack: TestStack<100, 10> = Stack::new_test_stack();
     stack.op_num(2);
     stack.op_num(5);
     stack.op_add();
@@ -658,7 +682,7 @@ fn test_op_num() {
 
 #[test]
 fn test_dups() {
-    let mut stack = Stack::new_test_stack();
+    let mut stack: TestStack<100, 10> = Stack::new_test_stack();
     stack.op_num(2);
     stack.op_ifdup();
     assert(stack.stack_size == 2);
@@ -688,7 +712,7 @@ fn test_dups() {
 
 #[test]
 fn test_alt_stack() {
-    let mut stack = Stack::new_test_stack();
+    let mut stack: TestStack<100, 10> = Stack::new_test_stack();
     stack.op_num(2);
     stack.op_toaltstack();
     assert(stack.stack_size == 0);
@@ -700,7 +724,7 @@ fn test_alt_stack() {
 
 #[test]
 fn test_depth_drops() {
-    let mut stack = Stack::new_test_stack();
+    let mut stack: TestStack<100, 10> = Stack::new_test_stack();
     stack.op_num(2);
     stack.op_num(5);
     stack.op_depth();
@@ -712,7 +736,7 @@ fn test_depth_drops() {
 
 #[test]
 fn test_nip_overs() {
-    let mut stack = Stack::new_test_stack();
+    let mut stack: TestStack<100, 10> = Stack::new_test_stack();
     stack.op_num(2);
     stack.op_num(5);
     stack.op_over();
@@ -735,7 +759,7 @@ fn test_nip_overs() {
 
 #[test]
 fn test_pick() {
-    let mut stack = Stack::new_test_stack();
+    let mut stack: TestStack<100, 10> = Stack::new_test_stack();
     stack.op_num(2);
     stack.op_num(5);
     stack.op_num(3);
@@ -746,7 +770,7 @@ fn test_pick() {
 
 #[test]
 fn test_roll() {
-    let mut stack = Stack::new_test_stack();
+    let mut stack: TestStack<100, 10> = Stack::new_test_stack();
     stack.op_num(2);
     stack.op_num(5);
     stack.op_num(3);
@@ -757,7 +781,7 @@ fn test_roll() {
 
 #[test]
 fn test_swaps() {
-    let mut stack = Stack::new_test_stack();
+    let mut stack: TestStack<100, 10> = Stack::new_test_stack();
     stack.op_num(2);
     stack.op_num(5);
     stack.op_swap();
@@ -775,7 +799,7 @@ fn test_swaps() {
 
 #[test]
 fn test_tuck() {
-    let mut stack = Stack::new_test_stack();
+    let mut stack: TestStack<100, 10> = Stack::new_test_stack();
     stack.op_num(2);
     stack.op_num(5);
     stack.op_tuck();
@@ -786,7 +810,7 @@ fn test_tuck() {
 
 #[test]
 fn test_rots() {
-    let mut stack = Stack::new_test_stack();
+    let mut stack: TestStack<100, 10> = Stack::new_test_stack();
     stack.op_num(1);
     stack.op_num(2);
     stack.op_num(3);
@@ -812,7 +836,7 @@ fn test_rots() {
 
 #[test]
 fn test_ripemd160() {
-    let mut stack = Stack::new_test_stack();
+    let mut stack: TestStack<20, 10> = Stack::new_test_stack();
     stack.op_num(1);
     stack.op_ripemd160::<1>();
     assert(
@@ -826,7 +850,7 @@ fn test_ripemd160() {
 
 #[test]
 fn test_sha1() {
-    let mut stack = Stack::new_test_stack();
+    let mut stack: TestStack<20, 10> = Stack::new_test_stack();
     stack.op_num(1);
     stack.op_sha1::<1>();
     assert(
@@ -840,7 +864,7 @@ fn test_sha1() {
 
 #[test]
 fn test_sha256() {
-    let mut stack = Stack::new_test_stack();
+    let mut stack: TestStack<32, 10> = Stack::new_test_stack();
     stack.op_num(1);
     stack.op_sha256::<1>();
     assert(
@@ -855,7 +879,7 @@ fn test_sha256() {
 
 #[test]
 fn test_hash160() {
-    let mut stack = Stack::new_test_stack();
+    let mut stack: TestStack<20, 10> = Stack::new_test_stack();
     stack.op_num(1);
     stack.op_hash160::<1>();
     assert(
@@ -869,7 +893,7 @@ fn test_hash160() {
 
 #[test]
 fn test_hash256() {
-    let mut stack = Stack::new_test_stack();
+    let mut stack: TestStack<32, 10> = Stack::new_test_stack();
     stack.op_num(1);
     stack.op_hash256::<1>();
     assert(
@@ -884,7 +908,7 @@ fn test_hash256() {
 
 #[test]
 fn test_arithmetic() {
-    let mut stack = Stack::new_test_stack();
+    let mut stack: TestStack<100, 10> = Stack::new_test_stack();
     stack.op_num(10);
     stack.op_num(2);
     stack.op_sub();
@@ -902,7 +926,7 @@ fn test_arithmetic() {
 
 #[test]
 fn test_logical() {
-    let mut stack = Stack::new_test_stack();
+    let mut stack: TestStack<100, 10> = Stack::new_test_stack();
     stack.op_num(10);
     stack.op_num(0);
     stack.op_2dup();
@@ -945,7 +969,7 @@ fn test_logical() {
 
 #[test]
 fn test_max_min_range() {
-    let mut stack = Stack::new_test_stack();
+    let mut stack: TestStack<100, 10> = Stack::new_test_stack();
     stack.op_num(10);
     stack.op_num(12);
     stack.op_max();
@@ -980,7 +1004,7 @@ fn test_checksig() {
 
     let output_to_unlock = 0;
 
-    let mut stack = Stack::new::<80, 7>(cur_tx, prev_tx);
+    let mut stack = Stack::<80, 7, 201, 3, 1, 124, 2, 1, 69, 0, 0, 274, 2, 1, 231, 1, 1, 35, 0, 0>::new(cur_tx, prev_tx);
 
     let signature_hex: str<144> = "304502203f004eeed0cef2715643e2f25a27a28f3c578e94c7f0f6a4df104e7d163f7f8f022100b8b248c1cfd8f77a0365107a9511d759b7544d979dd152a955c867afac0ef78601";
     let signature_bytes = hex_to_bytes(signature_hex);
