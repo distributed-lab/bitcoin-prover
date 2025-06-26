@@ -157,8 +157,6 @@ pub fn serialize_sighash_all_anyonecanpay<let TRANSACTION_SIZE: u32, let INPUT_C
         script_pub_key,
     );
 
-    println(bytes_to_hex(transaction_data));
-
     let hashed_transaction = sha256::digest(sha256::digest(transaction_data));
 
     hashed_transaction
@@ -416,8 +414,6 @@ pub fn serialize_sighash_single_anyonecanpay<let TRANSACTION_SIZE: u32, let INPU
         script_pub_key,
     );
 
-    println(bytes_to_hex(transaction_data));
-
     let hashed_transaction = sha256::digest(sha256::digest(transaction_data));
 
     hashed_transaction
@@ -502,8 +498,6 @@ pub fn serialize_sighash_none<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, l
     let transaction_data =
         prepare_preimage_hash_for_sighash_none(transaction, input_to_sign, script_pub_key);
 
-    println(bytes_to_hex(transaction_data));
-
     let hashed_transaction = sha256::digest(sha256::digest(transaction_data));
 
     hashed_transaction
@@ -580,8 +574,6 @@ pub fn serialize_sighash_none_anyonecanpay<let TRANSACTION_SIZE: u32, let INPUT_
         input_to_sign,
         script_pub_key,
     );
-
-    println(bytes_to_hex(transaction_data));
 
     let hashed_transaction = sha256::digest(sha256::digest(transaction_data));
 
@@ -662,18 +654,18 @@ fn test_serialize_legacy_transaction_sighash_single() {
 // todo: Write proper test assertions - currently only checking that no panics occur
 #[test]
 fn test_serialize_legacy_transaction_sighash_none() {
-    let string = "0100000001b7994a0db2f373a29227e1d90da883c6ce1cb0dd2d6812e4558041ebbbcfa54b0000000000ffffffff01983a0000000000001976a914b3e2819b6262e0b1f19fc7229d75677f347c91ac88ac00000000";
+    let string = "01000000056c499afac2e1a63bb6b9461a337319b970c13c2c77be53ebc1c7c870059334000800000000ffffffff00e16741107dcd7cfa2eaeb7d767e47edbec577511b3e10f16980754c3493b090900000000ffffffff078f6ec6d77fc7e0200e12fc1e2114e56e1c5bfc869d376a87b0a1bc5f8dc50e0800000000ffffffff64289405350c34a437566b764989b50381f68cf208531c54cb205f4e859e22100800000000ffffffff291cd5940ac16559eef5a2f2b4770271959f2007b45a0d850ef5d35d134df4100900000000ffffffff010000000000000000266a24e4b883e5bda9e7a59ee4bb99e9b1bcf09f909f426974636f696e20746f20506c75746f2100000000";
     let bytes = hex_to_bytes(string);
-    let transaction = Transaction::<85, 1, 1, 42, 1, 1, 35, 1, 0>::new(bytes, false);
+    let transaction = Transaction::<262, 5, 1, 206, 1, 1, 48, 1, 0>::new(bytes, false);
 
     // script_pub_key should contain script_pub_key_size along with the script_pub_key
-    let script_pub_key = "1976a9144299ff317fcd12ef19047df66d72454691797bfc88ac";
+    let script_pub_key = "1976a9140fb87a5071385b6976397d1c53ee16f09139a33488ac";
     let script_pub_key_bytes = hex_to_bytes(script_pub_key);
 
-    let sighash_none_transaction_bytes =
+    let sighash =
         serialize_sighash_none(transaction, 0, script_pub_key_bytes);
 
-    let sighash_none_transaction = bytes_to_hex(sighash_none_transaction_bytes);
+    assert(bytes_to_hex(sighash) == "809a85f9e793e9cb66866db039e8753402dcf6bc5b65893ffaccb2746e499ebe");
 }
 
 // todo: Write proper test assertions - currently only checking that no panics occur
@@ -693,7 +685,7 @@ fn test_serialize_legacy_transaction_sighash_all_anyonecanpay() {
         script_pub_key_bytes,
     );
 
-    let sighash_all_transaction = sighash;
+    assert(bytes_to_hex(sighash) == "376ce858de8118381de658dd3ad3e03b0b9f52931c75d40d5db37aa24a3e1a8b");
 }
 
 // todo: Write proper test assertions - currently only checking that no panics occur
@@ -713,7 +705,7 @@ fn test_serialize_legacy_transaction_sighash_single_anyonecanpay() {
         script_pub_key_bytes,
     );
 
-    let sighash_single_transaction = sighash;
+    assert(bytes_to_hex(sighash) == "316e41b505abf188d253bf38182692c8f282f2ae67f09306ed0f539a62503c70");
 }
 
 // todo: Write proper test assertions - currently only checking that no panics occur
@@ -733,5 +725,5 @@ fn test_serialize_legacy_transaction_sighash_none_anyonecanpay() {
         script_pub_key_bytes,
     );
 
-    let sighash_all_transaction = sighash;
+    assert(bytes_to_hex(sighash) == "35c22dea04126559fa211d7efd28c3bc16435d02e54f460d28c436d1c1a3c22f");
 }
