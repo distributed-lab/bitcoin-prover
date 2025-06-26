@@ -117,18 +117,6 @@ fn prepare_preimage_hash_for_sighash_all<let TRANSACTION_SIZE: u32, let INPUT_CO
     data
 }
 
-fn get_public_key_hash_from_script_pub_key(script_pub_key: [u8; 22]) -> [u8; 20] {
-    assert(script_pub_key[0] == 0x00);
-    assert(script_pub_key[1] == 0x14);
-
-    let mut public_key_hash = [0; 20];
-    for i in 0..20 {
-        public_key_hash[i] = script_pub_key[i + 2];
-    }
-
-    public_key_hash
-}
-
 // 0x1976a914<public_key_hash>88ac
 fn create_p2wpkh_script_code(public_key_hash: [u8; 20]) -> [u8; 26] {
     let mut script_code = [0; 26];
@@ -149,11 +137,8 @@ pub fn serialize_p2wpkh_sighash_all<let TRANSACTION_SIZE: u32, let INPUT_COUNT: 
     transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
     input_to_sign: u32,
     prev_amount: [u8; 8],
-    script_pub_key: [u8; 22],
+    script_code: [u8; 26],
 ) -> [u8; 32] {
-    let public_key_hash = get_public_key_hash_from_script_pub_key(script_pub_key);
-
-    let script_code = create_p2wpkh_script_code(public_key_hash);
 
     let preimage_data = prepare_preimage_hash_for_sighash_all(transaction, input_to_sign, script_code, prev_amount);
 
@@ -168,7 +153,7 @@ fn test_serialize_p2wpkh_sighash_all() {
     let bytes = hex_to_bytes(hex_string);
     let transaction = Transaction::<88, 1, 1, 42, 1, 1, 35, 1, 1>::new(bytes, true);
 
-    let script_pub_key = "0014aa966f56de599b4094b61aa68a2b3df9e97e9c48";
+    let script_pub_key = "1976a914aa966f56de599b4094b61aa68a2b3df9e97e9c4888ac";
     let script_pub_key_bytes = hex_to_bytes(script_pub_key);
 
     let prev_amount_hex = "3075000000000000";

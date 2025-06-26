@@ -275,6 +275,56 @@ impl<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, 
 
         txid_bytes
     }
+
+    pub fn get_script_pub_key_with_size<let SCRIPT_PUB_KEY_SIZE: u32>(self, output_index: u32) -> [u8; SCRIPT_PUB_KEY_SIZE] {
+        let mut script_pub_key = [0; SCRIPT_PUB_KEY_SIZE];
+        let output = self.outputs[output_index];
+        let transaction_offset = output.script_pub_key_size.offset;
+        assert(output.script_pub_key.offset + output.script_pub_key.size - transaction_offset == SCRIPT_PUB_KEY_SIZE);
+
+        for i in 0..SCRIPT_PUB_KEY_SIZE {
+            script_pub_key[i] = self.data[transaction_offset + i];
+        }
+
+        script_pub_key
+    }
+
+    pub fn get_amount(self, output_index: u32) -> [u8; 8] {
+        let amount_offset = self.outputs[output_index].amount.offset;
+
+        let mut amount = [0; 8];
+        for i in 0..8 {
+            amount[i] = self.data[amount_offset + i];
+        }
+
+        amount
+    }
+
+    pub fn get_p2wpkh_script_code(self, output_index: u32) -> [u8; 26] {
+        let mut script_code = [0; 26];
+
+        let script_pub_key = self.outputs[output_index].script_pub_key;
+        assert(script_pub_key.size == 22);
+
+        let offset = script_pub_key.offset;
+
+        assert(self.data[offset] == 0x00);
+        assert(self.data[offset + 1] == 0x14);
+
+        for i in 2..22 {
+            script_code[i + 4] = self.data[offset + i];
+        }
+
+        script_code[0] = 0x19;
+        script_code[1] = 0x76;
+        script_code[2] = 0xa9;
+        script_code[3] = 0x14;
+
+        script_code[24] = 0x88;
+        script_code[25] = 0xac;
+
+        script_code
+    }
 }
 
 #[test]

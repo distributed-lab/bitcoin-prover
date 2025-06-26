@@ -1,46 +1,178 @@
-use crate::utils::split_raw_signature;
-use dep::bignum::{BigNum, U768};
 use ripemd160::ripemd160;
 use sha1::sha1;
-use sign::{legacy::serialize_sighash_all, transaction::Transaction};
-use std::{collections::bounded_vec::BoundedVec, ecdsa_secp256k1, ops::{Add, Mul}};
+use sign::{
+    legacy::serialize_sighash_all,
+    segwit::serialize_p2wpkh_sighash_all,
+    transaction::Transaction
+    };
+use std::{collections::bounded_vec::BoundedVec};
 
-use crypto::{ecdsa::ecdsa_verify, point::get_y_from_x, types::{I768, sqrt_secp256k1}, point::get_low_s_if_needed};
+use crypto::ecdsa::ecdsa_verify;
 use utils::{
     convert::{
-        bytes_to_hex, bytes_to_vec, cut_array, get_256_bits_from_768, hex_to_bytes, i32_to_le_bytes,
-        i32_to_vec, reverse_bytes, u32_to_le_bytes, vec_to_array, vec_to_i32, vec_to_u32,
+        bytes_to_vec, cut_array, hex_to_bytes, i32_to_le_bytes,
+        i32_to_vec, u32_to_le_bytes, vec_to_array, vec_to_i32, vec_to_u32,
     },
 };
+use crate::utils::split_raw_signature;
+use sign::address::Address;
 
-pub struct Stack<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANSACTION_SIZE: u32, let CURRENT_INPUT_COUNT: u32, let CURRENT_INPUT_COUNT_LEN: u32, let CURRENT_INPUT_SIZE: u32, let CURRENT_OUTPUT_COUNT: u32, let CURRENT_OUTPUT_COUNT_LEN: u32, let CURRENT_OUTPUT_SIZE: u32, let CURRENT_MAX_WITNESS_STACK_SIZE: u32, let CURRENT_WITNESS_SIZE: u32> {
+pub struct Stack<
+    let MAX_STACK_ELEMENT_SIZE: u32, 
+    let MAX_STACK_SIZE: u32, 
+    let CURRENT_TRANSACTION_SIZE: u32, 
+    let CURRENT_INPUT_COUNT: u32, 
+    let CURRENT_INPUT_COUNT_LEN: u32, 
+    let CURRENT_INPUT_SIZE: u32, 
+    let CURRENT_OUTPUT_COUNT: u32, 
+    let CURRENT_OUTPUT_COUNT_LEN: u32, 
+    let CURRENT_OUTPUT_SIZE: u32, 
+    let CURRENT_MAX_WITNESS_STACK_SIZE: u32, 
+    let CURRENT_WITNESS_SIZE: u32,
+    let PREV_TRANSACTION_SIZE: u32,
+    let PREV_INPUT_COUNT: u32,
+    let PREV_INPUT_COUNT_LEN: u32,
+    let PREV_INPUT_SIZE: u32,
+    let PREV_OUTPUT_COUNT: u32,
+    let PREV_OUTPUT_COUNT_LEN: u32,
+    let PREV_OUTPUT_SIZE: u32,
+    let PREV_MAX_WITNESS_STACK_SIZE: u32,
+    let PREV_WITNESS_SIZE: u32,
+> {
     data: [BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>; MAX_STACK_SIZE],
     stack_size: u32,
     alt_data: [BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>; MAX_STACK_SIZE],
     alt_stack_size: u32,
-    cur_transaction: Transaction<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE>,
+    cur_transaction: Transaction<
+        CURRENT_TRANSACTION_SIZE, 
+        CURRENT_INPUT_COUNT, 
+        CURRENT_INPUT_COUNT_LEN, 
+        CURRENT_INPUT_SIZE, 
+        CURRENT_OUTPUT_COUNT, 
+        CURRENT_OUTPUT_COUNT_LEN, 
+        CURRENT_OUTPUT_SIZE, 
+        CURRENT_MAX_WITNESS_STACK_SIZE, 
+        CURRENT_WITNESS_SIZE
+    >,
+    prev_transaction: Transaction<
+        PREV_TRANSACTION_SIZE, 
+        PREV_INPUT_COUNT, 
+        PREV_INPUT_COUNT_LEN, 
+        PREV_INPUT_SIZE, 
+        PREV_OUTPUT_COUNT, 
+        PREV_OUTPUT_COUNT_LEN, 
+        PREV_OUTPUT_SIZE, 
+        PREV_MAX_WITNESS_STACK_SIZE, 
+        PREV_WITNESS_SIZE
+    >,
 }
 
-impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANSACTION_SIZE: u32, let CURRENT_INPUT_COUNT: u32, let CURRENT_INPUT_COUNT_LEN: u32, let CURRENT_INPUT_SIZE: u32, let CURRENT_OUTPUT_COUNT: u32, let CURRENT_OUTPUT_COUNT_LEN: u32, let CURRENT_OUTPUT_SIZE: u32, let CURRENT_MAX_WITNESS_STACK_SIZE: u32, let CURRENT_WITNESS_SIZE: u32> Stack<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE> {
-    pub fn new(
-        cur_transaction: Transaction<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE>,
-    ) -> Self {
+impl<
+    let MAX_STACK_ELEMENT_SIZE: u32, 
+    let MAX_STACK_SIZE: u32, 
+    let CURRENT_TRANSACTION_SIZE: u32, 
+    let CURRENT_INPUT_COUNT: u32, 
+    let CURRENT_INPUT_COUNT_LEN: u32, 
+    let CURRENT_INPUT_SIZE: u32, 
+    let CURRENT_OUTPUT_COUNT: u32, 
+    let CURRENT_OUTPUT_COUNT_LEN: u32, 
+    let CURRENT_OUTPUT_SIZE: u32, 
+    let CURRENT_MAX_WITNESS_STACK_SIZE: u32, 
+    let CURRENT_WITNESS_SIZE: u32,
+    let PREV_TRANSACTION_SIZE: u32,
+    let PREV_INPUT_COUNT: u32,
+    let PREV_INPUT_COUNT_LEN: u32,
+    let PREV_INPUT_SIZE: u32,
+    let PREV_OUTPUT_COUNT: u32,
+    let PREV_OUTPUT_COUNT_LEN: u32,
+    let PREV_OUTPUT_SIZE: u32,
+    let PREV_MAX_WITNESS_STACK_SIZE: u32,
+    let PREV_WITNESS_SIZE: u32
+> Stack<
+    MAX_STACK_ELEMENT_SIZE, 
+    MAX_STACK_SIZE, 
+    CURRENT_TRANSACTION_SIZE, 
+    CURRENT_INPUT_COUNT, 
+    CURRENT_INPUT_COUNT_LEN, 
+    CURRENT_INPUT_SIZE, 
+    CURRENT_OUTPUT_COUNT, 
+    CURRENT_OUTPUT_COUNT_LEN, 
+    CURRENT_OUTPUT_SIZE, 
+    CURRENT_MAX_WITNESS_STACK_SIZE, 
+    CURRENT_WITNESS_SIZE,
+    PREV_TRANSACTION_SIZE,
+    PREV_INPUT_COUNT,
+    PREV_INPUT_COUNT_LEN,
+    PREV_INPUT_SIZE,
+    PREV_OUTPUT_COUNT,
+    PREV_OUTPUT_COUNT_LEN,
+    PREV_OUTPUT_SIZE,
+    PREV_MAX_WITNESS_STACK_SIZE,
+    PREV_WITNESS_SIZE
+> {
+    pub fn new<let NEW_MAX_STACK_ELEMENT_SIZE: u32, let NEW_MAX_STACK_SIZE: u32>(
+        cur_transaction: Transaction<
+            CURRENT_TRANSACTION_SIZE, 
+            CURRENT_INPUT_COUNT, 
+            CURRENT_INPUT_COUNT_LEN, 
+            CURRENT_INPUT_SIZE, 
+            CURRENT_OUTPUT_COUNT, 
+            CURRENT_OUTPUT_COUNT_LEN, 
+            CURRENT_OUTPUT_SIZE, 
+            CURRENT_MAX_WITNESS_STACK_SIZE, 
+            CURRENT_WITNESS_SIZE
+        >,
+        prev_transaction: Transaction<
+            PREV_TRANSACTION_SIZE, 
+            PREV_INPUT_COUNT, 
+            PREV_INPUT_COUNT_LEN, 
+            PREV_INPUT_SIZE, 
+            PREV_OUTPUT_COUNT, 
+            PREV_OUTPUT_COUNT_LEN, 
+            PREV_OUTPUT_SIZE, 
+            PREV_MAX_WITNESS_STACK_SIZE, 
+            PREV_WITNESS_SIZE
+        >,
+    ) -> Stack<
+        NEW_MAX_STACK_ELEMENT_SIZE, 
+        NEW_MAX_STACK_SIZE, 
+        CURRENT_TRANSACTION_SIZE, 
+        CURRENT_INPUT_COUNT, 
+        CURRENT_INPUT_COUNT_LEN, 
+        CURRENT_INPUT_SIZE, 
+        CURRENT_OUTPUT_COUNT, 
+        CURRENT_OUTPUT_COUNT_LEN, 
+        CURRENT_OUTPUT_SIZE, 
+        CURRENT_MAX_WITNESS_STACK_SIZE, 
+        CURRENT_WITNESS_SIZE,
+        PREV_TRANSACTION_SIZE, 
+        PREV_INPUT_COUNT, 
+        PREV_INPUT_COUNT_LEN, 
+        PREV_INPUT_SIZE, 
+        PREV_OUTPUT_COUNT, 
+        PREV_OUTPUT_COUNT_LEN, 
+        PREV_OUTPUT_SIZE, 
+        PREV_MAX_WITNESS_STACK_SIZE, 
+        PREV_WITNESS_SIZE
+    > {
         Stack {
-            data: [BoundedVec::new(); MAX_STACK_SIZE],
+            data: [BoundedVec::new(); NEW_MAX_STACK_SIZE],
             stack_size: 0,
-            alt_data: [BoundedVec::new(); MAX_STACK_SIZE],
+            alt_data: [BoundedVec::new(); NEW_MAX_STACK_SIZE],
             alt_stack_size: 0,
             cur_transaction: cur_transaction,
+            prev_transaction: prev_transaction,
         }
     }
 
-    pub fn new_test_stack() -> Self {
+    pub fn new_test_stack<let TEST_MAX_STACK_ELEMENT_SIZE: u32, let TEST_MAX_STACK_SIZE: u32>() -> Stack<TEST_MAX_STACK_ELEMENT_SIZE, TEST_MAX_STACK_SIZE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0> {
         Stack {
-            data: [BoundedVec::new(); MAX_STACK_SIZE],
+            data: [BoundedVec::new(); TEST_MAX_STACK_SIZE],
             stack_size: 0,
-            alt_data: [BoundedVec::new(); MAX_STACK_SIZE],
+            alt_data: [BoundedVec::new(); TEST_MAX_STACK_SIZE],
             alt_stack_size: 0,
-            cur_transaction: Transaction::new_empty_transaction(),
+            cur_transaction: Transaction::<0, 0, 0, 0, 0, 0, 0, 0, 0>::new_empty_transaction(),
+            prev_transaction: Transaction::<0, 0, 0, 0, 0, 0, 0, 0, 0>::new_empty_transaction(),
         }
     }
 
@@ -447,12 +579,13 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
 
     pub fn op_checksig_sighash_all<
         let SIGNATURE_LEN: u32,
-        let SCRIPT_PUB_KEY_LEN: u32,
+        let SCRIPT_CODE_LEN: u32,
         let PUBKEY_LEN: u32,
     >(
         &mut self,
         input_to_sign: u32,
-        script_pub_key: [u8; SCRIPT_PUB_KEY_LEN],
+        output_to_unlock: u32,
+        address: Address,
     ) -> bool {
         let mut pubkey_vec = self.pop();
         let mut raw_signature_vec = self.pop();
@@ -463,7 +596,18 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
 
         let mut pubkey_bytes = vec_to_array::<MAX_STACK_ELEMENT_SIZE, PUBKEY_LEN>(pubkey_vec);
 
-        let message_hash = serialize_sighash_all(self.cur_transaction, input_to_sign, script_pub_key);
+        let mut message_hash = [0; 32];
+
+        if address.is_p2pk() | address.is_p2pkh() | address.is_p2sh() {
+            let script_code = self.cur_transaction.get_script_pub_key_with_size::<SCRIPT_CODE_LEN>(output_to_unlock);
+            message_hash = serialize_sighash_all(self.cur_transaction, input_to_sign, script_code);
+        } else if address.is_p2wpkh() {
+            let amount = self.cur_transaction.get_amount(output_to_unlock);
+            let script_code = self.cur_transaction.get_p2wpkh_script_code(output_to_unlock);
+            message_hash = serialize_p2wpkh_sighash_all(self.cur_transaction, input_to_sign, amount, script_code);
+        } else {
+            assert(false, "not implemented");
+        }
 
         ecdsa_verify(encoded_signature, pubkey_bytes, message_hash)
     }
@@ -471,7 +615,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
 
 #[test]
 fn test_addition() {
-    let mut stack = Stack::<10, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::new_test_stack::<100, 10>();
 
     let a = 12345;
     let b = 4648;
@@ -493,7 +637,7 @@ fn test_addition() {
 
 #[test]
 fn test_op_num() {
-    let mut stack = Stack::<10, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::new_test_stack();
     stack.op_num(2);
     stack.op_num(5);
     stack.op_add();
@@ -514,7 +658,7 @@ fn test_op_num() {
 
 #[test]
 fn test_dups() {
-    let mut stack = Stack::<10, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::new_test_stack();
     stack.op_num(2);
     stack.op_ifdup();
     assert(stack.stack_size == 2);
@@ -544,7 +688,7 @@ fn test_dups() {
 
 #[test]
 fn test_alt_stack() {
-    let mut stack = Stack::<10, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::new_test_stack();
     stack.op_num(2);
     stack.op_toaltstack();
     assert(stack.stack_size == 0);
@@ -556,7 +700,7 @@ fn test_alt_stack() {
 
 #[test]
 fn test_depth_drops() {
-    let mut stack = Stack::<10, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::new_test_stack();
     stack.op_num(2);
     stack.op_num(5);
     stack.op_depth();
@@ -568,7 +712,7 @@ fn test_depth_drops() {
 
 #[test]
 fn test_nip_overs() {
-    let mut stack = Stack::<10, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::new_test_stack();
     stack.op_num(2);
     stack.op_num(5);
     stack.op_over();
@@ -591,7 +735,7 @@ fn test_nip_overs() {
 
 #[test]
 fn test_pick() {
-    let mut stack = Stack::<10, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::new_test_stack();
     stack.op_num(2);
     stack.op_num(5);
     stack.op_num(3);
@@ -602,7 +746,7 @@ fn test_pick() {
 
 #[test]
 fn test_roll() {
-    let mut stack = Stack::<10, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::new_test_stack();
     stack.op_num(2);
     stack.op_num(5);
     stack.op_num(3);
@@ -613,7 +757,7 @@ fn test_roll() {
 
 #[test]
 fn test_swaps() {
-    let mut stack = Stack::<10, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::new_test_stack();
     stack.op_num(2);
     stack.op_num(5);
     stack.op_swap();
@@ -631,7 +775,7 @@ fn test_swaps() {
 
 #[test]
 fn test_tuck() {
-    let mut stack = Stack::<10, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::new_test_stack();
     stack.op_num(2);
     stack.op_num(5);
     stack.op_tuck();
@@ -642,7 +786,7 @@ fn test_tuck() {
 
 #[test]
 fn test_rots() {
-    let mut stack = Stack::<10, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::new_test_stack();
     stack.op_num(1);
     stack.op_num(2);
     stack.op_num(3);
@@ -668,7 +812,7 @@ fn test_rots() {
 
 #[test]
 fn test_ripemd160() {
-    let mut stack = Stack::<20, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::new_test_stack();
     stack.op_num(1);
     stack.op_ripemd160::<1>();
     assert(
@@ -682,7 +826,7 @@ fn test_ripemd160() {
 
 #[test]
 fn test_sha1() {
-    let mut stack = Stack::<20, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::new_test_stack();
     stack.op_num(1);
     stack.op_sha1::<1>();
     assert(
@@ -696,7 +840,7 @@ fn test_sha1() {
 
 #[test]
 fn test_sha256() {
-    let mut stack = Stack::<32, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::new_test_stack();
     stack.op_num(1);
     stack.op_sha256::<1>();
     assert(
@@ -711,7 +855,7 @@ fn test_sha256() {
 
 #[test]
 fn test_hash160() {
-    let mut stack = Stack::<20, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::new_test_stack();
     stack.op_num(1);
     stack.op_hash160::<1>();
     assert(
@@ -725,7 +869,7 @@ fn test_hash160() {
 
 #[test]
 fn test_hash256() {
-    let mut stack = Stack::<32, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::new_test_stack();
     stack.op_num(1);
     stack.op_hash256::<1>();
     assert(
@@ -740,7 +884,7 @@ fn test_hash256() {
 
 #[test]
 fn test_arithmetic() {
-    let mut stack = Stack::<5, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::new_test_stack();
     stack.op_num(10);
     stack.op_num(2);
     stack.op_sub();
@@ -758,7 +902,7 @@ fn test_arithmetic() {
 
 #[test]
 fn test_logical() {
-    let mut stack = Stack::<5, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::new_test_stack();
     stack.op_num(10);
     stack.op_num(0);
     stack.op_2dup();
@@ -801,7 +945,7 @@ fn test_logical() {
 
 #[test]
 fn test_max_min_range() {
-    let mut stack = Stack::<5, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0>::new_test_stack();
+    let mut stack = Stack::new_test_stack();
     stack.op_num(10);
     stack.op_num(12);
     stack.op_max();
@@ -829,15 +973,17 @@ fn test_checksig() {
 
     let input_to_sign = 1;
 
-    let mut stack = Stack::<80, 7, 201, 3, 1, 124, 2, 1, 69, 0, 0>::new(cur_tx);
+    // From here: https://www.blockchain.com/explorer/transactions/btc/6f7cf9580f1c2dfb3c4d5d043cdbb128c640e3f20161245aa7372e9666168516
+    let prev_tx_hex = "0100000002f60b5e96f09422354ab150b0e506c4bffedaf20216d30059cc5a3061b4c83dff000000004a493046022100e26d9ff76a07d68369e5782be3f8532d25ecc8add58ee256da6c550b52e8006b022100b4431f5a9a4dcb51cbdcaae935218c0ae4cfc8aa903fe4e5bac4c208290b7d5d01fffffffff7272ef43189f5553c2baea50f59cde99b3220fd518884d932016d055895b62d000000004a493046022100a2ab7cdc5b67aca032899ea1b262f6e8181060f5a34ee667a82dac9c7b7db4c3022100911bc945c4b435df8227466433e56899fbb65833e4853683ecaa12ee840d16bf01ffffffff0100e40b54020000001976a91412ab8dc588ca9d5787dde7eb29569da63c3a238c88ac00000000";
+    let prev_tx_bytes = hex_to_bytes(prev_tx_hex);
+    let prev_tx = Transaction::<274, 2, 1, 231, 1, 1, 35, 0, 0>::new(prev_tx_bytes, false);
+
+    let output_to_unlock = 0;
+
+    let mut stack = Stack::new::<80, 7>(cur_tx, prev_tx);
 
     let signature_hex: str<144> = "304502203f004eeed0cef2715643e2f25a27a28f3c578e94c7f0f6a4df104e7d163f7f8f022100b8b248c1cfd8f77a0365107a9511d759b7544d979dd152a955c867afac0ef78601";
     let signature_bytes = hex_to_bytes(signature_hex);
-
-    // From here: https://www.blockchain.com/explorer/transactions/btc/6f7cf9580f1c2dfb3c4d5d043cdbb128c640e3f20161245aa7372e9666168516
-    // script_pub_key includes the length of the script
-    let script_pub_key_hex: str<52> = "1976a91412ab8dc588ca9d5787dde7eb29569da63c3a238c88ac";
-    let script_pub_key_bytes = hex_to_bytes(script_pub_key_hex);
 
     let pubkey_hex: str<130> = "044d05240cfbd8a2786eda9dadd520c1609b8593ff8641018d57703d02ba687cf2f187f0cee2221c3afb1b5ff7888caced2423916b61444666ca1216f26181398c";
     let pubkey_bytes = hex_to_bytes(pubkey_hex);
@@ -845,5 +991,5 @@ fn test_checksig() {
     stack.push(bytes_to_vec(signature_bytes));
     stack.push(bytes_to_vec(pubkey_bytes));
 
-    assert(stack.op_checksig_sighash_all::<72, 26, 65>(input_to_sign, script_pub_key_bytes));
+    assert(stack.op_checksig_sighash_all::<72, 26, 65>(input_to_sign, output_to_unlock, Address::new_p2pkh()));
 }
