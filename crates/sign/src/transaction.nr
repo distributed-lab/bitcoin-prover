@@ -71,7 +71,7 @@ impl Witness {
     }
 }
 
-pub struct Transaction<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32> {
+pub struct Transaction<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_COUNT_LEN: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32> {
     pub data: [u8; TRANSACTION_SIZE],
     pub version: PositionField,
     pub marker: Option<PositionField>,
@@ -84,7 +84,7 @@ pub struct Transaction<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPU
     pub lock_time: PositionField,
 }
 
-impl<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32> Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE> {
+impl<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_COUNT_LEN: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32> Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE> {
     pub fn new(data: [u8; TRANSACTION_SIZE], segwit: bool) -> Self {
         let mut cur_pos: u32 = 0;
 
@@ -105,6 +105,8 @@ impl<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_SIZE: u32, let O
 
         let input_count = compact_size::get_compact_size(data, cur_pos);
         cur_pos += input_count.size;
+
+        assert(INPUT_COUNT_LEN == input_count.size);
 
         let mut inputs: [Input; INPUT_COUNT] = [Input::default(); INPUT_COUNT];
         for i in 0..INPUT_COUNT {
@@ -131,6 +133,8 @@ impl<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_SIZE: u32, let O
 
         let output_count = compact_size::get_compact_size(data, cur_pos);
         cur_pos += output_count.size;
+
+        assert(OUTPUT_COUNT_LEN == output_count.size);
 
         let mut outputs: [Output; OUTPUT_COUNT] = [Output::default(); OUTPUT_COUNT];
         for i in 0..OUTPUT_COUNT {
@@ -258,14 +262,11 @@ impl<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_SIZE: u32, let O
             preimage_hash[preimage_hash_offset + i] = self.data[transaction_data_offset + i];
         }
 
-        let hex = bytes_to_hex(preimage_hash);
-
         sha256::digest(sha256::digest(preimage_hash))
     }
 
     pub fn get_input_txid(self, input_index: u32) -> [u8; 32] {
         let txid_offset = self.inputs[input_index].txid.offset;
-        let txid_size = self.inputs[input_index].txid.size;
 
         let mut txid_bytes = [0; 32];
         for i in 0..32 {
@@ -274,6 +275,56 @@ impl<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_SIZE: u32, let O
 
         txid_bytes
     }
+
+    pub fn get_script_pub_key_with_size<let SCRIPT_PUB_KEY_SIZE: u32>(self, output_index: u32) -> [u8; SCRIPT_PUB_KEY_SIZE] {
+        let mut script_pub_key = [0; SCRIPT_PUB_KEY_SIZE];
+        let output = self.outputs[output_index];
+        let transaction_offset = output.script_pub_key_size.offset;
+        assert(output.script_pub_key.offset + output.script_pub_key.size - transaction_offset == SCRIPT_PUB_KEY_SIZE);
+
+        for i in 0..SCRIPT_PUB_KEY_SIZE {
+            script_pub_key[i] = self.data[transaction_offset + i];
+        }
+
+        script_pub_key
+    }
+
+    pub fn get_amount(self, output_index: u32) -> [u8; 8] {
+        let amount_offset = self.outputs[output_index].amount.offset;
+
+        let mut amount = [0; 8];
+        for i in 0..8 {
+            amount[i] = self.data[amount_offset + i];
+        }
+
+        amount
+    }
+
+    pub fn get_p2wpkh_script_code(self, output_index: u32) -> [u8; 26] {
+        let mut script_code = [0; 26];
+
+        let script_pub_key = self.outputs[output_index].script_pub_key;
+        assert(script_pub_key.size == 22);
+
+        let offset = script_pub_key.offset;
+
+        assert(self.data[offset] == 0x00);
+        assert(self.data[offset + 1] == 0x14);
+
+        for i in 2..22 {
+            script_code[i + 4] = self.data[offset + i];
+        }
+
+        script_code[0] = 0x19;
+        script_code[1] = 0x76;
+        script_code[2] = 0xa9;
+        script_code[3] = 0x14;
+
+        script_code[24] = 0x88;
+        script_code[25] = 0xac;
+
+        script_code
+    }
 }
 
 #[test]
@@ -281,7 +332,7 @@ fn test_transaction_creation_legacy() {
     let string: str<446> = "0100000001a77618edf4b1b47885f643ea7c6349598053eb1b1b879dd698085aa97bc03fb4010000006a473044022000dc119d89dc8499dbfb7e0361e78a450013bfadc20ef8e011a444750c467aaa02200637fe44dd4950f16f4fea64b59fcc2980eb4650c582b5da5bf4b2134474dcd2012102d20b39b3b90f53677e953f39ad3a61655a1c57f98635ea70933839ce3e4e416affffffff02a08601000000000017a91499b5a29770085fc856f717cc7e52a46b2361aa9a8786960c00000000001976a91440a64639e2fbcbc593e7c257c33ea615c83c8c6788ac00000000";
 
     let bytes = hex_to_bytes(string);
-    let transaction = Transaction::<223, 1, 148, 2, 67, 2, 0>::new(bytes, false);
+    let transaction = Transaction::<223, 1, 1, 148, 2, 1, 67, 2, 0>::new(bytes, false);
 
     assert(transaction.is_segwit() == false);
 
@@ -304,7 +355,7 @@ fn test_transaction_creation_segwit() {
     let string: str<702> = "0100000000010248fc3350b6d46da2b1a9f686bce993fe9c4e99e20dec6bf535e2b0451c89edff0100000000ffffffff00a3291c04a983fd0dd888442315b1eca0ae90e338e03bd95c89e8b858213fe90100000000ffffffff017a8b3b0000000000220020e2d0744b20aa3319d5e7a6220296fb7fd2f73ac934456f155ec98da41f4918030247304402207980264b54284b4b762e3284d70477d19e5156d27603c2b4a54669dbc0b4c62d0220488ca70a5892f0fbc915f9b26e987d30151710ab295bc88c4ff824dfc73f3990012102c2f3e2a446815b7cb8f0b0390fada48fefc4bc45026414cc8d1aec33574afcd50247304402203724093d7d059f65a6bcec1d4dc85620f2cdc24824c9b9897aa34d1d2c76f7a4022073ef3d58c106e50431df3f103aa045edafe4d5c7e300546752fcde2f64bb705f012102317fbf9a0f8e2b0071879850b5c703f3c22e926ae3c36d7bf2236e49701718f800000000";
 
     let bytes = hex_to_bytes(string);
-    let transaction = Transaction::<351, 2, 83, 1, 44, 2, 214>::new(bytes, true);
+    let transaction = Transaction::<351, 2, 1, 83, 1, 1, 44, 2, 214>::new(bytes, true);
 
     assert(transaction.is_segwit() == true);
 
@@ -326,7 +377,7 @@ fn test_transaction_creation_segwit() {
 fn test_transaction_hash() {
     let string: str<634> = "020000000001016d16731b9e16c2b8ac3499935af3f4f02a3e5b2bcb22376ef48e9fea5987fc052e00000000fdffffff012202000000000000225120079041570ca421321409eb2a3f9dab81e4445ea73004467170660ba890eafc680340d118072a8ff004a87c607d1e7042cc8b624d8132d143d9d86d24a09ec6df66080842916d7bebce70611627d536519c630a3306ebaafbf1531aca28e4fe84ce0a78202cea7e08b4a583bc246c332aa00e79c1150e798e0b197a4462b42181b47f2a1cac0063036f7264010118746578742f706c61696e3b636861727365743d7574662d3800327b2270223a226272632d3230222c226f70223a226d696e74222c227469636b223a2275666f78222c22616d74223a2233227d6821c12cea7e08b4a583bc246c332aa00e79c1150e798e0b197a4462b42181b47f2a1c00000000";
     let bytes = hex_to_bytes(string);
-    let transaction = Transaction::<317, 1, 42, 1, 44, 3, 221>::new(bytes, true);
+    let transaction = Transaction::<317, 1, 1, 42, 1, 1, 44, 3, 221>::new(bytes, true);
 
     let txid = transaction.txid();
     let txid_hex = bytes_to_hex(txid);
