@@ -14,7 +14,10 @@ use utils::{
         i32_to_vec, u32_to_le_bytes, vec_to_array, vec_to_i32, vec_to_u32,
     },
 };
-use crate::utils::split_raw_signature;
+use crate::utils::{
+    split_raw_signature,
+    empty_stack_array
+};
 use sign::address::Address;
 
 pub struct Stack<
@@ -159,6 +162,7 @@ impl<
             PREV_MAX_WITNESS_STACK_SIZE, 
             PREV_WITNESS_SIZE
         >,
+        stack_array: [BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>; MAX_STACK_SIZE]
     ) -> Stack<
         MAX_STACK_ELEMENT_SIZE, 
         MAX_STACK_SIZE, 
@@ -182,9 +186,9 @@ impl<
         PREV_WITNESS_SIZE
     > {
         Stack {
-            data: [BoundedVec::new(); MAX_STACK_SIZE],
+            data: stack_array,
             stack_size: 0,
-            alt_data: [BoundedVec::new(); MAX_STACK_SIZE],
+            alt_data: stack_array,
             alt_stack_size: 0,
             cur_transaction: cur_transaction,
             prev_transaction: prev_transaction,
@@ -1004,7 +1008,7 @@ fn test_checksig() {
 
     let output_to_unlock = 0;
 
-    let mut stack = Stack::<80, 7, 201, 3, 1, 124, 2, 1, 69, 0, 0, 274, 2, 1, 231, 1, 1, 35, 0, 0>::new(cur_tx, prev_tx);
+    let mut stack = Stack::new(cur_tx, prev_tx, empty_stack_array::<80, 7>());
 
     let signature_hex: str<144> = "304502203f004eeed0cef2715643e2f25a27a28f3c578e94c7f0f6a4df104e7d163f7f8f022100b8b248c1cfd8f77a0365107a9511d759b7544d979dd152a955c867afac0ef78601";
     let signature_bytes = hex_to_bytes(signature_hex);
