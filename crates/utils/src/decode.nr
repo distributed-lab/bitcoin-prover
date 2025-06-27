@@ -2,9 +2,6 @@ use super::convert::hex_to_bytes;
 use dep::bignum::{BigNum, U256};
 
 pub fn decode_der(der: [u8]) -> (U256, U256) {
-    let mut r = U256::zero();
-    let mut s = U256::zero();
-
     let mut r_b = [0].as_slice();
     let mut r_s = 0;
     if der[3] == 32 {

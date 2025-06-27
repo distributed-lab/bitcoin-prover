@@ -1,7 +1,6 @@
 use crate::legacy::Transaction;
 use utils::convert::{bytes_to_hex, hex_to_bytes};
 
-
 fn prepare_preimage_hash_for_sighash_all<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_COUNT_LEN: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32, let SCRIPT_CODE_SIZE: u32>(
     transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
     input_to_sign: u32,
@@ -17,7 +16,7 @@ fn prepare_preimage_hash_for_sighash_all<let TRANSACTION_SIZE: u32, let INPUT_CO
         cur_pos += 1;
     }
 
-    // Inputs ((txid, vout) + (txid, vout) + ...) hash 
+    // Inputs ((txid, vout) + (txid, vout) + ...) hash
     let mut preimage_inputs = [0; INPUT_COUNT * (32 + 4)];
     for i in 0..INPUT_COUNT {
         let transaction_txid_offset = transaction.inputs[i].txid.offset;
@@ -140,7 +139,8 @@ pub fn serialize_p2wpkh_sighash_all<let TRANSACTION_SIZE: u32, let INPUT_COUNT: 
     script_code: [u8; 26],
 ) -> [u8; 32] {
 
-    let preimage_data = prepare_preimage_hash_for_sighash_all(transaction, input_to_sign, script_code, prev_amount);
+    let preimage_data =
+        prepare_preimage_hash_for_sighash_all(transaction, input_to_sign, script_code, prev_amount);
 
     let sighash_all = sha256::digest(sha256::digest(preimage_data));
 
@@ -159,9 +159,13 @@ fn test_serialize_p2wpkh_sighash_all() {
     let prev_amount_hex = "3075000000000000";
     let prev_amount_bytes = hex_to_bytes(prev_amount_hex);
 
-    let sighash_all_transaction_bytes = serialize_p2wpkh_sighash_all(transaction, 0, prev_amount_bytes, script_pub_key_bytes);
+    let sighash_all_transaction_bytes =
+        serialize_p2wpkh_sighash_all(transaction, 0, prev_amount_bytes, script_pub_key_bytes);
 
     let sighash_all_transaction = bytes_to_hex(sighash_all_transaction_bytes);
 
-    assert(sighash_all_transaction == "d7b60220e1b9b2c1ab40845118baf515203f7b6f0ad83cbb68d3c89b5b3098a6");
+    assert(
+        sighash_all_transaction
+            == "d7b60220e1b9b2c1ab40845118baf515203f7b6f0ad83cbb68d3c89b5b3098a6",
+    );
 }

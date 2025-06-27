@@ -1,0 +1,5 @@
+cur_tx_data = "{curTx.txData}"
+prev_tx_data = "{prevTx.txData}"
+signature = "{signature}"
+pub_key = "{pub_key}"
+input_to_sign = "{input_to_sign}"

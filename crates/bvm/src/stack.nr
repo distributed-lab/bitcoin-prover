@@ -220,6 +220,7 @@ impl<
     pub fn op_equal(&mut self) {
         let value1 = self.pop().storage();
         let value2 = self.pop().storage();
+
         if value1 == value2 {
             self.push(bytes_to_vec([1]));
         } else {
@@ -247,9 +248,11 @@ impl<
         if self.data.len() == 0 {
             false
         } else {
-            // TODO: check that top item is not 0
-            // Not sure 0x00000000, for example, is valid or not
-            true
+            if vec_to_i32(self.pop()) == 0 {
+                false
+            } else {
+                true
+            }
         }
     }
 
@@ -592,7 +595,7 @@ impl<
     }
 
     // todo: implement this opcode
-    pub fn op_size() {
+    pub fn op_size(&mut self) {
         //
     }
 
@@ -609,7 +612,8 @@ impl<
         let mut pubkey_vec = self.pop();
         let mut raw_signature_vec = self.pop();
 
-        let signature_bytes = vec_to_array::<MAX_STACK_ELEMENT_SIZE, SIGNATURE_LEN>(raw_signature_vec);
+        let signature_bytes =
+            vec_to_array::<MAX_STACK_ELEMENT_SIZE, SIGNATURE_LEN>(raw_signature_vec);
         let (encoded_signature, hash_type) = split_raw_signature(signature_bytes);
         assert(hash_type == 0x01);
 
