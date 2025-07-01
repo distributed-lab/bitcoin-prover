@@ -1,7 +1,6 @@
 import json
 from typing import Dict
-import tx
-from typing import List
+from generators.utils.tx import get_ready_tx
 
 def get_config(path: str = "./generators/p2pkh/config.json") -> Dict:
     with open(path, "r") as f:
@@ -10,9 +9,9 @@ def get_config(path: str = "./generators/p2pkh/config.json") -> Dict:
 def main():
     config = get_config()
 
-    curTx = tx.get_ready_tx(config["cur_tx"])
+    curTx = get_ready_tx(config["cur_tx"])
 
-    prevTx = tx.get_ready_tx(config["prev_tx"])
+    prevTx = get_ready_tx(config["prev_tx"])
 
     with open(config["file_path"] + "/src/main.nr.template", "r") as file:
         templateMain = file.read()
