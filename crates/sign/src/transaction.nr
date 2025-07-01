@@ -311,8 +311,8 @@ impl<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, 
         assert(self.data[offset] == 0x00);
         assert(self.data[offset + 1] == 0x14);
 
-        for i in 2..22 {
-            script_code[i + 4] = self.data[offset + i];
+        for i in 0..22 {
+            script_code[i + 4] = self.data[offset + i + 2];
         }
 
         script_code[0] = 0x19;

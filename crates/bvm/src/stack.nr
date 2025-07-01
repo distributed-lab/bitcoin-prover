@@ -625,8 +625,8 @@ impl<
             let script_code = self.prev_transaction.get_script_pub_key_with_size::<SCRIPT_CODE_LEN>(output_to_unlock);
             message_hash = serialize_sighash_all(self.cur_transaction, input_to_sign, script_code);
         } else if address.is_p2wpkh() {
-            let amount = self.cur_transaction.get_amount(output_to_unlock);
-            let script_code = self.cur_transaction.get_p2wpkh_script_code(output_to_unlock);
+            let amount = self.prev_transaction.get_amount(output_to_unlock);
+            let script_code = self.prev_transaction.get_p2wpkh_script_code(output_to_unlock);
             message_hash = serialize_p2wpkh_sighash_all(self.cur_transaction, input_to_sign, amount, script_code);
         } else {
             assert(false, "not implemented");
@@ -996,7 +996,7 @@ fn test_max_min_range() {
 }
 
 #[test]
-fn test_checksig() {
+fn test_legacy_checksig() {
     // From here: https://www.blockchain.com/explorer/transactions/btc/12e753ef5cc30925a6eee2c457aa7f53022443ca013ea81882a6b59b69e342a6
     // Transaction with deleted script sigs
     let cur_tx_hex: str<402> = "01000000030dd7891efbf67da47c651531db8aab3144ed7a524e4ae1e30b773525e27ddd7b0000000000ffffffff16851666962e37a75a246101f2e340c628b1db3c045d4d3cfb2d1c0f58f97c6f0000000000ffffffffffda5d38e91fd9a0d92872d51f83cb746fc7bf5d3ff13402f8d0d5ed60ddc79c0000000000ffffffff02c0c62d00000000001976a91417194e1bd175fb5b1b2a1f9d221f6f5c29e1928388ac00c817a8040000001976a91465bda9b05f7e9a8f96a7f4ba0996a877708ef90888ac00000000";
@@ -1024,6 +1024,38 @@ fn test_checksig() {
     stack.push(bytes_to_vec(pubkey_bytes));
 
     let sig_result = stack.op_checksig_sighash_all::<72, 26, 65>(input_to_sign, output_to_unlock, Address::new_p2pkh());
+
+    assert(sig_result);
+}
+
+#[test]
+fn test_segwit_checksig() {
+    // From here: https://www.blockchain.com/explorer/transactions/btc/ca7e89a098385f2053b88d4ef28974c17f2034b84116136705af366cb2a2d26f
+    let cur_tx_hex = "02000000000101822952a47327be304809fb6b6c0e55a27321146e5151b1f1bccdce35bba99fb20000000000fdffffff0658020000000000002251208625054ae2eca687577e35ae70c6646fd47ff1276fe64b85a10e034f30b5136a4a010000000000001600148a8c751ab2a5fe26e68210b36019c6b0bfe024694a010000000000001600148a8c751ab2a5fe26e68210b36019c6b0bfe0246922020000000000001600148a8c751ab2a5fe26e68210b36019c6b0bfe024694a010000000000001600148a8c751ab2a5fe26e68210b36019c6b0bfe02469482b1101000000002251208625054ae2eca687577e35ae70c6646fd47ff1276fe64b85a10e034f30b5136a02483045022100acbc5aeef43fa19a7078d34e84177534c40e2ad8cee5ff4deb5aae2b4650f864022026288d3d694fdd6e592bfb5d200848206848bb0c8f0119ffee831ed7a7a148d001210310217ab07ffb6f90fb9dd925c3e950d74003ba26aad82d09b1da730ac2b3b8da00000000";
+    let cur_tx_bytes = hex_to_bytes(cur_tx_hex);
+    let cur_tx = Transaction::<371, 1, 1, 42, 6, 1, 211, 2, 108>::new(cur_tx_bytes, true);
+
+    let input_to_sign = 0;
+
+    // From here: https://www.blockchain.com/explorer/transactions/btc/b29fa9bb35cecdbcf1b151516e142173a2550e6c6bfb094830be2773a4522982
+    let prev_tx_hex = "02000000000106be778a8d6493de9cae18155c3c761b9334d6223916310348c17c587f2fb7992c0500000000ffffffffb529dd3f119f36705bee141134aca6d1400fbf6ab22927ca1b16a6846ab351df0000000000ffffffffb0e5e81a0e4fa61bac8fa31f11eb0a4a58d97b6ca9b2445f36bfd26662c350000000000000ffffffffabd075d382452621f65a24d921ff4dcc813a300a9517ffb3e7a514197becb6da0000000000ffffffff4a01d9e9564bb99949ff91cc4554832f1c0c1bb37acaa02bc83f011f4a505da20000000000ffffffffcd39ad5bcb73b1c0c611dda48499c8963cb80725a2cb801d39b202558e13c3b80200000000ffffffff05e4381101000000001600148a8c751ab2a5fe26e68210b36019c6b0bfe0246900ee020000000000225120943e0e9878cf21609289994525741ddae45e83d73ffe73283c311cc65d11200fa0fd020000000000225120943e0e9878cf21609289994525741ddae45e83d73ffe73283c311cc65d11200fa062070000000000225120270da8a60c0d7f197e45cf49d3c0367c74739a9c49434ad6b491aaf88c7c57e384310900000000002251205674a20e0690c723138a032d5852fbee91f702ed83efd71f65b9b02224d34e680140c2907f4fd021b2ce513c7913d2d89692a4880a28a359f764935ff6474687547874cc2021cbc7ee97fe35040338c62311349c7fe6debdf12ea79c2122dfc7901001416027f838bc31e24523c83c9e9df04df6ba970348ae7bd5c0346062c562910a74ae4807a41dd41ac5bd83c69ce35165a6e7119d14e9c605b918ac766929599dd3830141cfee2552147af1f4112068197886359a25868cad9b17d2af7ae47784180a03f61b89bf54db4177e4db52755b2c2594314fd46850eca080c09813d12bfc699955830141ec28538e01eca31282dca1df1b018ba430a27bc8f0cd409ff4985f74bcde81e8e663bf3fe73b884bd69a54eb4c0e154552f9882b7d0f4db6db8b1d28d2edf1398301410029733548627ca3bc366575203481e94cc01ae9c03a535b40ce50d1a72472e077e6210cb227a6bc3efa4cf4bd63c94f4fdf9f523fac40eccc17e525600284b8830140ed4ba22ed2ba0eb1a21c941e261107c70942860ceccc9d69df816706e126eb7908c168c5c67f9d28993363656ecf836f889e34ada97ae6754e7dfee58d22f67000000000";
+    let prev_tx_bytes = hex_to_bytes(prev_tx_hex);
+    let prev_tx = Transaction::<861, 6, 1, 247, 5, 1, 204, 1, 400>::new(prev_tx_bytes, true);
+
+    let output_to_unlock = 0;
+
+    let mut stack = Stack::new(cur_tx, prev_tx, empty_stack_array::<80, 7>());
+    
+    let signature_hex = "3045022100acbc5aeef43fa19a7078d34e84177534c40e2ad8cee5ff4deb5aae2b4650f864022026288d3d694fdd6e592bfb5d200848206848bb0c8f0119ffee831ed7a7a148d001";
+    let signature_bytes = hex_to_bytes(signature_hex);
+
+    let pubkey_hex = "0310217ab07ffb6f90fb9dd925c3e950d74003ba26aad82d09b1da730ac2b3b8da";
+    let pubkey_bytes = hex_to_bytes(pubkey_hex);
+
+    stack.push(bytes_to_vec(signature_bytes));
+    stack.push(bytes_to_vec(pubkey_bytes));
+
+    let sig_result = stack.op_checksig_sighash_all::<72, 22, 33>(input_to_sign, output_to_unlock, Address::new_p2wpkh());
 
     assert(sig_result);
 }
