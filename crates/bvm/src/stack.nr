@@ -6,19 +6,29 @@ use sign::{
     transaction::Transaction
     };
 use std::{collections::bounded_vec::BoundedVec};
-
-use crypto::ecdsa::ecdsa_verify;
+use crypto::ecdsa::{
+    ecdsa_verify,
+    get_xy_from_compressed_pubkey,
+    get_xy_from_uncompressed_pubkey,
+    get_rs_from_signature
+};
 use utils::{
     convert::{
-        bytes_to_vec, cut_array, hex_to_bytes, i32_to_le_bytes, bytes_to_hex,
+        bytes_to_vec, hex_to_bytes, i32_to_le_bytes, bytes_to_hex,
         i32_to_vec, u32_to_le_bytes, vec_to_array, vec_to_i32, vec_to_u32,
     },
 };
-use crate::utils::{
-    split_raw_signature,
-    empty_stack_array
-};
 use sign::address::Address;
+use sign::sig_types::{
+    SIGHASH_ALL,
+    SIGHASH_NONE,
+    SIGHASH_SINGLE,
+    SIGHASH_ANYONECANPAY
+};
+
+pub fn empty_stack_array<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32>() -> [BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>; MAX_STACK_SIZE] {
+    [BoundedVec::new(); MAX_STACK_SIZE]
+}
 
 pub struct Stack<
     let MAX_STACK_ELEMENT_SIZE: u32, 
@@ -68,6 +78,8 @@ pub struct Stack<
         PREV_MAX_WITNESS_STACK_SIZE, 
         PREV_WITNESS_SIZE
     >,
+    input_to_sign: u32,
+    output_to_unlock: u32,
 }
 
 impl<
@@ -92,6 +104,8 @@ impl<
             alt_stack_size: 0,
             cur_transaction: Transaction::<0, 0, 0, 0, 0, 0, 0, 0, 0>::new_empty_transaction(),
             prev_transaction: Transaction::<0, 0, 0, 0, 0, 0, 0, 0, 0>::new_empty_transaction(),
+            input_to_sign: 0,
+            output_to_unlock: 0,
         }
     }
 }
@@ -162,6 +176,8 @@ impl<
             PREV_MAX_WITNESS_STACK_SIZE, 
             PREV_WITNESS_SIZE
         >,
+        input_to_sign: u32,
+        output_to_unlock: u32,
         stack_array: [BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>; MAX_STACK_SIZE]
     ) -> Stack<
         MAX_STACK_ELEMENT_SIZE, 
@@ -192,6 +208,8 @@ impl<
             alt_stack_size: 0,
             cur_transaction: cur_transaction,
             prev_transaction: prev_transaction,
+            input_to_sign: input_to_sign,
+            output_to_unlock: output_to_unlock,
         }
     }
 
@@ -200,10 +218,59 @@ impl<
         self.stack_size += 1;
     }
 
+    pub fn push_bytes<let N: u32>(&mut self, input: [u8; N]) {
+        let value = bytes_to_vec(input);
+        self.push(value)
+    }
+
     fn pop(&mut self) -> BoundedVec<u8, MAX_STACK_ELEMENT_SIZE> {
         assert(self.stack_size > 0);
         self.stack_size -= 1;
         self.data[self.stack_size]
+    }
+
+    pub fn pop_bytes<let N: u32>(&mut self) -> [u8; N] {
+        let value = self.pop();
+        assert(value.len() == N);
+        let mut value_array = [0; N];
+        for i in 0..N {
+            value_array[i] = value.storage()[i];
+        }
+        value_array
+    }
+
+    pub fn pop_pubkey(&mut self) -> ([u8; 32], [u8; 32]) {
+        let pubkey_bytes = self.pop();
+
+        if pubkey_bytes.len() == 33 {
+            get_xy_from_compressed_pubkey(vec_to_array::<MAX_STACK_ELEMENT_SIZE, 33>(pubkey_bytes))
+        } else if pubkey_bytes.len() == 65 {
+            get_xy_from_uncompressed_pubkey(vec_to_array::<MAX_STACK_ELEMENT_SIZE, 65>(pubkey_bytes))
+        } else {
+            assert(false, "Invalid pubkey length");
+            ([0; 32], [0; 32])
+        }
+    }
+
+    pub fn pop_signature(&mut self) -> ([u8; 64], u8) {
+        let encoded_signature_vec = self.pop();
+
+        let mut signature = [0; 64];
+        let mut hash_type = 0;
+
+        if encoded_signature_vec.len() - 1 == 71 {
+            let encoded_signature_with_hash_type = vec_to_array::<MAX_STACK_ELEMENT_SIZE, 72>(encoded_signature_vec);
+            hash_type = encoded_signature_with_hash_type[71];
+            let mut encoded_signature = [0; 71];
+            for i in 0..71 {
+                encoded_signature[i] = encoded_signature_with_hash_type[i];
+            }
+            signature = get_rs_from_signature(encoded_signature);
+        } else {
+            assert(false, "Invalid signature length");
+        }
+
+        (signature, hash_type)
     }
 
     // OP_0 ... OP_16
@@ -226,6 +293,13 @@ impl<
         } else {
             self.push(bytes_to_vec([0]));
         }
+    }
+
+    pub fn op_equalverify(&mut self) {
+        let value1 = self.pop().storage();
+        let value2 = self.pop().storage();
+
+        assert(value1 == value2);
     }
 
     pub fn op_add(&mut self) {
@@ -544,7 +618,7 @@ impl<
 
     pub fn op_ripemd160<let LEN: u32>(&mut self) {
         let hash = ripemd160(
-            cut_array::<MAX_STACK_ELEMENT_SIZE, LEN>(self.pop().storage()),
+            self.pop_bytes::<LEN>()
         );
         let mut vec = BoundedVec::new();
         vec.extend_from_slice(hash);
@@ -553,7 +627,7 @@ impl<
 
     pub fn op_sha1<let LEN: u32>(&mut self) {
         let hash = sha1::digest(
-            cut_array::<MAX_STACK_ELEMENT_SIZE, LEN>(self.pop().storage()),
+            self.pop_bytes::<LEN>()
         );
         let mut vec = BoundedVec::new();
         vec.extend_from_slice(hash);
@@ -562,7 +636,7 @@ impl<
 
     pub fn op_sha256<let LEN: u32>(&mut self) {
         let hash = sha256::digest(
-            cut_array::<MAX_STACK_ELEMENT_SIZE, LEN>(self.pop().storage()),
+            self.pop_bytes::<LEN>()
         );
         let mut vec = BoundedVec::new();
         vec.extend_from_slice(hash);
@@ -571,7 +645,7 @@ impl<
 
     pub fn op_hash160<let LEN: u32>(&mut self) {
         let hash = sha256::digest(
-            cut_array::<MAX_STACK_ELEMENT_SIZE, LEN>(self.pop().storage()),
+            self.pop_bytes::<LEN>()
         );
         let dhash = ripemd160(hash);
         let mut vec = BoundedVec::new();
@@ -581,7 +655,7 @@ impl<
 
     pub fn op_hash256<let LEN: u32>(&mut self) {
         let hash = sha256::digest(
-            cut_array::<MAX_STACK_ELEMENT_SIZE, LEN>(self.pop().storage()),
+            self.pop_bytes::<LEN>()
         );
         let dhash = sha256::digest(hash);
         let mut vec = BoundedVec::new();
@@ -599,40 +673,42 @@ impl<
         //
     }
 
-    pub fn op_checksig_sighash_all<
-        let SIGNATURE_LEN: u32,
-        let SCRIPT_CODE_LEN: u32,
-        let PUBKEY_LEN: u32,
-    >(
+    fn get_sighash_all_message_hash<let SCRIPT_CODE_LEN: u32>(
         &mut self,
-        input_to_sign: u32,
-        output_to_unlock: u32,
         address: Address,
-    ) -> bool {
-        let mut pubkey_vec = self.pop();
-        let mut raw_signature_vec = self.pop();
-
-        let signature_bytes =
-            vec_to_array::<MAX_STACK_ELEMENT_SIZE, SIGNATURE_LEN>(raw_signature_vec);
-        let (encoded_signature, hash_type) = split_raw_signature(signature_bytes);
-        assert(hash_type == 0x01);
-
-        let mut pubkey_bytes = vec_to_array::<MAX_STACK_ELEMENT_SIZE, PUBKEY_LEN>(pubkey_vec);
-
+    ) -> [u8; 32] {
         let mut message_hash = [0; 32];
-
         if address.is_p2pk() | address.is_p2pkh() | address.is_p2sh() {
-            let script_code = self.prev_transaction.get_script_pub_key_with_size::<SCRIPT_CODE_LEN>(output_to_unlock);
-            message_hash = serialize_sighash_all(self.cur_transaction, input_to_sign, script_code);
+            let script_code = self.prev_transaction.get_script_pub_key_with_size::<SCRIPT_CODE_LEN>(self.output_to_unlock);
+            message_hash = serialize_sighash_all(self.cur_transaction, self.input_to_sign, script_code);
         } else if address.is_p2wpkh() {
-            let amount = self.prev_transaction.get_amount(output_to_unlock);
-            let script_code = self.prev_transaction.get_p2wpkh_script_code(output_to_unlock);
-            message_hash = serialize_p2wpkh_sighash_all(self.cur_transaction, input_to_sign, amount, script_code);
+            let amount = self.prev_transaction.get_amount(self.output_to_unlock);
+            let script_code = self.prev_transaction.get_p2wpkh_script_code(self.output_to_unlock);
+            message_hash = serialize_p2wpkh_sighash_all(self.cur_transaction, self.input_to_sign, amount, script_code);
         } else {
             assert(false, "not implemented");
         }
+        message_hash
+    }
 
-        ecdsa_verify(encoded_signature, pubkey_bytes, message_hash)
+    pub fn op_checksig<
+        let SCRIPT_CODE_LEN: u32,
+    >(
+        &mut self,
+        address: Address,
+    ) -> bool {
+        let mut message_hash = [0; 32];
+
+        let (pub_x, pub_y) = self.pop_pubkey();
+        let (signature, hash_type) = self.pop_signature();
+
+        if hash_type == SIGHASH_ALL {
+            message_hash = self.get_sighash_all_message_hash::<SCRIPT_CODE_LEN>(address);
+        } else {
+            assert(false, "Unsupported hash type");
+        }
+
+        ecdsa_verify(pub_x, pub_y, signature, message_hash)
     }
 }
 
@@ -1012,7 +1088,7 @@ fn test_legacy_checksig() {
 
     let output_to_unlock = 0;
 
-    let mut stack = Stack::new(cur_tx, prev_tx, empty_stack_array::<80, 7>());
+    let mut stack = Stack::new(cur_tx, prev_tx, input_to_sign, output_to_unlock, empty_stack_array::<80, 7>());
 
     let signature_hex: str<144> = "304502203f004eeed0cef2715643e2f25a27a28f3c578e94c7f0f6a4df104e7d163f7f8f022100b8b248c1cfd8f77a0365107a9511d759b7544d979dd152a955c867afac0ef78601";
     let signature_bytes = hex_to_bytes(signature_hex);
@@ -1020,10 +1096,10 @@ fn test_legacy_checksig() {
     let pubkey_hex: str<130> = "044d05240cfbd8a2786eda9dadd520c1609b8593ff8641018d57703d02ba687cf2f187f0cee2221c3afb1b5ff7888caced2423916b61444666ca1216f26181398c";
     let pubkey_bytes = hex_to_bytes(pubkey_hex);
 
-    stack.push(bytes_to_vec(signature_bytes));
-    stack.push(bytes_to_vec(pubkey_bytes));
+    stack.push_bytes(signature_bytes);
+    stack.push_bytes(pubkey_bytes);
 
-    let sig_result = stack.op_checksig_sighash_all::<72, 26, 65>(input_to_sign, output_to_unlock, Address::new_p2pkh());
+    let sig_result = stack.op_checksig::<26>(Address::new_p2pkh());
 
     assert(sig_result);
 }
@@ -1044,7 +1120,7 @@ fn test_segwit_checksig() {
 
     let output_to_unlock = 0;
 
-    let mut stack = Stack::new(cur_tx, prev_tx, empty_stack_array::<80, 7>());
+    let mut stack = Stack::new(cur_tx, prev_tx, input_to_sign, output_to_unlock, empty_stack_array::<80, 7>());
     
     let signature_hex = "3045022100acbc5aeef43fa19a7078d34e84177534c40e2ad8cee5ff4deb5aae2b4650f864022026288d3d694fdd6e592bfb5d200848206848bb0c8f0119ffee831ed7a7a148d001";
     let signature_bytes = hex_to_bytes(signature_hex);
@@ -1052,10 +1128,10 @@ fn test_segwit_checksig() {
     let pubkey_hex = "0310217ab07ffb6f90fb9dd925c3e950d74003ba26aad82d09b1da730ac2b3b8da";
     let pubkey_bytes = hex_to_bytes(pubkey_hex);
 
-    stack.push(bytes_to_vec(signature_bytes));
-    stack.push(bytes_to_vec(pubkey_bytes));
+    stack.push_bytes(signature_bytes);
+    stack.push_bytes(pubkey_bytes);
 
-    let sig_result = stack.op_checksig_sighash_all::<72, 22, 33>(input_to_sign, output_to_unlock, Address::new_p2wpkh());
+    let sig_result = stack.op_checksig::<22>(Address::new_p2wpkh());
 
     assert(sig_result);
 }
