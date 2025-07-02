@@ -55,33 +55,6 @@ pub fn ecdsa_sign(message: [u8; 32], priv_key: U256, nonce: U256) -> (U256, U256
     (get_256_bits_from_768(r.num), get_256_bits_from_768(s.num))
 }
 
-pub fn get_xy_from_pubkey<let PUBKEY_LEN: u32>(pubkey: [u8; PUBKEY_LEN]) -> ([u8; 32], [u8; 32]) {
-    let mut pub_x = [0; 32];
-    let mut pub_y = [0; 32];
-
-    if PUBKEY_LEN == 33 {
-        if (pubkey[0] != 0x02) & (pubkey[0] != 0x03) {
-            assert(false, "Invalid pubkey");
-        }
-        pub_y = get_y_from_x(pubkey.as_slice().as_array());
-        pub_x = pubkey.as_slice().pop_front().1.as_array::<32>();
-    } else if PUBKEY_LEN == 65 {
-        if pubkey[0] != 0x04 {
-            assert(false, "Invalid pubkey");
-        }
-        for i in 0..32 {
-            pub_x[i] = pubkey[i + 1];
-        }
-        for i in 0..32 {
-            pub_y[i] = pubkey[i + 33];
-        }
-    } else {
-        assert(false, "Invalid pubkey length");
-    }
-
-    (pub_x, pub_y)
-}
-
 pub fn get_xy_from_compressed_pubkey(pubkey: [u8; 33]) -> ([u8; 32], [u8; 32]) {
     let mut pub_x = [0; 32];
     let mut pub_y = [0; 32];
