@@ -643,6 +643,10 @@ impl<
         self.push(vec);
     }
 
+    pub fn get_last_stack_element_length(&mut self) -> u32 {
+        self.data[self.stack_size - 1].len()
+    }
+
     pub fn op_hash160<let LEN: u32>(&mut self) {
         let hash = sha256::digest(
             self.pop_bytes::<LEN>()
@@ -1099,7 +1103,7 @@ fn test_max_min_range() {
 fn test_legacy_checksig() {
     // From here: https://www.blockchain.com/explorer/transactions/btc/12e753ef5cc30925a6eee2c457aa7f53022443ca013ea81882a6b59b69e342a6
     // Transaction with deleted script sigs
-    let cur_tx_hex: str<402> = "01000000030dd7891efbf67da47c651531db8aab3144ed7a524e4ae1e30b773525e27ddd7b0000000000ffffffff16851666962e37a75a246101f2e340c628b1db3c045d4d3cfb2d1c0f58f97c6f0000000000ffffffffffda5d38e91fd9a0d92872d51f83cb746fc7bf5d3ff13402f8d0d5ed60ddc79c0000000000ffffffff02c0c62d00000000001976a91417194e1bd175fb5b1b2a1f9d221f6f5c29e1928388ac00c817a8040000001976a91465bda9b05f7e9a8f96a7f4ba0996a877708ef90888ac00000000";
+    let cur_tx_hex = "01000000030dd7891efbf67da47c651531db8aab3144ed7a524e4ae1e30b773525e27ddd7b0000000000ffffffff16851666962e37a75a246101f2e340c628b1db3c045d4d3cfb2d1c0f58f97c6f0000000000ffffffffffda5d38e91fd9a0d92872d51f83cb746fc7bf5d3ff13402f8d0d5ed60ddc79c0000000000ffffffff02c0c62d00000000001976a91417194e1bd175fb5b1b2a1f9d221f6f5c29e1928388ac00c817a8040000001976a91465bda9b05f7e9a8f96a7f4ba0996a877708ef90888ac00000000";
     let cur_tx_bytes = hex_to_bytes(cur_tx_hex);
     let cur_tx = Transaction::<201, 3, 1, 124, 2, 1, 69, 0, 0>::new(cur_tx_bytes, false);
 
@@ -1123,9 +1127,7 @@ fn test_legacy_checksig() {
     stack.push_bytes(signature_bytes);
     stack.push_bytes(pubkey_bytes);
 
-    let sig_result = stack.op_checksig::<26>(Address::new_p2pkh());
-
-    assert(sig_result);
+    stack.op_checksig::<26>(Address::new_p2pkh(), true);
 }
 
 #[test]
@@ -1155,7 +1157,5 @@ fn test_segwit_checksig() {
     stack.push_bytes(signature_bytes);
     stack.push_bytes(pubkey_bytes);
 
-    let sig_result = stack.op_checksig::<22>(Address::new_p2wpkh());
-
-    assert(sig_result);
+    stack.op_checksig::<22>(Address::new_p2wpkh(), true);
 }

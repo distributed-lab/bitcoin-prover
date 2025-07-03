@@ -72,4 +72,14 @@ impl Address {
     pub fn is_p2tr(self) -> bool {
         self.version == 0x06
     }
+
+    pub fn new_script_sig() -> Self {
+        Self {
+            version: 0x07
+        }
+    }
+
+    pub fn is_script_sig(self) -> bool {
+        self.version == 0x07
+    }
 }

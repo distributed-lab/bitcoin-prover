@@ -280,6 +280,7 @@ impl<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, 
         let mut script_pub_key = [0; SCRIPT_PUB_KEY_SIZE];
         let output = self.outputs[output_index];
         let transaction_offset = output.script_pub_key_size.offset;
+
         assert(output.script_pub_key.offset + output.script_pub_key.size - transaction_offset == SCRIPT_PUB_KEY_SIZE);
 
         for i in 0..SCRIPT_PUB_KEY_SIZE {
@@ -327,7 +328,7 @@ impl<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, 
     }
 
     pub fn get_script_pub_key_size(self, output_index: u32) -> u32 {
-        self.outputs[output_index].script_pub_key.size
+        self.outputs[output_index].script_pub_key.size + self.outputs[output_index].script_pub_key_size.size
     }
 }
 
