@@ -2,7 +2,7 @@ use bvm::stack::Stack;
 use crate::opcode::{
     OP_0, OP_PUSHBYTES1, OP_PUSHBYTES75, OP_PUSHDATA1, OP_PUSHDATA2, 
     OP_PUSHDATA4, OP_1NEGATE, OP_1, OP_16, OP_DUP, OP_HASH160, OP_EQUAL, 
-    OP_EQUALVERIFY, OP_CHECKSIG
+    OP_EQUALVERIFY, OP_CHECKSIG, OP_CHECKSIGVERIFY
 };
 use sign::address::Address;
 
@@ -124,8 +124,23 @@ pub fn execution<
                 stack.op_equal();
             } else if opcode == OP_EQUALVERIFY {
                 stack.op_equalverify();
-            } else if opcode == OP_CHECKSIG {
-                stack.op_checksig::<SCRIPT_CODE_LEN_1>(address);
+            } else if (opcode == OP_CHECKSIG) | (opcode == OP_CHECKSIGVERIFY) {
+                let script_code_size = stack.get_script_code_size(address);
+                let verify = opcode == OP_CHECKSIGVERIFY;
+
+                if script_code_size == SCRIPT_CODE_LEN_1 {
+                    stack.op_checksig::<SCRIPT_CODE_LEN_1>(address, verify);
+                } else if script_code_size == SCRIPT_CODE_LEN_2 {
+                    stack.op_checksig::<SCRIPT_CODE_LEN_2>(address, verify);
+                } else if script_code_size == SCRIPT_CODE_LEN_3 {
+                    stack.op_checksig::<SCRIPT_CODE_LEN_3>(address, verify);
+                } else if script_code_size == SCRIPT_CODE_LEN_4 {
+                    stack.op_checksig::<SCRIPT_CODE_LEN_4>(address, verify);
+                } else if script_code_size == SCRIPT_CODE_LEN_5 {
+                    stack.op_checksig::<SCRIPT_CODE_LEN_5>(address, verify);
+                } else {
+                    assert(false, "wrong script code size");
+                }
             }
         }
     }

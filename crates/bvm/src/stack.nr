@@ -673,6 +673,18 @@ impl<
         //
     }
 
+    pub fn get_script_code_size(&mut self, address: Address) -> u32 {
+        let mut size = 0;
+        if address.is_p2pk() | address.is_p2pkh() {
+            size = self.prev_transaction.get_script_pub_key_size(self.output_to_unlock);
+        } else if address.is_p2wpkh() {
+            size = 26;
+        } else {
+            assert(false, "not implemented");
+        }
+        size
+    }
+
     fn get_sighash_all_message_hash<let SCRIPT_CODE_LEN: u32>(
         &mut self,
         address: Address,
@@ -691,9 +703,7 @@ impl<
         message_hash
     }
 
-    pub fn op_checksig<
-        let SCRIPT_CODE_LEN: u32,
-    >(
+    fn _op_checksig<let SCRIPT_CODE_LEN: u32>(
         &mut self,
         address: Address,
     ) -> bool {
@@ -709,6 +719,20 @@ impl<
         }
 
         ecdsa_verify(pub_x, pub_y, signature, message_hash)
+    }
+
+    pub fn op_checksig<let SCRIPT_CODE_LEN: u32>(
+        &mut self,
+        address: Address,
+        verify: bool,
+    ) {
+        let result = self._op_checksig::<SCRIPT_CODE_LEN>(address);
+        if verify {
+            assert(result);
+        } else {
+            let integer = i32_to_vec(if result { 1 } else { 0 });
+            self.push(integer);
+        }
     }
 }
 

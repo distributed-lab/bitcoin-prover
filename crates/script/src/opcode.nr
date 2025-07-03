@@ -21,3 +21,4 @@ pub global OP_EQUAL: u8 = 135;
 pub global OP_EQUALVERIFY: u8 = 136;
 
 pub global OP_CHECKSIG: u8 = 172;
+pub global OP_CHECKSIGVERIFY: u8 = 173;

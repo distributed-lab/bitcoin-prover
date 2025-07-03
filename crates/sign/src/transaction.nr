@@ -325,6 +325,10 @@ impl<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, 
 
         script_code
     }
+
+    pub fn get_script_pub_key_size(self, output_index: u32) -> u32 {
+        self.outputs[output_index].script_pub_key.size
+    }
 }
 
 #[test]
