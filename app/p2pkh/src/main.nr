@@ -1,21 +1,28 @@
-use sign::{transaction::Transaction, address::Address};
 use bvm::{stack::Stack, utils::empty_stack_array};
-use utils::convert::{le_bytes_to_u32, hex_to_bytes};
 use script::script::check_p2pkh_template;
+use sign::{address::Address, transaction::Transaction};
+use utils::convert::{hex_to_bytes, le_bytes_to_u32};
 
 global CUR_TX_LEN: u32 = 402;
 global PREV_TX_LEN: u32 = 252;
 global SIG_LEN: u32 = 144;
 global PK_LEN: u32 = 130;
 
-fn main(cur_tx_data: str<CUR_TX_LEN>, prev_tx_data: str<PREV_TX_LEN>, signature: str<SIG_LEN>, pub_key: str<PK_LEN>, input_to_sign: pub u32) -> pub bool {
+fn main(
+    cur_tx_data: str<CUR_TX_LEN>,
+    prev_tx_data: str<PREV_TX_LEN>,
+    signature: str<SIG_LEN>,
+    pub_key: str<PK_LEN>,
+    input_to_sign: pub u32,
+) -> pub bool {
     let mut res = true;
 
     let cur_tx_data = hex_to_bytes(cur_tx_data);
     let prev_tx_data = hex_to_bytes(prev_tx_data);
 
     let cur_tx = Transaction::<CUR_TX_LEN / 2, 3, 1, 124, 2, 1, 69, 0, 0>::new(cur_tx_data, false);
-    let prev_tx = Transaction::<PREV_TX_LEN / 2, 2, 1, 83, 1, 1, 35, 0, 0>::new(prev_tx_data, false);
+    let prev_tx =
+        Transaction::<PREV_TX_LEN / 2, 2, 1, 83, 1, 1, 35, 0, 0>::new(prev_tx_data, false);
     let mut stack = Stack::new(cur_tx, prev_tx, empty_stack_array::<80, 7>());
     let mut script_pub_key = [0; 26];
 
@@ -50,12 +57,12 @@ fn main(cur_tx_data: str<CUR_TX_LEN>, prev_tx_data: str<PREV_TX_LEN>, signature:
 
     stack.op_pushbytes(hash_pub_key);
     stack.op_equal();
-    
+
     if !stack.verify() {
         println("Failed pk hash");
         res = false;
     }
-                   
+
     if !stack.op_checksig_sighash_all::<SIG_LEN / 2, 26, PK_LEN / 2>(input_to_sign, vout, addr) {
         println("Failed signature");
         res = false;

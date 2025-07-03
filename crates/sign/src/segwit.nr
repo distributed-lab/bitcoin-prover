@@ -138,7 +138,6 @@ pub fn serialize_p2wpkh_sighash_all<let TRANSACTION_SIZE: u32, let INPUT_COUNT: 
     prev_amount: [u8; 8],
     script_code: [u8; 26],
 ) -> [u8; 32] {
-
     let preimage_data =
         prepare_preimage_hash_for_sighash_all(transaction, input_to_sign, script_code, prev_amount);
 

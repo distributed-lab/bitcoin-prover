@@ -276,11 +276,18 @@ impl<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, 
         txid_bytes
     }
 
-    pub fn get_script_pub_key_with_size<let SCRIPT_PUB_KEY_SIZE: u32>(self, output_index: u32) -> [u8; SCRIPT_PUB_KEY_SIZE] {
+    pub fn get_script_pub_key_with_size<let SCRIPT_PUB_KEY_SIZE: u32>(
+        self,
+        output_index: u32,
+    ) -> [u8; SCRIPT_PUB_KEY_SIZE] {
         let mut script_pub_key = [0; SCRIPT_PUB_KEY_SIZE];
         let output = self.outputs[output_index];
         let transaction_offset = output.script_pub_key_size.offset;
-        assert(output.script_pub_key.offset + output.script_pub_key.size - transaction_offset == SCRIPT_PUB_KEY_SIZE);
+
+        assert(
+            output.script_pub_key.offset + output.script_pub_key.size - transaction_offset
+                == SCRIPT_PUB_KEY_SIZE,
+        );
 
         for i in 0..SCRIPT_PUB_KEY_SIZE {
             script_pub_key[i] = self.data[transaction_offset + i];
@@ -311,8 +318,8 @@ impl<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, 
         assert(self.data[offset] == 0x00);
         assert(self.data[offset + 1] == 0x14);
 
-        for i in 2..22 {
-            script_code[i + 4] = self.data[offset + i];
+        for i in 0..22 {
+            script_code[i + 4] = self.data[offset + i + 2];
         }
 
         script_code[0] = 0x19;
@@ -324,6 +331,11 @@ impl<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, 
         script_code[25] = 0xac;
 
         script_code
+    }
+
+    pub fn get_script_pub_key_size(self, output_index: u32) -> u32 {
+        self.outputs[output_index].script_pub_key.size
+            + self.outputs[output_index].script_pub_key_size.size
     }
 }
 
