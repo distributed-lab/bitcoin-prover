@@ -662,10 +662,11 @@ fn test_serialize_legacy_transaction_sighash_none() {
     let script_pub_key = "1976a9140fb87a5071385b6976397d1c53ee16f09139a33488ac";
     let script_pub_key_bytes = hex_to_bytes(script_pub_key);
 
-    let sighash =
-        serialize_sighash_none(transaction, 0, script_pub_key_bytes);
+    let sighash = serialize_sighash_none(transaction, 0, script_pub_key_bytes);
 
-    assert(bytes_to_hex(sighash) == "809a85f9e793e9cb66866db039e8753402dcf6bc5b65893ffaccb2746e499ebe");
+    assert(
+        bytes_to_hex(sighash) == "809a85f9e793e9cb66866db039e8753402dcf6bc5b65893ffaccb2746e499ebe",
+    );
 }
 
 // todo: Write proper test assertions - currently only checking that no panics occur
@@ -685,7 +686,9 @@ fn test_serialize_legacy_transaction_sighash_all_anyonecanpay() {
         script_pub_key_bytes,
     );
 
-    assert(bytes_to_hex(sighash) == "376ce858de8118381de658dd3ad3e03b0b9f52931c75d40d5db37aa24a3e1a8b");
+    assert(
+        bytes_to_hex(sighash) == "376ce858de8118381de658dd3ad3e03b0b9f52931c75d40d5db37aa24a3e1a8b",
+    );
 }
 
 // todo: Write proper test assertions - currently only checking that no panics occur
@@ -705,7 +708,9 @@ fn test_serialize_legacy_transaction_sighash_single_anyonecanpay() {
         script_pub_key_bytes,
     );
 
-    assert(bytes_to_hex(sighash) == "316e41b505abf188d253bf38182692c8f282f2ae67f09306ed0f539a62503c70");
+    assert(
+        bytes_to_hex(sighash) == "316e41b505abf188d253bf38182692c8f282f2ae67f09306ed0f539a62503c70",
+    );
 }
 
 // todo: Write proper test assertions - currently only checking that no panics occur
@@ -725,5 +730,7 @@ fn test_serialize_legacy_transaction_sighash_none_anyonecanpay() {
         script_pub_key_bytes,
     );
 
-    assert(bytes_to_hex(sighash) == "35c22dea04126559fa211d7efd28c3bc16435d02e54f460d28c436d1c1a3c22f");
+    assert(
+        bytes_to_hex(sighash) == "35c22dea04126559fa211d7efd28c3bc16435d02e54f460d28c436d1c1a3c22f",
+    );
 }

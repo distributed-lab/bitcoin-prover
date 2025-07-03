@@ -1,5 +1,3 @@
-
-
 pub global OP_0: u8 = 0;
 
 pub global OP_PUSHBYTES1: u8 = 1;

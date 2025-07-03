@@ -58,7 +58,7 @@ pub fn ecdsa_sign(message: [u8; 32], priv_key: U256, nonce: U256) -> (U256, U256
 pub fn get_xy_from_compressed_pubkey(pubkey: [u8; 33]) -> ([u8; 32], [u8; 32]) {
     let mut pub_x = [0; 32];
     let mut pub_y = [0; 32];
-    
+
     if (pubkey[0] != 0x02) & (pubkey[0] != 0x03) {
         assert(false, "Invalid pubkey");
     }
@@ -71,7 +71,7 @@ pub fn get_xy_from_compressed_pubkey(pubkey: [u8; 33]) -> ([u8; 32], [u8; 32]) {
 pub fn get_xy_from_uncompressed_pubkey(pubkey: [u8; 65]) -> ([u8; 32], [u8; 32]) {
     let mut pub_x = [0; 32];
     let mut pub_y = [0; 32];
-    
+
     if pubkey[0] != 0x04 {
         assert(false, "Invalid pubkey");
     }
@@ -85,7 +85,9 @@ pub fn get_xy_from_uncompressed_pubkey(pubkey: [u8; 65]) -> ([u8; 32], [u8; 32])
     (pub_x, pub_y)
 }
 
-pub fn get_rs_from_signature<let DER_SIGNATURE_LEN: u32>(encoded_signature: [u8; DER_SIGNATURE_LEN]) -> [u8; 64] {
+pub fn get_rs_from_signature<let DER_SIGNATURE_LEN: u32>(
+    encoded_signature: [u8; DER_SIGNATURE_LEN],
+) -> [u8; 64] {
     let (sign_r, sign_s) = decode_der(encoded_signature);
     let sign_s = get_low_s_if_needed(sign_s);
 
@@ -93,7 +95,7 @@ pub fn get_rs_from_signature<let DER_SIGNATURE_LEN: u32>(encoded_signature: [u8;
     let sign_s = sign_s.to_be_bytes().as_slice().pop_front().1.as_array::<32>();
 
     let signature = sign_r.as_slice().append(sign_s).as_array::<64>();
-    
+
     signature
 }
 

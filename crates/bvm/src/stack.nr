@@ -1,102 +1,37 @@
+use crypto::ecdsa::{
+    ecdsa_verify, get_rs_from_signature, get_xy_from_compressed_pubkey,
+    get_xy_from_uncompressed_pubkey,
+};
 use ripemd160::ripemd160;
 use sha1::sha1;
-use sign::{
-    legacy::serialize_sighash_all,
-    segwit::serialize_p2wpkh_sighash_all,
-    transaction::Transaction
-    };
-use std::{collections::bounded_vec::BoundedVec};
-use crypto::ecdsa::{
-    ecdsa_verify,
-    get_xy_from_compressed_pubkey,
-    get_xy_from_uncompressed_pubkey,
-    get_rs_from_signature
-};
-use utils::{
-    convert::{
-        bytes_to_vec, hex_to_bytes, i32_to_le_bytes, bytes_to_hex,
-        i32_to_vec, u32_to_le_bytes, vec_to_array, vec_to_i32, vec_to_u32,
-    },
-};
 use sign::address::Address;
-use sign::sig_types::{
-    SIGHASH_ALL,
-    SIGHASH_NONE,
-    SIGHASH_SINGLE,
-    SIGHASH_ANYONECANPAY
+use sign::{
+    legacy::serialize_sighash_all, segwit::serialize_p2wpkh_sighash_all, transaction::Transaction,
+};
+use sign::sig_types::{SIGHASH_ALL, SIGHASH_ANYONECANPAY, SIGHASH_NONE, SIGHASH_SINGLE};
+use std::collections::bounded_vec::BoundedVec;
+use utils::convert::{
+    bytes_to_hex, bytes_to_vec, hex_to_bytes, i32_to_le_bytes, i32_to_vec, u32_to_le_bytes,
+    vec_to_array, vec_to_i32, vec_to_u32,
 };
 
 pub fn empty_stack_array<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32>() -> [BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>; MAX_STACK_SIZE] {
     [BoundedVec::new(); MAX_STACK_SIZE]
 }
 
-pub struct Stack<
-    let MAX_STACK_ELEMENT_SIZE: u32, 
-    let MAX_STACK_SIZE: u32, 
-    let CURRENT_TRANSACTION_SIZE: u32, 
-    let CURRENT_INPUT_COUNT: u32, 
-    let CURRENT_INPUT_COUNT_LEN: u32, 
-    let CURRENT_INPUT_SIZE: u32, 
-    let CURRENT_OUTPUT_COUNT: u32, 
-    let CURRENT_OUTPUT_COUNT_LEN: u32, 
-    let CURRENT_OUTPUT_SIZE: u32, 
-    let CURRENT_MAX_WITNESS_STACK_SIZE: u32, 
-    let CURRENT_WITNESS_SIZE: u32,
-    let PREV_TRANSACTION_SIZE: u32,
-    let PREV_INPUT_COUNT: u32,
-    let PREV_INPUT_COUNT_LEN: u32,
-    let PREV_INPUT_SIZE: u32,
-    let PREV_OUTPUT_COUNT: u32,
-    let PREV_OUTPUT_COUNT_LEN: u32,
-    let PREV_OUTPUT_SIZE: u32,
-    let PREV_MAX_WITNESS_STACK_SIZE: u32,
-    let PREV_WITNESS_SIZE: u32,
-> {
+pub struct Stack<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANSACTION_SIZE: u32, let CURRENT_INPUT_COUNT: u32, let CURRENT_INPUT_COUNT_LEN: u32, let CURRENT_INPUT_SIZE: u32, let CURRENT_OUTPUT_COUNT: u32, let CURRENT_OUTPUT_COUNT_LEN: u32, let CURRENT_OUTPUT_SIZE: u32, let CURRENT_MAX_WITNESS_STACK_SIZE: u32, let CURRENT_WITNESS_SIZE: u32, let PREV_TRANSACTION_SIZE: u32, let PREV_INPUT_COUNT: u32, let PREV_INPUT_COUNT_LEN: u32, let PREV_INPUT_SIZE: u32, let PREV_OUTPUT_COUNT: u32, let PREV_OUTPUT_COUNT_LEN: u32, let PREV_OUTPUT_SIZE: u32, let PREV_MAX_WITNESS_STACK_SIZE: u32, let PREV_WITNESS_SIZE: u32> {
     data: [BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>; MAX_STACK_SIZE],
     stack_size: u32,
     alt_data: [BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>; MAX_STACK_SIZE],
     alt_stack_size: u32,
-    cur_transaction: Transaction<
-        CURRENT_TRANSACTION_SIZE, 
-        CURRENT_INPUT_COUNT, 
-        CURRENT_INPUT_COUNT_LEN, 
-        CURRENT_INPUT_SIZE, 
-        CURRENT_OUTPUT_COUNT, 
-        CURRENT_OUTPUT_COUNT_LEN, 
-        CURRENT_OUTPUT_SIZE, 
-        CURRENT_MAX_WITNESS_STACK_SIZE, 
-        CURRENT_WITNESS_SIZE
-    >,
-    prev_transaction: Transaction<
-        PREV_TRANSACTION_SIZE, 
-        PREV_INPUT_COUNT, 
-        PREV_INPUT_COUNT_LEN, 
-        PREV_INPUT_SIZE, 
-        PREV_OUTPUT_COUNT, 
-        PREV_OUTPUT_COUNT_LEN, 
-        PREV_OUTPUT_SIZE, 
-        PREV_MAX_WITNESS_STACK_SIZE, 
-        PREV_WITNESS_SIZE
-    >,
+    cur_transaction: Transaction<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE>,
+    prev_transaction: Transaction<PREV_TRANSACTION_SIZE, PREV_INPUT_COUNT, PREV_INPUT_COUNT_LEN, PREV_INPUT_SIZE, PREV_OUTPUT_COUNT, PREV_OUTPUT_COUNT_LEN, PREV_OUTPUT_SIZE, PREV_MAX_WITNESS_STACK_SIZE, PREV_WITNESS_SIZE>,
     input_to_sign: u32,
     output_to_unlock: u32,
 }
 
-impl<
-    let MAX_STACK_ELEMENT_SIZE: u32, 
-    let MAX_STACK_SIZE: u32, 
-> Stack<
-    MAX_STACK_ELEMENT_SIZE, 
-    MAX_STACK_SIZE, 
-    0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0
-> {
-    pub fn new_test_stack() -> Stack<
-        MAX_STACK_ELEMENT_SIZE, 
-        MAX_STACK_SIZE, 
-        0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0
-    > {
+impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32> Stack<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0> {
+    pub fn new_test_stack() -> Stack<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0> {
         Self {
             data: [BoundedVec::new(); MAX_STACK_SIZE],
             stack_size: 0,
@@ -110,97 +45,14 @@ impl<
     }
 }
 
-impl<
-    let MAX_STACK_ELEMENT_SIZE: u32, 
-    let MAX_STACK_SIZE: u32, 
-    let CURRENT_TRANSACTION_SIZE: u32, 
-    let CURRENT_INPUT_COUNT: u32, 
-    let CURRENT_INPUT_COUNT_LEN: u32, 
-    let CURRENT_INPUT_SIZE: u32, 
-    let CURRENT_OUTPUT_COUNT: u32, 
-    let CURRENT_OUTPUT_COUNT_LEN: u32, 
-    let CURRENT_OUTPUT_SIZE: u32, 
-    let CURRENT_MAX_WITNESS_STACK_SIZE: u32, 
-    let CURRENT_WITNESS_SIZE: u32,
-    let PREV_TRANSACTION_SIZE: u32,
-    let PREV_INPUT_COUNT: u32,
-    let PREV_INPUT_COUNT_LEN: u32,
-    let PREV_INPUT_SIZE: u32,
-    let PREV_OUTPUT_COUNT: u32,
-    let PREV_OUTPUT_COUNT_LEN: u32,
-    let PREV_OUTPUT_SIZE: u32,
-    let PREV_MAX_WITNESS_STACK_SIZE: u32,
-    let PREV_WITNESS_SIZE: u32
-> Stack<
-    MAX_STACK_ELEMENT_SIZE, 
-    MAX_STACK_SIZE, 
-    CURRENT_TRANSACTION_SIZE, 
-    CURRENT_INPUT_COUNT, 
-    CURRENT_INPUT_COUNT_LEN, 
-    CURRENT_INPUT_SIZE, 
-    CURRENT_OUTPUT_COUNT, 
-    CURRENT_OUTPUT_COUNT_LEN, 
-    CURRENT_OUTPUT_SIZE, 
-    CURRENT_MAX_WITNESS_STACK_SIZE, 
-    CURRENT_WITNESS_SIZE,
-    PREV_TRANSACTION_SIZE,
-    PREV_INPUT_COUNT,
-    PREV_INPUT_COUNT_LEN,
-    PREV_INPUT_SIZE,
-    PREV_OUTPUT_COUNT,
-    PREV_OUTPUT_COUNT_LEN,
-    PREV_OUTPUT_SIZE,
-    PREV_MAX_WITNESS_STACK_SIZE,
-    PREV_WITNESS_SIZE
-> {
+impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANSACTION_SIZE: u32, let CURRENT_INPUT_COUNT: u32, let CURRENT_INPUT_COUNT_LEN: u32, let CURRENT_INPUT_SIZE: u32, let CURRENT_OUTPUT_COUNT: u32, let CURRENT_OUTPUT_COUNT_LEN: u32, let CURRENT_OUTPUT_SIZE: u32, let CURRENT_MAX_WITNESS_STACK_SIZE: u32, let CURRENT_WITNESS_SIZE: u32, let PREV_TRANSACTION_SIZE: u32, let PREV_INPUT_COUNT: u32, let PREV_INPUT_COUNT_LEN: u32, let PREV_INPUT_SIZE: u32, let PREV_OUTPUT_COUNT: u32, let PREV_OUTPUT_COUNT_LEN: u32, let PREV_OUTPUT_SIZE: u32, let PREV_MAX_WITNESS_STACK_SIZE: u32, let PREV_WITNESS_SIZE: u32> Stack<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, PREV_TRANSACTION_SIZE, PREV_INPUT_COUNT, PREV_INPUT_COUNT_LEN, PREV_INPUT_SIZE, PREV_OUTPUT_COUNT, PREV_OUTPUT_COUNT_LEN, PREV_OUTPUT_SIZE, PREV_MAX_WITNESS_STACK_SIZE, PREV_WITNESS_SIZE> {
     pub fn new(
-        cur_transaction: Transaction<
-            CURRENT_TRANSACTION_SIZE, 
-            CURRENT_INPUT_COUNT, 
-            CURRENT_INPUT_COUNT_LEN, 
-            CURRENT_INPUT_SIZE, 
-            CURRENT_OUTPUT_COUNT, 
-            CURRENT_OUTPUT_COUNT_LEN, 
-            CURRENT_OUTPUT_SIZE, 
-            CURRENT_MAX_WITNESS_STACK_SIZE, 
-            CURRENT_WITNESS_SIZE
-        >,
-        prev_transaction: Transaction<
-            PREV_TRANSACTION_SIZE, 
-            PREV_INPUT_COUNT, 
-            PREV_INPUT_COUNT_LEN, 
-            PREV_INPUT_SIZE, 
-            PREV_OUTPUT_COUNT, 
-            PREV_OUTPUT_COUNT_LEN, 
-            PREV_OUTPUT_SIZE, 
-            PREV_MAX_WITNESS_STACK_SIZE, 
-            PREV_WITNESS_SIZE
-        >,
+        cur_transaction: Transaction<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE>,
+        prev_transaction: Transaction<PREV_TRANSACTION_SIZE, PREV_INPUT_COUNT, PREV_INPUT_COUNT_LEN, PREV_INPUT_SIZE, PREV_OUTPUT_COUNT, PREV_OUTPUT_COUNT_LEN, PREV_OUTPUT_SIZE, PREV_MAX_WITNESS_STACK_SIZE, PREV_WITNESS_SIZE>,
         input_to_sign: u32,
         output_to_unlock: u32,
-        stack_array: [BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>; MAX_STACK_SIZE]
-    ) -> Stack<
-        MAX_STACK_ELEMENT_SIZE, 
-        MAX_STACK_SIZE, 
-        CURRENT_TRANSACTION_SIZE, 
-        CURRENT_INPUT_COUNT, 
-        CURRENT_INPUT_COUNT_LEN, 
-        CURRENT_INPUT_SIZE, 
-        CURRENT_OUTPUT_COUNT, 
-        CURRENT_OUTPUT_COUNT_LEN, 
-        CURRENT_OUTPUT_SIZE, 
-        CURRENT_MAX_WITNESS_STACK_SIZE, 
-        CURRENT_WITNESS_SIZE,
-        PREV_TRANSACTION_SIZE, 
-        PREV_INPUT_COUNT, 
-        PREV_INPUT_COUNT_LEN, 
-        PREV_INPUT_SIZE, 
-        PREV_OUTPUT_COUNT, 
-        PREV_OUTPUT_COUNT_LEN, 
-        PREV_OUTPUT_SIZE, 
-        PREV_MAX_WITNESS_STACK_SIZE, 
-        PREV_WITNESS_SIZE
-    > {
+        stack_array: [BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>; MAX_STACK_SIZE],
+    ) -> Stack<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, PREV_TRANSACTION_SIZE, PREV_INPUT_COUNT, PREV_INPUT_COUNT_LEN, PREV_INPUT_SIZE, PREV_OUTPUT_COUNT, PREV_OUTPUT_COUNT_LEN, PREV_OUTPUT_SIZE, PREV_MAX_WITNESS_STACK_SIZE, PREV_WITNESS_SIZE> {
         Stack {
             data: stack_array,
             stack_size: 0,
@@ -259,7 +111,8 @@ impl<
         let mut hash_type = 0;
 
         if encoded_signature_vec.len() - 1 == 71 {
-            let encoded_signature_with_hash_type = vec_to_array::<MAX_STACK_ELEMENT_SIZE, 72>(encoded_signature_vec);
+            let encoded_signature_with_hash_type =
+                vec_to_array::<MAX_STACK_ELEMENT_SIZE, 72>(encoded_signature_vec);
             hash_type = encoded_signature_with_hash_type[71];
             let mut encoded_signature = [0; 71];
             for i in 0..71 {
@@ -617,27 +470,21 @@ impl<
     }
 
     pub fn op_ripemd160<let LEN: u32>(&mut self) {
-        let hash = ripemd160(
-            self.pop_bytes::<LEN>()
-        );
+        let hash = ripemd160(self.pop_bytes::<LEN>());
         let mut vec = BoundedVec::new();
         vec.extend_from_slice(hash);
         self.push(vec);
     }
 
     pub fn op_sha1<let LEN: u32>(&mut self) {
-        let hash = sha1::digest(
-            self.pop_bytes::<LEN>()
-        );
+        let hash = sha1::digest(self.pop_bytes::<LEN>());
         let mut vec = BoundedVec::new();
         vec.extend_from_slice(hash);
         self.push(vec);
     }
 
     pub fn op_sha256<let LEN: u32>(&mut self) {
-        let hash = sha256::digest(
-            self.pop_bytes::<LEN>()
-        );
+        let hash = sha256::digest(self.pop_bytes::<LEN>());
         let mut vec = BoundedVec::new();
         vec.extend_from_slice(hash);
         self.push(vec);
@@ -648,9 +495,7 @@ impl<
     }
 
     pub fn op_hash160<let LEN: u32>(&mut self) {
-        let hash = sha256::digest(
-            self.pop_bytes::<LEN>()
-        );
+        let hash = sha256::digest(self.pop_bytes::<LEN>());
         let dhash = ripemd160(hash);
         let mut vec = BoundedVec::new();
         vec.extend_from_slice(dhash);
@@ -658,9 +503,7 @@ impl<
     }
 
     pub fn op_hash256<let LEN: u32>(&mut self) {
-        let hash = sha256::digest(
-            self.pop_bytes::<LEN>()
-        );
+        let hash = sha256::digest(self.pop_bytes::<LEN>());
         let dhash = sha256::digest(hash);
         let mut vec = BoundedVec::new();
         vec.extend_from_slice(dhash);
@@ -695,22 +538,27 @@ impl<
     ) -> [u8; 32] {
         let mut message_hash = [0; 32];
         if address.is_p2pk() | address.is_p2pkh() {
-            let script_code = self.prev_transaction.get_script_pub_key_with_size::<SCRIPT_CODE_LEN>(self.output_to_unlock);
-            message_hash = serialize_sighash_all(self.cur_transaction, self.input_to_sign, script_code);
+            let script_code = self.prev_transaction.get_script_pub_key_with_size::<SCRIPT_CODE_LEN>(
+                self.output_to_unlock,
+            );
+            message_hash =
+                serialize_sighash_all(self.cur_transaction, self.input_to_sign, script_code);
         } else if address.is_p2wpkh() {
             let amount = self.prev_transaction.get_amount(self.output_to_unlock);
             let script_code = self.prev_transaction.get_p2wpkh_script_code(self.output_to_unlock);
-            message_hash = serialize_p2wpkh_sighash_all(self.cur_transaction, self.input_to_sign, amount, script_code);
+            message_hash = serialize_p2wpkh_sighash_all(
+                self.cur_transaction,
+                self.input_to_sign,
+                amount,
+                script_code,
+            );
         } else {
             assert(false, "not implemented");
         }
         message_hash
     }
 
-    fn _op_checksig<let SCRIPT_CODE_LEN: u32>(
-        &mut self,
-        address: Address,
-    ) -> bool {
+    fn _op_checksig<let SCRIPT_CODE_LEN: u32>(&mut self, address: Address) -> bool {
         let mut message_hash = [0; 32];
 
         let (pub_x, pub_y) = self.pop_pubkey();
@@ -725,11 +573,7 @@ impl<
         ecdsa_verify(pub_x, pub_y, signature, message_hash)
     }
 
-    pub fn op_checksig<let SCRIPT_CODE_LEN: u32>(
-        &mut self,
-        address: Address,
-        verify: bool,
-    ) {
+    pub fn op_checksig<let SCRIPT_CODE_LEN: u32>(&mut self, address: Address, verify: bool) {
         let result = self._op_checksig::<SCRIPT_CODE_LEN>(address);
         if verify {
             assert(result);
@@ -740,14 +584,7 @@ impl<
     }
 }
 
-type TestStack<
-    let MAX_STACK_ELEMENT_SIZE: u32, 
-    let MAX_STACK_SIZE: u32, 
-> = Stack<
-    MAX_STACK_ELEMENT_SIZE, 
-    MAX_STACK_SIZE, 
-    0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0>;
+type TestStack<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32> = Stack<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0>;
 
 #[test]
 fn test_addition() {
@@ -1116,7 +953,13 @@ fn test_legacy_checksig() {
 
     let output_to_unlock = 0;
 
-    let mut stack = Stack::new(cur_tx, prev_tx, input_to_sign, output_to_unlock, empty_stack_array::<80, 7>());
+    let mut stack = Stack::new(
+        cur_tx,
+        prev_tx,
+        input_to_sign,
+        output_to_unlock,
+        empty_stack_array::<80, 7>(),
+    );
 
     let signature_hex: str<144> = "304502203f004eeed0cef2715643e2f25a27a28f3c578e94c7f0f6a4df104e7d163f7f8f022100b8b248c1cfd8f77a0365107a9511d759b7544d979dd152a955c867afac0ef78601";
     let signature_bytes = hex_to_bytes(signature_hex);
@@ -1146,8 +989,14 @@ fn test_segwit_checksig() {
 
     let output_to_unlock = 0;
 
-    let mut stack = Stack::new(cur_tx, prev_tx, input_to_sign, output_to_unlock, empty_stack_array::<80, 7>());
-    
+    let mut stack = Stack::new(
+        cur_tx,
+        prev_tx,
+        input_to_sign,
+        output_to_unlock,
+        empty_stack_array::<80, 7>(),
+    );
+
     let signature_hex = "3045022100acbc5aeef43fa19a7078d34e84177534c40e2ad8cee5ff4deb5aae2b4650f864022026288d3d694fdd6e592bfb5d200848206848bb0c8f0119ffee831ed7a7a148d001";
     let signature_bytes = hex_to_bytes(signature_hex);
 

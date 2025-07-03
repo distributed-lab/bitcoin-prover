@@ -1,4 +1,3 @@
-
 pub global SIGHASH_ALL: u8 = 0x01;
 pub global SIGHASH_NONE: u8 = 0x02;
 pub global SIGHASH_SINGLE: u8 = 0x03;
