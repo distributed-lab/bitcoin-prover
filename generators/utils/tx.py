@@ -133,6 +133,18 @@ class Transaction:
         
         self.lock_time = data['locktime']
 
+    def cut_script_sigs(self):
+        for i in range(self.input_count):
+            old_input = self.inputs[i]
+            new_input = Input(
+                txid=old_input.txid,
+                vout=old_input.vout,
+                script_sig_size=0,
+                script_sig=b'',
+                sequence=old_input.sequence,
+            )
+            self.inputs[i] = new_input
+
     def to_hex(self) -> str:
         version_hex = self.version.to_bytes(4, byteorder='little').hex()
 

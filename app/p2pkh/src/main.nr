@@ -1,12 +1,16 @@
-use bvm::{stack::Stack, utils::empty_stack_array};
-use script::script::check_p2pkh_template;
+mod globals;
+
+use bvm::stack::{empty_stack_array, Stack};
+use globals::{
+    CUR_TX_INP_COUNT, CUR_TX_INP_COUNT_LEN, CUR_TX_INP_SIZE, CUR_TX_LEN,
+    CUR_TX_MAX_WITNESS_STACK_SIZE, CUR_TX_OUT_COUNT, CUR_TX_OUT_COUNT_LEN, CUR_TX_OUT_SIZE,
+    CUR_TX_WITNESS_SIZE, OPCODES_AMOUNT, PK_LEN, PREV_TX_INP_COUNT, PREV_TX_INP_COUNT_LEN,
+    PREV_TX_INP_SIZE, PREV_TX_LEN, PREV_TX_MAX_WITNESS_STACK_SIZE, PREV_TX_OUT_COUNT,
+    PREV_TX_OUT_COUNT_LEN, PREV_TX_OUT_SIZE, PREV_TX_WITNESS_SIZE, SIG_LEN,
+};
+use script::execution::ScriptExecutionEngine;
 use sign::{address::Address, transaction::Transaction};
 use utils::convert::{hex_to_bytes, le_bytes_to_u32};
-
-global CUR_TX_LEN: u32 = 402;
-global PREV_TX_LEN: u32 = 252;
-global SIG_LEN: u32 = 144;
-global PK_LEN: u32 = 130;
 
 fn main(
     cur_tx_data: str<CUR_TX_LEN>,
@@ -15,58 +19,59 @@ fn main(
     pub_key: str<PK_LEN>,
     input_to_sign: pub u32,
 ) -> pub bool {
-    let mut res = true;
-
     let cur_tx_data = hex_to_bytes(cur_tx_data);
     let prev_tx_data = hex_to_bytes(prev_tx_data);
 
-    let cur_tx = Transaction::<CUR_TX_LEN / 2, 3, 1, 124, 2, 1, 69, 0, 0>::new(cur_tx_data, false);
-    let prev_tx =
-        Transaction::<PREV_TX_LEN / 2, 2, 1, 83, 1, 1, 35, 0, 0>::new(prev_tx_data, false);
-    let mut stack = Stack::new(cur_tx, prev_tx, empty_stack_array::<80, 7>());
-    let mut script_pub_key = [0; 26];
+    let cur_tx = Transaction::<CUR_TX_LEN / 2, CUR_TX_INP_COUNT, CUR_TX_INP_COUNT_LEN, CUR_TX_INP_SIZE, CUR_TX_OUT_COUNT, CUR_TX_OUT_COUNT_LEN, CUR_TX_OUT_SIZE, CUR_TX_MAX_WITNESS_STACK_SIZE, CUR_TX_WITNESS_SIZE>::new(
+        cur_tx_data,
+        false,
+    );
+
+    let prev_tx = Transaction::<PREV_TX_LEN / 2, PREV_TX_INP_COUNT, PREV_TX_INP_COUNT_LEN, PREV_TX_INP_SIZE, PREV_TX_OUT_COUNT, PREV_TX_OUT_COUNT_LEN, PREV_TX_OUT_SIZE, PREV_TX_MAX_WITNESS_STACK_SIZE, PREV_TX_WITNESS_SIZE>::new(
+        prev_tx_data,
+        false,
+    );
+
+    let mut script_pub_key = [0; 25];
 
     let vout_pos = cur_tx.inputs[input_to_sign].vout.offset;
     let mut vout_bytes = [0; 4];
-
     for i in 0..4 {
         vout_bytes[i] = cur_tx.data[vout_pos + i];
     }
 
     let vout = le_bytes_to_u32(vout_bytes);
     let script_pub_key_pos = prev_tx.outputs[vout].script_pub_key.offset;
-
-    script_pub_key[0] = 25;
     for i in 0..25 {
-        script_pub_key[i + 1] = prev_tx.data[script_pub_key_pos + i];
+        script_pub_key[i] = prev_tx.data[script_pub_key_pos + i];
     }
 
-    assert(check_p2pkh_template(script_pub_key));
+    let mut stack = Stack::new(
+        cur_tx,
+        prev_tx,
+        input_to_sign,
+        vout,
+        empty_stack_array::<80, 7>(),
+    );
 
-    let addr = Address::new_p2pkh();
+    let mut script_execution_engine = ScriptExecutionEngine::new(stack);
 
-    stack.op_pushbytes(hex_to_bytes(signature));
-    stack.op_pushbytes(hex_to_bytes(pub_key));
-    stack.op_dup();
-    stack.op_hash160::<PK_LEN / 2>();
+    let signature_bytes = hex_to_bytes(signature);
+    let pub_key_bytes = hex_to_bytes(pub_key);
 
-    let mut hash_pub_key = [0; 20];
-    for i in 0..20 {
-        hash_pub_key[i] = script_pub_key[i + 4];
-    }
+    let script = [signature_bytes.len() as u8]
+        .as_slice()
+        .append(signature_bytes.as_slice())
+        .push_back(pub_key_bytes.len() as u8)
+        .append(pub_key_bytes.as_slice())
+        .append(script_pub_key.as_slice())
+        .as_array::<SIG_LEN / 2 + PK_LEN / 2 + 25 + 2>();
 
-    stack.op_pushbytes(hash_pub_key);
-    stack.op_equal();
+    script_execution_engine
+        .execute::<SIG_LEN / 2 + PK_LEN / 2 + 25 + 2, OPCODES_AMOUNT, 20, 33, 65, 70, 71, 72, 26, 0, 0, 0, 0>(
+            script,
+            Address::new_p2pkh(),
+        );
 
-    if !stack.verify() {
-        println("Failed pk hash");
-        res = false;
-    }
-
-    if !stack.op_checksig_sighash_all::<SIG_LEN / 2, 26, PK_LEN / 2>(input_to_sign, vout, addr) {
-        println("Failed signature");
-        res = false;
-    }
-
-    res
+    script_execution_engine.stack.op_verify()
 }

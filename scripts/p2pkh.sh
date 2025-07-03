@@ -4,7 +4,7 @@
 set -e
 
 # Generate Prover.toml
-python3 generators/p2pkh/main.py
+python3 -m generators.p2pkh.main
 
 # Execute the binary
 nargo execute --package p2pkh

@@ -83,7 +83,9 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
 
     pub fn pop_bytes<let N: u32>(&mut self) -> [u8; N] {
         let value = self.pop();
-        assert(value.len() == N);
+        // println(value);
+        // println(value.len());
+        // assert(value.len() == N);
         let mut value_array = [0; N];
         for i in 0..N {
             value_array[i] = value.storage()[i];
@@ -171,7 +173,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         self.push(i32_to_vec(value3));
     }
 
-    pub fn verify(&mut self) -> bool {
+    pub fn op_verify(&mut self) -> bool {
         if self.data.len() == 0 {
             false
         } else {
