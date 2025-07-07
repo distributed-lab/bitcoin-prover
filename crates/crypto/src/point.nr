@@ -126,11 +126,26 @@ fn gcd(a: I768, b: I768) -> (I768, I768) {
     }
 }
 
-pub fn mul_point(mut scalar: U256, modulo: U768) -> Point {
+pub fn mul_point(mut scalar: U256, mut point: Point, modulo: U768) -> Point {
     let mut res1 = Point { x: I768::from(0), y: I768::from(0), is_O: true };
 
+    for _ in 0..256 {
+        if !scalar.is_zero() {
+            if scalar.get_limb(0) % 2 == 1 {
+                res1 = add_point(res1, point, modulo);
+            }
+            point = double_point(point, modulo);
+            scalar = scalar.udiv(U256::from(2));
+        }
+    }
+
+    res1
+}
+
+#[test]
+fn get_pub_key_test() {
     // Base point
-    let mut res2 = Point {
+    let G = Point {
         x: I768 {
             num: U768::from_be_bytes([
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -158,21 +173,6 @@ pub fn mul_point(mut scalar: U256, modulo: U768) -> Point {
         is_O: false,
     };
 
-    for _ in 0..256 {
-        if !scalar.is_zero() {
-            if scalar.get_limb(0) % 2 == 1 {
-                res1 = add_point(res1, res2, modulo);
-            }
-            res2 = double_point(res2, modulo);
-            scalar = scalar.udiv(U256::from(2));
-        }
-    }
-
-    res1
-}
-
-#[test]
-fn get_pub_key_test() {
     let modulo: U768 = U768::from_be_bytes([
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -190,7 +190,7 @@ fn get_pub_key_test() {
         0x73, 0xba, 0xc0,
     ]);
 
-    let x = mul_point(priv_key, modulo).x.num.to_be_bytes();
+    let x = mul_point(priv_key, G, modulo).x.num.to_be_bytes();
 
     assert(
         x
