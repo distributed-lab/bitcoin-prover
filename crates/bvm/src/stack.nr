@@ -1,6 +1,10 @@
-use crypto::ecdsa::{
-    ecdsa_verify, get_rs_from_signature, get_xy_from_compressed_pubkey,
-    get_xy_from_uncompressed_pubkey,
+use bignum::{BigNum, fields::{U256::U256, U768::U768}};
+use crypto::{
+    ecdsa::{
+        ecdsa_verify, get_rs_from_signature, get_xy_from_compressed_pubkey,
+        get_xy_from_uncompressed_pubkey,
+    },
+    types::I768,
 };
 use ripemd160::ripemd160;
 use sha1::sha1;
@@ -11,8 +15,8 @@ use sign::{
 use sign::sig_types::{SIGHASH_ALL, SIGHASH_ANYONECANPAY, SIGHASH_NONE, SIGHASH_SINGLE};
 use std::collections::bounded_vec::BoundedVec;
 use utils::convert::{
-    bytes_to_hex, bytes_to_vec, hex_to_bytes, i32_to_le_bytes, i32_to_vec, u32_to_le_bytes,
-    vec_to_array, vec_to_i32, vec_to_u32,
+    bytes_to_hex, bytes_to_vec, get_256_bits_from_768, hex_to_bytes, i32_to_le_bytes, i32_to_vec,
+    u32_to_le_bytes, vec_to_array, vec_to_i32, vec_to_u32,
 };
 
 pub fn empty_stack_array<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32>() -> [BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>; MAX_STACK_SIZE] {
@@ -564,7 +568,30 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         let mut message_hash = [0; 32];
 
         let (pub_x, pub_y) = self.pop_pubkey();
-        let (signature, hash_type) = self.pop_signature();
+        let (mut signature, hash_type) = self.pop_signature();
+
+        let mut s_bytes = [0; 32];
+        for i in 0..32 {
+            s_bytes[i] = signature[32 + i]
+        }
+
+        let mut s = U256::from_be_bytes([0; 1].as_slice().append(s_bytes).as_array::<33>());
+
+        let modulo_n = U256::from_be_bytes([
+            0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+            0xFF, 0xFF, 0xFE, 0xBA, 0xAE, 0xDC, 0xE6, 0xAF, 0x48, 0xA0, 0x3B, 0xBF, 0xD2, 0x5E,
+            0x8C, 0xD0, 0x36, 0x41, 0x41,
+        ]);
+
+        if s > modulo_n.umod(U256::from(2)) {
+            s = modulo_n - s;
+
+            let s_bytes = s.to_be_bytes().as_slice().pop_front().1;
+
+            for i in 0..32 {
+                signature[32 + i] = s_bytes[i];
+            }
+        }
 
         if hash_type == SIGHASH_ALL {
             message_hash = self.get_sighash_all_message_hash::<SCRIPT_CODE_LEN>(address);
