@@ -583,7 +583,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
             0x8C, 0xD0, 0x36, 0x41, 0x41,
         ]);
 
-        if s > modulo_n.umod(U256::from(2)) {
+        if s > modulo_n.udiv(U256::from(2)) {
             s = modulo_n - s;
 
             let s_bytes = s.to_be_bytes().as_slice().pop_front().1;
