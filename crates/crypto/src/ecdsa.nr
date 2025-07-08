@@ -134,51 +134,51 @@ pub fn get_rs_from_signature<let DER_SIGNATURE_LEN: u32>(
     signature
 }
 
-// pub fn ecdsa_verify(
-//     pub_x: [u8; 32],
-//     pub_y: [u8; 32],
-//     signature: [u8; 64],
-//     message_hash: [u8; 32],
-// ) -> bool {
-//     ecdsa_secp256k1::verify_signature(pub_x, pub_y, signature, message_hash)
-// }
-
 pub fn ecdsa_verify(
     pub_x: [u8; 32],
     pub_y: [u8; 32],
     signature: [u8; 64],
     message_hash: [u8; 32],
 ) -> bool {
-    let pub_x = Secp256k1_Fq::from_limbs(U256::from_be_bytes([0; 1]
-        .as_slice()
-        .append(pub_x)
-        .as_array())
-        .get_limbs());
-    let pub_y = Secp256k1_Fq::from_limbs(U256::from_be_bytes([0; 1]
-        .as_slice()
-        .append(pub_y)
-        .as_array())
-        .get_limbs());
-
-    let mut r_bytes = [0; 32];
-    let mut s_bytes = [0; 32];
-    for i in 0..32 {
-        r_bytes[i] = signature[i];
-        s_bytes[i] = signature[32 + i]
-    }
-
-    let r = Secp256k1_Fr::from_limbs(U256::from_be_bytes([0; 1].as_slice().append(r_bytes).as_array())
-        .get_limbs());
-    let s = Secp256k1_Fr::from_limbs(U256::from_be_bytes([0; 1].as_slice().append(s_bytes).as_array())
-        .get_limbs());
-
-    verify_ecdsa::<32, 65, Secp256k1_Fq, Secp256k1_Fr, Secp256k1_Params>(
-        pub_x,
-        pub_y,
-        message_hash,
-        (r, s),
-    )
+    ecdsa_secp256k1::verify_signature(pub_x, pub_y, signature, message_hash)
 }
+
+// pub fn ecdsa_verify(
+//     pub_x: [u8; 32],
+//     pub_y: [u8; 32],
+//     signature: [u8; 64],
+//     message_hash: [u8; 32],
+// ) -> bool {
+//     let pub_x = Secp256k1_Fq::from_limbs(U256::from_be_bytes([0; 1]
+//         .as_slice()
+//         .append(pub_x)
+//         .as_array())
+//         .get_limbs());
+//     let pub_y = Secp256k1_Fq::from_limbs(U256::from_be_bytes([0; 1]
+//         .as_slice()
+//         .append(pub_y)
+//         .as_array())
+//         .get_limbs());
+
+//     let mut r_bytes = [0; 32];
+//     let mut s_bytes = [0; 32];
+//     for i in 0..32 {
+//         r_bytes[i] = signature[i];
+//         s_bytes[i] = signature[32 + i]
+//     }
+
+//     let r = Secp256k1_Fr::from_limbs(U256::from_be_bytes([0; 1].as_slice().append(r_bytes).as_array())
+//         .get_limbs());
+//     let s = Secp256k1_Fr::from_limbs(U256::from_be_bytes([0; 1].as_slice().append(s_bytes).as_array())
+//         .get_limbs());
+
+//     verify_ecdsa::<32, 65, Secp256k1_Fq, Secp256k1_Fr, Secp256k1_Params>(
+//         pub_x,
+//         pub_y,
+//         message_hash,
+//         (r, s),
+//     )
+// }
 
 #[test]
 fn ecdsa_sign_test() {

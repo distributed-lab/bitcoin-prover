@@ -570,29 +570,6 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         let (pub_x, pub_y) = self.pop_pubkey();
         let (mut signature, hash_type) = self.pop_signature();
 
-        let mut s_bytes = [0; 32];
-        for i in 0..32 {
-            s_bytes[i] = signature[32 + i]
-        }
-
-        let mut s = U256::from_be_bytes([0; 1].as_slice().append(s_bytes).as_array::<33>());
-
-        let modulo_n = U256::from_be_bytes([
-            0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-            0xFF, 0xFF, 0xFE, 0xBA, 0xAE, 0xDC, 0xE6, 0xAF, 0x48, 0xA0, 0x3B, 0xBF, 0xD2, 0x5E,
-            0x8C, 0xD0, 0x36, 0x41, 0x41,
-        ]);
-
-        if s > modulo_n.udiv(U256::from(2)) {
-            s = modulo_n - s;
-
-            let s_bytes = s.to_be_bytes().as_slice().pop_front().1;
-
-            for i in 0..32 {
-                signature[32 + i] = s_bytes[i];
-            }
-        }
-
         if hash_type == SIGHASH_ALL {
             message_hash = self.get_sighash_all_message_hash::<SCRIPT_CODE_LEN>(address);
         } else {
