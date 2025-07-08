@@ -67,6 +67,8 @@ fn main(
         .append(script_pub_key.as_slice())
         .as_array::<SIG_LEN / 2 + PK_LEN / 2 + 25 + 2>();
 
+    // 0c83d25a8fce5065fc8d4b398a91d203eb49eebe
+    // 0900bb14c7cb6a52fd8a22fd68a5986eb193c9f5
     script_execution_engine
         .execute::<SIG_LEN / 2 + PK_LEN / 2 + 25 + 2, OPCODES_AMOUNT, 20, 33, 65, 70, 71, 72, 26, 0, 0, 0, 0>(
             script,
