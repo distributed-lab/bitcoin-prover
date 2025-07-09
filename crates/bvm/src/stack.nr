@@ -6,7 +6,7 @@ use ripemd160::ripemd160;
 use sha1::sha1;
 use sign::address::Address;
 use sign::{
-    legacy::serialize_sighash_all, segwit::serialize_p2wpkh_sighash_all, transaction::Transaction,
+    legacy::serialize_sighash_all, legacy::serialize_sighash_none, segwit::serialize_p2wpkh_sighash_all, segwit::serialize_p2wpkh_sighash_none, transaction::Transaction,
 };
 use sign::sig_types::{SIGHASH_ALL, SIGHASH_ANYONECANPAY, SIGHASH_NONE, SIGHASH_SINGLE};
 use std::collections::bounded_vec::BoundedVec;
@@ -558,6 +558,32 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         message_hash
     }
 
+    fn get_sighash_none_message_hash<let SCRIPT_CODE_LEN: u32>(
+        &mut self,
+        address: Address,
+    ) -> [u8; 32] {
+        let mut message_hash = [0; 32];
+        if address.is_p2pk() | address.is_p2pkh() {
+            let script_code = self.prev_transaction.get_script_pub_key_with_size::<SCRIPT_CODE_LEN>(
+                self.output_to_unlock,
+            );
+            message_hash =
+                serialize_sighash_none(self.cur_transaction, self.input_to_sign, script_code);
+        } else if address.is_p2wpkh() {
+            let amount = self.prev_transaction.get_amount(self.output_to_unlock);
+            let script_code = self.prev_transaction.get_p2wpkh_script_code(self.output_to_unlock);
+            message_hash = serialize_p2wpkh_sighash_none(
+                self.cur_transaction,
+                self.input_to_sign,
+                amount,
+                script_code,
+            );
+        } else {
+            assert(false, "not implemented");
+        }
+        message_hash
+    }
+
     fn _op_checksig<let SCRIPT_CODE_LEN: u32>(&mut self, address: Address) -> bool {
         let mut message_hash = [0; 32];
 
@@ -566,7 +592,10 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
 
         if hash_type == SIGHASH_ALL {
             message_hash = self.get_sighash_all_message_hash::<SCRIPT_CODE_LEN>(address);
-        } else {
+        } else if hash_type == SIGHASH_NONE {
+            message_hash = self.get_sighash_none_message_hash::<SCRIPT_CODE_LEN>(address);
+        }   
+        else {
             assert(false, "Unsupported hash type");
         }
 
@@ -937,7 +966,7 @@ fn test_max_min_range() {
 }
 
 #[test]
-fn test_legacy_checksig() {
+fn test_legacy_checksig_all() {
     // From here: https://www.blockchain.com/explorer/transactions/btc/12e753ef5cc30925a6eee2c457aa7f53022443ca013ea81882a6b59b69e342a6
     // Transaction with deleted script sigs
     let cur_tx_hex = "01000000030dd7891efbf67da47c651531db8aab3144ed7a524e4ae1e30b773525e27ddd7b0000000000ffffffff16851666962e37a75a246101f2e340c628b1db3c045d4d3cfb2d1c0f58f97c6f0000000000ffffffffffda5d38e91fd9a0d92872d51f83cb746fc7bf5d3ff13402f8d0d5ed60ddc79c0000000000ffffffff02c0c62d00000000001976a91417194e1bd175fb5b1b2a1f9d221f6f5c29e1928388ac00c817a8040000001976a91465bda9b05f7e9a8f96a7f4ba0996a877708ef90888ac00000000";
@@ -974,7 +1003,7 @@ fn test_legacy_checksig() {
 }
 
 #[test]
-fn test_segwit_checksig() {
+fn test_segwit_checksig_all() {
     // From here: https://www.blockchain.com/explorer/transactions/btc/ca7e89a098385f2053b88d4ef28974c17f2034b84116136705af366cb2a2d26f
     let cur_tx_hex = "02000000000101822952a47327be304809fb6b6c0e55a27321146e5151b1f1bccdce35bba99fb20000000000fdffffff0658020000000000002251208625054ae2eca687577e35ae70c6646fd47ff1276fe64b85a10e034f30b5136a4a010000000000001600148a8c751ab2a5fe26e68210b36019c6b0bfe024694a010000000000001600148a8c751ab2a5fe26e68210b36019c6b0bfe0246922020000000000001600148a8c751ab2a5fe26e68210b36019c6b0bfe024694a010000000000001600148a8c751ab2a5fe26e68210b36019c6b0bfe02469482b1101000000002251208625054ae2eca687577e35ae70c6646fd47ff1276fe64b85a10e034f30b5136a02483045022100acbc5aeef43fa19a7078d34e84177534c40e2ad8cee5ff4deb5aae2b4650f864022026288d3d694fdd6e592bfb5d200848206848bb0c8f0119ffee831ed7a7a148d001210310217ab07ffb6f90fb9dd925c3e950d74003ba26aad82d09b1da730ac2b3b8da00000000";
     let cur_tx_bytes = hex_to_bytes(cur_tx_hex);
