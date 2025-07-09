@@ -2,15 +2,15 @@ mod globals;
 
 use bvm::stack::{empty_stack_array, Stack};
 use globals::{
-    CUR_TX_INP_COUNT, CUR_TX_INP_COUNT_LEN, CUR_TX_INP_SIZE, CUR_TX_LEN,
+    CUR_IS_GEGWIT, CUR_TX_INP_COUNT, CUR_TX_INP_COUNT_LEN, CUR_TX_INP_SIZE, CUR_TX_LEN,
     CUR_TX_MAX_WITNESS_STACK_SIZE, CUR_TX_OUT_COUNT, CUR_TX_OUT_COUNT_LEN, CUR_TX_OUT_SIZE,
-    CUR_TX_WITNESS_SIZE, OPCODES_AMOUNT, PK_LEN, PREV_TX_INP_COUNT, PREV_TX_INP_COUNT_LEN,
-    PREV_TX_INP_SIZE, PREV_TX_LEN, PREV_TX_MAX_WITNESS_STACK_SIZE, PREV_TX_OUT_COUNT,
-    PREV_TX_OUT_COUNT_LEN, PREV_TX_OUT_SIZE, PREV_TX_WITNESS_SIZE, SIG_LEN,
+    CUR_TX_WITNESS_SIZE, OPCODES_AMOUNT, PK_LEN, PREV_IS_GEGWIT, PREV_TX_INP_COUNT,
+    PREV_TX_INP_COUNT_LEN, PREV_TX_INP_SIZE, PREV_TX_LEN, PREV_TX_MAX_WITNESS_STACK_SIZE,
+    PREV_TX_OUT_COUNT, PREV_TX_OUT_COUNT_LEN, PREV_TX_OUT_SIZE, PREV_TX_WITNESS_SIZE, SIG_LEN,
 };
 use script::execution::ScriptExecutionEngine;
 use sign::{address::Address, transaction::Transaction};
-use utils::convert::{hex_to_bytes, le_bytes_to_u32};
+use utils::convert::{byte_to_hex_symbol, bytes_to_hex, hex_to_bytes, le_bytes_to_u32};
 
 fn main(
     cur_tx_data: str<CUR_TX_LEN>,
@@ -24,12 +24,12 @@ fn main(
 
     let cur_tx = Transaction::<CUR_TX_LEN / 2, CUR_TX_INP_COUNT, CUR_TX_INP_COUNT_LEN, CUR_TX_INP_SIZE, CUR_TX_OUT_COUNT, CUR_TX_OUT_COUNT_LEN, CUR_TX_OUT_SIZE, CUR_TX_MAX_WITNESS_STACK_SIZE, CUR_TX_WITNESS_SIZE>::new(
         cur_tx_data,
-        false,
+        CUR_IS_GEGWIT,
     );
 
     let prev_tx = Transaction::<PREV_TX_LEN / 2, PREV_TX_INP_COUNT, PREV_TX_INP_COUNT_LEN, PREV_TX_INP_SIZE, PREV_TX_OUT_COUNT, PREV_TX_OUT_COUNT_LEN, PREV_TX_OUT_SIZE, PREV_TX_MAX_WITNESS_STACK_SIZE, PREV_TX_WITNESS_SIZE>::new(
         prev_tx_data,
-        false,
+        PREV_IS_GEGWIT,
     );
 
     let mut script_pub_key = [0; 25];
@@ -42,8 +42,19 @@ fn main(
 
     let vout = le_bytes_to_u32(vout_bytes);
     let script_pub_key_pos = prev_tx.outputs[vout].script_pub_key.offset;
-    for i in 0..25 {
-        script_pub_key[i] = prev_tx.data[script_pub_key_pos + i];
+    if CUR_IS_GEGWIT {
+        script_pub_key[0] = 118;
+        script_pub_key[1] = 169;
+        script_pub_key[2] = 20;
+        for i in 3..23 {
+            script_pub_key[i] = prev_tx.data[script_pub_key_pos + i - 1];
+        }
+        script_pub_key[23] = 136;
+        script_pub_key[24] = 172;
+    } else {
+        for i in 0..25 {
+            script_pub_key[i] = prev_tx.data[script_pub_key_pos + i];
+        }
     }
 
     let mut stack = Stack::new(
@@ -67,10 +78,16 @@ fn main(
         .append(script_pub_key.as_slice())
         .as_array::<SIG_LEN / 2 + PK_LEN / 2 + 25 + 2>();
 
+    let address = if CUR_IS_GEGWIT {
+        Address::new_p2wpkh()
+    } else {
+        Address::new_p2pkh()
+    };
+
     script_execution_engine
         .execute::<SIG_LEN / 2 + PK_LEN / 2 + 25 + 2, OPCODES_AMOUNT, 20, 33, 65, 70, 71, 72, 26, 0, 0, 0, 0>(
             script,
-            Address::new_p2pkh(),
+            address,
         );
 
     script_execution_engine.stack.op_verify()

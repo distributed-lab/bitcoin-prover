@@ -80,7 +80,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                         self.stack.push_bytes(value);
                     }
                 } else if opcode >= OP_1 & opcode <= OP_16 {
-                    self.stack.op_num(opcode as i8);
+                    self.stack.op_num(opcode as i8 - 80);
                 } else if opcode == OP_DUP {
                     self.stack.op_dup();
                 } else if opcode == OP_HASH160 {
