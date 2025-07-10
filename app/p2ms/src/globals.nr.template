@@ -1,0 +1,22 @@
+pub global CUR_TX_LEN: u32 = {curTxLen};
+pub global PREV_TX_LEN: u32 = {prevTxLen};
+pub global SCRIPT_SIG_LEN: u32 = {signLen};
+pub global SCRIPT_PUB_KEY_LEN: u32 = {scriptPubKeyLen};
+pub global N1: u32 = {n1};
+pub global M1: u32 = {m1};
+
+pub global CUR_TX_INP_COUNT: u32 = {curTx.input_count};
+pub global CUR_TX_INP_COUNT_LEN: u32 = {CUR_TX_INP_COUNT_LEN};
+pub global CUR_TX_INP_SIZE: u32 = {CUR_TX_INP_SIZE};
+pub global CUR_TX_OUT_COUNT: u32 = {curTx.output_count};
+pub global CUR_TX_OUT_COUNT_LEN: u32 = {CUR_TX_OUT_COUNT_LEN};
+pub global CUR_TX_OUT_SIZE: u32 = {CUR_TX_OUT_SIZE};
+
+pub global PREV_TX_INP_COUNT: u32 = {prevTx.input_count};
+pub global PREV_TX_INP_COUNT_LEN: u32 = {PREV_TX_INP_COUNT_LEN};
+pub global PREV_TX_INP_SIZE: u32 = {PREV_TX_INP_SIZE};
+pub global PREV_TX_OUT_COUNT: u32 = {prevTx.output_count};
+pub global PREV_TX_OUT_COUNT_LEN: u32 = {PREV_TX_OUT_COUNT_LEN};
+pub global PREV_TX_OUT_SIZE: u32 = {PREV_TX_OUT_SIZE};
+
+pub global OPCODES_AMOUNT: u32 = {opcodesAmount};

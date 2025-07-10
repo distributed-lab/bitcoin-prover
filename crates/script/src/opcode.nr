@@ -20,3 +20,5 @@ pub global OP_EQUALVERIFY: u8 = 136;
 
 pub global OP_CHECKSIG: u8 = 172;
 pub global OP_CHECKSIGVERIFY: u8 = 173;
+pub global OP_CHECKMULSIG: u8 = 174;
+pub global OP_CHECKMULSIGVERIFY: u8 = 174;
