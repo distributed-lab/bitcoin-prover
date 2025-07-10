@@ -728,11 +728,25 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                 .get_sighash_single_message_hash::<SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN>(
                     address,
                 );
-        } else {
+        } else if hash_type == (SIGHASH_ALL | SIGHASH_ANYONECANPAY) {
+            message_hash = self
+                .get_sighash_all_anyonecanpay_message_hash::<SCRIPT_CODE_LEN, N_INPUT_SIZE>(address)
+                ;
+            } else if hash_type == (SIGHASH_NONE | SIGHASH_ANYONECANPAY) {
+                message_hash = self
+                    .get_sighash_none_anyonecanpay_message_hash::<SCRIPT_CODE_LEN, N_INPUT_SIZE>(
+                        address,
+                    );
+            } else if hash_type == (SIGHASH_SINGLE | SIGHASH_ANYONECANPAY) {
+                message_hash = self
+                    .get_sighash_single_anyonecanpay_message_hash::<SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
+                        address,
+                    );
+            } else {
                 assert(false, "Unsupported hash type");
-        }
+            }
 
-        ecdsa_verify(pub_x, pub_y, signature, message_hash)
+            ecdsa_verify(pub_x, pub_y, signature, message_hash)
         }
 
     pub fn op_checksig<let SCRIPT_CODE_LEN: u32, let N_OUTPUT_SIZE: u32, let INPUT_TO_SIGN: u32, let INPUT_TO_SIGN_LEN: u32, let N_INPUT_SIZE: u32>(
@@ -740,7 +754,6 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         address: Address,
         verify: bool,
     ) {
-        print(SIGHASH_ALL);
         let result = self
             ._op_checksig::<SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
                 address,
@@ -1139,7 +1152,8 @@ fn test_legacy_checksig_all() {
 
     stack.push_bytes(signature_bytes);
     stack.push_bytes(pubkey_bytes);
-    stack.op_checksig::<26, 0, 0, 0, 0>(Address::new_p2pkh(), true);
+    //without 1 on N_INPUT_SIZE failing test
+    stack.op_checksig::<26, 0, 0, 0, 1>(Address::new_p2pkh(), true);
 }
 
 #[test]
@@ -1175,5 +1189,5 @@ fn test_segwit_checksig_all() {
     stack.push_bytes(signature_bytes);
     stack.push_bytes(pubkey_bytes);
 
-    stack.op_checksig::<22, 0, 0, 0, 0>(Address::new_p2wpkh(), true);
+    stack.op_checksig::<22, 0, 0, 0, 1>(Address::new_p2wpkh(), true);
 }
