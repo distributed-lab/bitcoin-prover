@@ -571,7 +571,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         address: Address,
     ) -> [u8; 32] {
         let mut message_hash = [0; 32];
-        if address.is_p2pk() | address.is_p2pkh() {
+        if address.is_p2pk() | address.is_p2pkh() | address.is_p2ms() {
             let script_code = self.prev_transaction.get_script_pub_key_with_size::<SCRIPT_CODE_LEN>(
                 self.output_to_unlock,
             );
@@ -781,6 +781,66 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
             ._op_checksig::<SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
                 address,
             );
+        if verify {
+            assert(result);
+        } else {
+            let integer = i32_to_vec(if result { 1 } else { 0 });
+            self.push(integer);
+        }
+    }
+
+    fn _op_checkmulsig<let SCRIPT_CODE_LEN: u32, let N: u32, let M: u32>(
+        &mut self,
+        address: Address,
+    ) -> bool {
+        let n = vec_to_u32(self.pop());
+        assert(n == N, "Incorrect amount of keys");
+
+        let mut keys = [([0; 32], [0; 32]); N];
+        for i in 0..N {
+            keys[i] = self.pop_pubkey();
+        }
+
+        let m = vec_to_u32(self.pop());
+        assert(m == M, "Incorrect amount of signatures");
+
+        let mut sigs = [([0; 64], 0); M];
+        for i in 0..M {
+            sigs[i] = self.pop_signature();
+        }
+
+        let o = vec_to_u32(self.pop());
+        assert(o == 0, "Incorrect structure of mulsig");
+
+        let mut sig_now = M as i32 - 1;
+        for i in 0..N {
+            if sig_now >= 0 {
+                let mut message_hash = [0; 32];
+
+                let (pub_x, pub_y) = keys[N - 1 - i];
+                let (signature, hash_type) = sigs[sig_now];
+
+                if hash_type == SIGHASH_ALL {
+                    message_hash = self.get_sighash_all_message_hash::<SCRIPT_CODE_LEN>(address);
+                } else {
+                    assert(false, "Unsupported hash type");
+                }
+
+                if ecdsa_verify(pub_x, pub_y, signature, message_hash) {
+                    sig_now -= 1;
+                }
+            }
+        }
+
+        sig_now == -1
+    }
+
+    pub fn op_checkmulsig<let SCRIPT_CODE_LEN: u32, let N: u32, let M: u32>(
+        &mut self,
+        address: Address,
+        verify: bool,
+    ) {
+        let result = self._op_checkmulsig::<SCRIPT_CODE_LEN, N, M>(address);
         if verify {
             assert(result);
         } else {
