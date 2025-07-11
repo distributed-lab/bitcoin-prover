@@ -32,7 +32,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                 cur_pos += 1;
 
                 if opcode == OP_0 {
-                    // do nothing
+                    self.stack.op_num(0);
                 } else if opcode >= OP_PUSHBYTES1 & opcode <= OP_PUSHBYTES75 {
                     // Handle push bytes with different lengths
                     let push_length = opcode as u32;

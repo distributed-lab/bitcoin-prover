@@ -18,6 +18,7 @@ def main():
     prevTx.cut_script_sigs()
 
     script_pub_key = prevTx.outputs[vout].script_pub_key
+    script_pub_key_size = prevTx.outputs[vout].script_pub_key_size
 
     with open(config["file_path"] + "/src/globals.nr.template", "r") as file:
         templateOpcodes = file.read()
@@ -43,11 +44,12 @@ def main():
         PREV_TX_INP_SIZE=PREV_TX_INP_SIZE,
         PREV_TX_OUT_COUNT_LEN=PREV_TX_OUT_COUNT_LEN,
         PREV_TX_OUT_SIZE=PREV_TX_OUT_SIZE,
-        opcodesAmount=20,
+        opcodesAmount=10, # todo: calc amount of opcodes
         curTxLen=curTx._get_transaction_size() * 2, 
         prevTxLen=prevTx._get_transaction_size() * 2, 
         signLen=len(config['script_sig']),
         scriptPubKeyLen=len(script_pub_key),
+        scriptPubKeyLenLen=curTx._get_compact_size_size(script_pub_key_size),
         # todo: size can be more than 1 byte
         n1=script_pub_key[len(script_pub_key) - 2] - 80,
         m1=script_pub_key[0] - 80

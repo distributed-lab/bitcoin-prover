@@ -1,10 +1,6 @@
-use bignum::{BigNum, fields::{U256::U256, U768::U768}};
-use crypto::{
-    ecdsa::{
-        ecdsa_verify, get_rs_from_signature, get_xy_from_compressed_pubkey,
-        get_xy_from_uncompressed_pubkey,
-    },
-    types::I768,
+use crypto::ecdsa::{
+    ecdsa_verify, get_rs_from_signature, get_xy_from_compressed_pubkey,
+    get_xy_from_uncompressed_pubkey,
 };
 use ripemd160::ripemd160;
 use sha1::sha1;
@@ -25,8 +21,8 @@ use sign::{
 use sign::sig_types::{SIGHASH_ALL, SIGHASH_ANYONECANPAY, SIGHASH_NONE, SIGHASH_SINGLE};
 use std::collections::bounded_vec::BoundedVec;
 use utils::convert::{
-    bytes_to_hex, bytes_to_vec, get_256_bits_from_768, hex_to_bytes, i32_to_le_bytes, i32_to_vec,
-    u32_to_le_bytes, vec_to_array, vec_to_i32, vec_to_u32,
+    bytes_to_vec, hex_to_bytes, i32_to_le_bytes, i32_to_vec, u32_to_le_bytes, vec_to_array,
+    vec_to_i32, vec_to_u32,
 };
 
 pub fn empty_stack_array<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32>() -> [BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>; MAX_STACK_SIZE] {
@@ -556,7 +552,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
 
     pub fn get_script_code_size(&mut self, address: Address) -> u32 {
         let mut size = 0;
-        if address.is_p2pk() | address.is_p2pkh() {
+        if address.is_p2pk() | address.is_p2pkh() | address.is_p2ms() {
             size = self.prev_transaction.get_script_pub_key_size(self.output_to_unlock);
         } else if address.is_p2wpkh() {
             size = 26;

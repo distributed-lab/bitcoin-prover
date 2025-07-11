@@ -5,7 +5,7 @@ use globals::{
     CUR_TX_INP_COUNT, CUR_TX_INP_COUNT_LEN, CUR_TX_INP_SIZE, CUR_TX_LEN, CUR_TX_OUT_COUNT,
     CUR_TX_OUT_COUNT_LEN, CUR_TX_OUT_SIZE, M1, N1, OPCODES_AMOUNT, PREV_TX_INP_COUNT,
     PREV_TX_INP_COUNT_LEN, PREV_TX_INP_SIZE, PREV_TX_LEN, PREV_TX_OUT_COUNT, PREV_TX_OUT_COUNT_LEN,
-    PREV_TX_OUT_SIZE, SCRIPT_PUB_KEY_LEN, SCRIPT_SIG_LEN,
+    PREV_TX_OUT_SIZE, SCRIPT_PUB_KEY_LEN, SCRIPT_PUB_KEY_LEN_LEN, SCRIPT_SIG_LEN,
 };
 use script::execution::ScriptExecutionEngine;
 use sign::{address::Address, transaction::Transaction};
@@ -50,7 +50,7 @@ fn main(
         prev_tx,
         input_to_sign,
         vout,
-        empty_stack_array::<80, 100>(),
+        empty_stack_array::<80, 10>(), // Can be long time compile
     );
 
     let mut script_execution_engine = ScriptExecutionEngine::new(stack);
@@ -60,10 +60,10 @@ fn main(
     let script = script_sig_bytes
         .as_slice()
         .append(script_pub_key.as_slice())
-        .as_array::<SCRIPT_SIG_LEN + SCRIPT_PUB_KEY_LEN>();
+        .as_array::<SCRIPT_SIG_LEN / 2 + SCRIPT_PUB_KEY_LEN>();
 
     script_execution_engine
-        .execute::<SCRIPT_SIG_LEN + SCRIPT_PUB_KEY_LEN, OPCODES_AMOUNT, 0, 33, 65, 70, 71, 72, SCRIPT_PUB_KEY_LEN, 0, 0, 0, 0, N1, M1>(
+        .execute::<SCRIPT_SIG_LEN / 2 + SCRIPT_PUB_KEY_LEN, OPCODES_AMOUNT, 0, 33, 65, 70, 71, 72, SCRIPT_PUB_KEY_LEN + SCRIPT_PUB_KEY_LEN_LEN, 0, 0, 0, 0, N1, M1>(
             script,
             Address::new_p2ms(),
         );

@@ -2,6 +2,7 @@ pub global CUR_TX_LEN: u32 = {curTxLen};
 pub global PREV_TX_LEN: u32 = {prevTxLen};
 pub global SCRIPT_SIG_LEN: u32 = {signLen};
 pub global SCRIPT_PUB_KEY_LEN: u32 = {scriptPubKeyLen};
+pub global SCRIPT_PUB_KEY_LEN_LEN: u32 = {scriptPubKeyLenLen};
 pub global N1: u32 = {n1};
 pub global M1: u32 = {m1};
 
