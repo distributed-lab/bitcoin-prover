@@ -1263,6 +1263,40 @@ fn test_legacy_checksig_none_anyonecanpay() {
     let cur_tx_bytes = hex_to_bytes(cur_tx_hex);
     let cur_tx = Transaction::<201, 3, 1, 124, 2, 1, 69, 0, 0>::new(cur_tx_bytes, false);
 
+    let input_to_sign = 1;
+
+    let prev_tx_hex = "0100000002f60b5e96f09422354ab150b0e506c4bffedaf20216d30059cc5a3061b4c83dff000000004a493046022100e26d9ff76a07d68369e5782be3f8532d25ecc8add58ee256da6c550b52e8006b022100b4431f5a9a4dcb51cbdcaae935218c0ae4cfc8aa903fe4e5bac4c208290b7d5d01fffffffff7272ef43189f5553c2baea50f59cde99b3220fd518884d932016d055895b62d000000004a493046022100a2ab7cdc5b67aca032899ea1b262f6e8181060f5a34ee667a82dac9c7b7db4c3022100911bc945c4b435df8227466433e56899fbb65833e4853683ecaa12ee840d16bf01ffffffff0100e40b54020000001976a91412ab8dc588ca9d5787dde7eb29569da63c3a238c88ac00000000";
+    let prev_tx_bytes = hex_to_bytes(prev_tx_hex);
+    let prev_tx = Transaction::<274, 2, 1, 231, 1, 1, 35, 0, 0>::new(prev_tx_bytes, false);
+
+    let output_to_unlock = 0;
+
+    let mut stack = Stack::new(
+        cur_tx,
+        prev_tx,
+        input_to_sign,
+        output_to_unlock,
+        empty_stack_array::<80, 7>(),
+    );
+
+    let signature_hex: str<144> = "3045022100de220a7cb022b3268f1d4d738527ccd128f9210aec48e8c001b96d638822730d0220092336b66c9f55925abac5d2b6a724b89c16bd167caf4f627b735d577d36e5da82";
+    let signature_bytes = hex_to_bytes(signature_hex);
+
+    let pubkey_hex: str<130> = "04bb58b5feca505c74edc000d8282fc556e51a1024fc8e7d7e56c6f887c5c8d5f202f76f508a57ac2491af19c8e67e55133f8e1cd3f9ee2350071497085f7356f8";
+    let pubkey_bytes = hex_to_bytes(pubkey_hex);
+
+    stack.push_bytes(signature_bytes);
+    stack.push_bytes(pubkey_bytes);
+    stack.op_checksig::<26, 0, 0, 0, 41>(Address::new_p2pkh(), true);
+}
+
+
+#[test]
+fn test_legacy_checksig_single() {
+    let cur_tx_hex = "01000000056c499afac2e1a63bb6b9461a337319b970c13c2c77be53ebc1c7c870059334000800000000ffffffff00e16741107dcd7cfa2eaeb7d767e47edbec577511b3e10f16980754c3493b090900000000ffffffff078f6ec6d77fc7e0200e12fc1e2114e56e1c5bfc869d376a87b0a1bc5f8dc50e0800000000ffffffff64289405350c34a437566b764989b50381f68cf208531c54cb205f4e859e22100800000000ffffffff291cd5940ac16559eef5a2f2b4770271959f2007b45a0d850ef5d35d134df4100900000000ffffffff010000000000000000266a24e4b883e5bda9e7a59ee4bb99e9b1bcf09f909f426974636f696e20746f20506c75746f2100000000";
+    let cur_tx_bytes = hex_to_bytes(cur_tx_hex);
+    let cur_tx = Transaction::<262, 5, 1, 206, 1, 1, 48, 1, 0>::new(cur_tx_bytes, false);
+
     let input_to_sign = 0;
 
     let prev_tx_hex = "0100000002f60b5e96f09422354ab150b0e506c4bffedaf20216d30059cc5a3061b4c83dff000000004a493046022100e26d9ff76a07d68369e5782be3f8532d25ecc8add58ee256da6c550b52e8006b022100b4431f5a9a4dcb51cbdcaae935218c0ae4cfc8aa903fe4e5bac4c208290b7d5d01fffffffff7272ef43189f5553c2baea50f59cde99b3220fd518884d932016d055895b62d000000004a493046022100a2ab7cdc5b67aca032899ea1b262f6e8181060f5a34ee667a82dac9c7b7db4c3022100911bc945c4b435df8227466433e56899fbb65833e4853683ecaa12ee840d16bf01ffffffff0100e40b54020000001976a91412ab8dc588ca9d5787dde7eb29569da63c3a238c88ac00000000";
@@ -1279,13 +1313,245 @@ fn test_legacy_checksig_none_anyonecanpay() {
         empty_stack_array::<80, 7>(),
     );
 
-    let signature_hex: str<144> = "3045022100e52403a51901f3fba9f8f077f6442949b50dddfded2c06477ca7661bb9126e5902203554f5d656e8934e6e183e487b30d830deb8b293a525d01b47a57738c6c4d8c582";
+    let signature_hex: str<144> = "3045022100bb5ccc97c010dabd6317bc85290ff3f9349d2d18bd9ad2e15d12a562c65b09d202205fcbd3ac628dc3515f6eb3ce1a8ded1de837e60a60214297cd2dc1e4f035dd2b03";
     let signature_bytes = hex_to_bytes(signature_hex);
 
-    let pubkey_hex: str<130> = "04bb58b5feca505c74edc000d8282fc556e51a1024fc8e7d7e56c6f887c5c8d5f202f76f508a57ac2491af19c8e67e55133f8e1cd3f9ee2350071497085f7356f8";
+    let pubkey_hex: str<130> = "042c0b7cf95324a07d05398b240174dc0c2be444d96b159aa6c7f7b1e668680991ae31a9c671a36543f46cea8fce6984608aa316aa0472a7eed08847440218cb2f";
     let pubkey_bytes = hex_to_bytes(pubkey_hex);
 
     stack.push_bytes(signature_bytes);
     stack.push_bytes(pubkey_bytes);
-    stack.op_checksig::<26, 0, 0, 0, 41>(Address::new_p2pkh(), true);
+    stack.op_checksig::<26, 47, 0, 1, 1>(Address::new_p2pkh(), true);
+}
+
+#[test]
+fn test_legacy_checksig_single_anyonecanpay() {
+    let cur_tx_hex = "01000000056c499afac2e1a63bb6b9461a337319b970c13c2c77be53ebc1c7c870059334000800000000ffffffff00e16741107dcd7cfa2eaeb7d767e47edbec577511b3e10f16980754c3493b090900000000ffffffff078f6ec6d77fc7e0200e12fc1e2114e56e1c5bfc869d376a87b0a1bc5f8dc50e0800000000ffffffff64289405350c34a437566b764989b50381f68cf208531c54cb205f4e859e22100800000000ffffffff291cd5940ac16559eef5a2f2b4770271959f2007b45a0d850ef5d35d134df4100900000000ffffffff010000000000000000266a24e4b883e5bda9e7a59ee4bb99e9b1bcf09f909f426974636f696e20746f20506c75746f2100000000";
+    let cur_tx_bytes = hex_to_bytes(cur_tx_hex);
+    let cur_tx = Transaction::<262, 5, 1, 206, 1, 1, 48, 1, 0>::new(cur_tx_bytes, false);
+
+    let input_to_sign = 0;
+
+    let prev_tx_hex = "0100000002f60b5e96f09422354ab150b0e506c4bffedaf20216d30059cc5a3061b4c83dff000000004a493046022100e26d9ff76a07d68369e5782be3f8532d25ecc8add58ee256da6c550b52e8006b022100b4431f5a9a4dcb51cbdcaae935218c0ae4cfc8aa903fe4e5bac4c208290b7d5d01fffffffff7272ef43189f5553c2baea50f59cde99b3220fd518884d932016d055895b62d000000004a493046022100a2ab7cdc5b67aca032899ea1b262f6e8181060f5a34ee667a82dac9c7b7db4c3022100911bc945c4b435df8227466433e56899fbb65833e4853683ecaa12ee840d16bf01ffffffff0100e40b54020000001976a91412ab8dc588ca9d5787dde7eb29569da63c3a238c88ac00000000";
+    let prev_tx_bytes = hex_to_bytes(prev_tx_hex);
+    let prev_tx = Transaction::<274, 2, 1, 231, 1, 1, 35, 0, 0>::new(prev_tx_bytes, false);
+
+    let output_to_unlock = 0;
+
+    let mut stack = Stack::new(
+        cur_tx,
+        prev_tx,
+        input_to_sign,
+        output_to_unlock,
+        empty_stack_array::<80, 7>(),
+    );
+
+    let signature_hex: str<144> = "3045022100bb5ccc97c010dabd6317bc85290ff3f9349d2d18bd9ad2e15d12a562c65b09d202205fcbd3ac628dc3515f6eb3ce1a8ded1de837e60a60214297cd2dc1e4f035dd2b03";
+    let signature_bytes = hex_to_bytes(signature_hex);
+
+    let pubkey_hex: str<130> = "042c0b7cf95324a07d05398b240174dc0c2be444d96b159aa6c7f7b1e668680991ae31a9c671a36543f46cea8fce6984608aa316aa0472a7eed08847440218cb2f";
+    let pubkey_bytes = hex_to_bytes(pubkey_hex);
+
+    stack.push_bytes(signature_bytes);
+    stack.push_bytes(pubkey_bytes);
+    stack.op_checksig::<26, 47, 0, 1, 1>(Address::new_p2pkh(), true);
+}
+
+#[test]
+fn test_p2wpkh_checksig_all() {
+    let cur_tx_hex = "02000000000101ac4994014aa36b7f53375658ef595b3cb2891e1735fe5b441686f5e53338e76a0100000000ffffffff01204e0000000000001976a914ce72abfd0e6d9354a660c18f2825eb392f060fdc88ac0000000000";
+    let cur_tx_bytes = hex_to_bytes(cur_tx_hex);
+    let cur_tx = Transaction::<88, 1, 1, 42, 1, 1, 35, 1, 1>::new(cur_tx_bytes, true);
+
+    let input_to_sign = 0;
+
+    let prev_tx_hex = "0200000000010192f29384a956361b9b9ebc667d01489cb360068c22c7b89396e5fdc3ece0305a0100000000ffffffff023d0500000000000016001464193f85b629823f114c9d997ee68627d7395d5fe7a1000000000000160014d0446764c4f16f78ca0ce0b7f487cc5fe205835e024730440220598ef97f63f7648e39d03ff58383056322fa13effaee8d11c9c9e8789a72522002204dda5bbc9cba008682d62820395a2c43b9abae52d6ad81835e72bda09468fa21012103d9a4d0bbe47d58b68e366a380107ba3470f6893764a2d020127d36c169df850100000000";
+    let prev_tx_bytes = hex_to_bytes(prev_tx_hex);
+    let prev_tx = Transaction::<222, 1, 1, 42, 2, 1, 63, 2, 107>::new(prev_tx_bytes, true);
+
+    let output_to_unlock = 1;
+
+    let mut stack = Stack::new(
+        cur_tx,
+        prev_tx,
+        input_to_sign,
+        output_to_unlock,
+        empty_stack_array::<80, 7>(),
+    );
+
+    let signature_hex: str<144> = "304502210090a81cb4cef2ab75e89767f8c447db07371c4e1dfd5f489736badb1a65c8d5d002205f1e58c3cf97b4351278b22171f7124652af9f55c5585875971d7fbf201ae20301";
+    let signature_bytes = hex_to_bytes(signature_hex);
+
+    let pubkey_hex: str<130> = "041428f3a3532ff4f1cac70f7292bfad06d1037f800ee8839b56ebba917a22e900ac5879295520ae5690ab668f57f8fdf6d06e410e7de064b676ce8561ec626f57";
+    let pubkey_bytes = hex_to_bytes(pubkey_hex);
+
+    stack.push_bytes(signature_bytes);
+    stack.push_bytes(pubkey_bytes);
+    stack.op_checksig::<26, 35, 0, 0, 1>(Address::new_p2wpkh(), true);
+}
+
+#[test]
+fn test_p2wpkh_checksig_all_anyonecanpay() {
+    let cur_tx_hex = "02000000000101ac4994014aa36b7f53375658ef595b3cb2891e1735fe5b441686f5e53338e76a0100000000ffffffff01204e0000000000001976a914ce72abfd0e6d9354a660c18f2825eb392f060fdc88ac0000000000";
+    let cur_tx_bytes = hex_to_bytes(cur_tx_hex);
+    let cur_tx = Transaction::<88, 1, 1, 42, 1, 1, 35, 1, 1>::new(cur_tx_bytes, true);
+
+    let input_to_sign = 0;
+
+    let prev_tx_hex = "0200000000010192f29384a956361b9b9ebc667d01489cb360068c22c7b89396e5fdc3ece0305a0100000000ffffffff023d0500000000000016001464193f85b629823f114c9d997ee68627d7395d5fe7a1000000000000160014d0446764c4f16f78ca0ce0b7f487cc5fe205835e024730440220598ef97f63f7648e39d03ff58383056322fa13effaee8d11c9c9e8789a72522002204dda5bbc9cba008682d62820395a2c43b9abae52d6ad81835e72bda09468fa21012103d9a4d0bbe47d58b68e366a380107ba3470f6893764a2d020127d36c169df850100000000";
+    let prev_tx_bytes = hex_to_bytes(prev_tx_hex);
+    let prev_tx = Transaction::<222, 1, 1, 42, 2, 1, 63, 2, 107>::new(prev_tx_bytes, true);
+
+    let output_to_unlock = 1;
+
+    let mut stack = Stack::new(
+        cur_tx,
+        prev_tx,
+        input_to_sign,
+        output_to_unlock,
+        empty_stack_array::<80, 7>(),
+    );
+
+    let signature_hex: str<144> = "3045022100d477f71331af459ecc84d0d721b0fc9d1914116f64ffff651747ffe0831c019b02206b06cb80968a3565108e395fd6972c482e6a86a36b17cf0dca736fe366471cdd81";
+    let signature_bytes = hex_to_bytes(signature_hex);
+
+    let pubkey_hex: str<130> = "041428f3a3532ff4f1cac70f7292bfad06d1037f800ee8839b56ebba917a22e900ac5879295520ae5690ab668f57f8fdf6d06e410e7de064b676ce8561ec626f57";
+    let pubkey_bytes = hex_to_bytes(pubkey_hex);
+
+    stack.push_bytes(signature_bytes);
+    stack.push_bytes(pubkey_bytes);
+    stack.op_checksig::<26, 35, 0, 0, 1>(Address::new_p2wpkh(), true);
+}
+
+#[test]
+fn test_p2wpkh_checksig_none() {
+    let cur_tx_hex = "02000000000101ac4994014aa36b7f53375658ef595b3cb2891e1735fe5b441686f5e53338e76a0100000000ffffffff01204e0000000000001976a914ce72abfd0e6d9354a660c18f2825eb392f060fdc88ac0000000000";
+    let cur_tx_bytes = hex_to_bytes(cur_tx_hex);
+    let cur_tx = Transaction::<88, 1, 1, 42, 1, 1, 35, 1, 1>::new(cur_tx_bytes, true);
+
+    let input_to_sign = 0;
+
+    let prev_tx_hex = "0200000000010192f29384a956361b9b9ebc667d01489cb360068c22c7b89396e5fdc3ece0305a0100000000ffffffff023d0500000000000016001464193f85b629823f114c9d997ee68627d7395d5fe7a1000000000000160014d0446764c4f16f78ca0ce0b7f487cc5fe205835e024730440220598ef97f63f7648e39d03ff58383056322fa13effaee8d11c9c9e8789a72522002204dda5bbc9cba008682d62820395a2c43b9abae52d6ad81835e72bda09468fa21012103d9a4d0bbe47d58b68e366a380107ba3470f6893764a2d020127d36c169df850100000000";
+    let prev_tx_bytes = hex_to_bytes(prev_tx_hex);
+    let prev_tx = Transaction::<222, 1, 1, 42, 2, 1, 63, 2, 107>::new(prev_tx_bytes, true);
+
+    let output_to_unlock = 1;
+
+    let mut stack = Stack::new(
+        cur_tx,
+        prev_tx,
+        input_to_sign,
+        output_to_unlock,
+        empty_stack_array::<80, 7>(),
+    );
+
+    let signature_hex: str<144> = "3045022100d0564fa7e4f4b919d6de7a46479f7b55a792f8be277c0bf46f70c303ec695747022064424a45a7a812dcc5f698a8fb0e8927dc1b5c5bd1afa728f4176913f678fbd302";
+    let signature_bytes = hex_to_bytes(signature_hex);
+
+    let pubkey_hex: str<130> = "041428f3a3532ff4f1cac70f7292bfad06d1037f800ee8839b56ebba917a22e900ac5879295520ae5690ab668f57f8fdf6d06e410e7de064b676ce8561ec626f57";
+    let pubkey_bytes = hex_to_bytes(pubkey_hex);
+
+    stack.push_bytes(signature_bytes);
+    stack.push_bytes(pubkey_bytes);
+    stack.op_checksig::<26, 35, 0, 0, 1>(Address::new_p2wpkh(), true);
+}
+
+#[test]
+fn test_p2wpkh_checksig_none_anyonecanpay() {
+    let cur_tx_hex = "02000000000101ac4994014aa36b7f53375658ef595b3cb2891e1735fe5b441686f5e53338e76a0100000000ffffffff01204e0000000000001976a914ce72abfd0e6d9354a660c18f2825eb392f060fdc88ac0000000000";
+    let cur_tx_bytes = hex_to_bytes(cur_tx_hex);
+    let cur_tx = Transaction::<88, 1, 1, 42, 1, 1, 35, 1, 1>::new(cur_tx_bytes, true);
+
+    let input_to_sign = 0;
+
+    let prev_tx_hex = "0200000000010192f29384a956361b9b9ebc667d01489cb360068c22c7b89396e5fdc3ece0305a0100000000ffffffff023d0500000000000016001464193f85b629823f114c9d997ee68627d7395d5fe7a1000000000000160014d0446764c4f16f78ca0ce0b7f487cc5fe205835e024730440220598ef97f63f7648e39d03ff58383056322fa13effaee8d11c9c9e8789a72522002204dda5bbc9cba008682d62820395a2c43b9abae52d6ad81835e72bda09468fa21012103d9a4d0bbe47d58b68e366a380107ba3470f6893764a2d020127d36c169df850100000000";
+    let prev_tx_bytes = hex_to_bytes(prev_tx_hex);
+    let prev_tx = Transaction::<222, 1, 1, 42, 2, 1, 63, 2, 107>::new(prev_tx_bytes, true);
+
+    let output_to_unlock = 1;
+
+    let mut stack = Stack::new(
+        cur_tx,
+        prev_tx,
+        input_to_sign,
+        output_to_unlock,
+        empty_stack_array::<80, 7>(),
+    );
+
+    let signature_hex: str<144> = "3045022100b40060a6736bca65871655f964bafc4e2f649025ae45acd498c9b42b53a0c54702207c6d1aa55af0974c76f16ecbb862d995dc723bb10013b2a03d11acbb3ecdc46482";
+    let signature_bytes = hex_to_bytes(signature_hex);
+
+    let pubkey_hex: str<130> = "041428f3a3532ff4f1cac70f7292bfad06d1037f800ee8839b56ebba917a22e900ac5879295520ae5690ab668f57f8fdf6d06e410e7de064b676ce8561ec626f57";
+    let pubkey_bytes = hex_to_bytes(pubkey_hex);
+
+    stack.push_bytes(signature_bytes);
+    stack.push_bytes(pubkey_bytes);
+    stack.op_checksig::<26, 34, 0, 0, 1>(Address::new_p2wpkh(), true);
+}
+
+
+#[test]
+fn test_p2wpkh_checksig_single() {
+    let cur_tx_hex = "02000000000101ac4994014aa36b7f53375658ef595b3cb2891e1735fe5b441686f5e53338e76a0100000000ffffffff01204e0000000000001976a914ce72abfd0e6d9354a660c18f2825eb392f060fdc88ac0000000000";
+    let cur_tx_bytes = hex_to_bytes(cur_tx_hex);
+    let cur_tx = Transaction::<88, 1, 1, 42, 1, 1, 35, 1, 1>::new(cur_tx_bytes, true);
+
+    let input_to_sign = 0;
+
+    let prev_tx_hex = "0200000000010192f29384a956361b9b9ebc667d01489cb360068c22c7b89396e5fdc3ece0305a0100000000ffffffff023d0500000000000016001464193f85b629823f114c9d997ee68627d7395d5fe7a1000000000000160014d0446764c4f16f78ca0ce0b7f487cc5fe205835e024730440220598ef97f63f7648e39d03ff58383056322fa13effaee8d11c9c9e8789a72522002204dda5bbc9cba008682d62820395a2c43b9abae52d6ad81835e72bda09468fa21012103d9a4d0bbe47d58b68e366a380107ba3470f6893764a2d020127d36c169df850100000000";
+    let prev_tx_bytes = hex_to_bytes(prev_tx_hex);
+    let prev_tx = Transaction::<222, 1, 1, 42, 2, 1, 63, 2, 107>::new(prev_tx_bytes, true);
+
+    let output_to_unlock = 1;
+
+    let mut stack = Stack::new(
+        cur_tx,
+        prev_tx,
+        input_to_sign,
+        output_to_unlock,
+        empty_stack_array::<80, 7>(),
+    );
+
+    let signature_hex: str<144> = "3045022100a682b1ee033be45ce935aec6f0e9bbf1f4af069b376a9dc9a8eb1643d52b3843022078e307b6fc2988fe6b3d7b84fcc93bdace768c7fb7efa8c775127efe162528a103";
+    let signature_bytes = hex_to_bytes(signature_hex);
+
+    let pubkey_hex: str<130> = "041428f3a3532ff4f1cac70f7292bfad06d1037f800ee8839b56ebba917a22e900ac5879295520ae5690ab668f57f8fdf6d06e410e7de064b676ce8561ec626f57";
+    let pubkey_bytes = hex_to_bytes(pubkey_hex);
+
+    stack.push_bytes(signature_bytes);
+    stack.push_bytes(pubkey_bytes);
+    stack.op_checksig::<26, 34, 0, 0, 1>(Address::new_p2wpkh(), true);
+}
+
+#[test]
+fn test_p2wpkh_checksig_single_anyonecanpay() {
+    let cur_tx_hex = "02000000000101ac4994014aa36b7f53375658ef595b3cb2891e1735fe5b441686f5e53338e76a0100000000ffffffff01204e0000000000001976a914ce72abfd0e6d9354a660c18f2825eb392f060fdc88ac0000000000";
+    let cur_tx_bytes = hex_to_bytes(cur_tx_hex);
+    let cur_tx = Transaction::<88, 1, 1, 42, 1, 1, 35, 1, 1>::new(cur_tx_bytes, true);
+
+    let input_to_sign = 0;
+
+    let prev_tx_hex = "0200000000010192f29384a956361b9b9ebc667d01489cb360068c22c7b89396e5fdc3ece0305a0100000000ffffffff023d0500000000000016001464193f85b629823f114c9d997ee68627d7395d5fe7a1000000000000160014d0446764c4f16f78ca0ce0b7f487cc5fe205835e024730440220598ef97f63f7648e39d03ff58383056322fa13effaee8d11c9c9e8789a72522002204dda5bbc9cba008682d62820395a2c43b9abae52d6ad81835e72bda09468fa21012103d9a4d0bbe47d58b68e366a380107ba3470f6893764a2d020127d36c169df850100000000";
+    let prev_tx_bytes = hex_to_bytes(prev_tx_hex);
+    let prev_tx = Transaction::<222, 1, 1, 42, 2, 1, 63, 2, 107>::new(prev_tx_bytes, true);
+
+    let output_to_unlock = 1;
+
+    let mut stack = Stack::new(
+        cur_tx,
+        prev_tx,
+        input_to_sign,
+        output_to_unlock,
+        empty_stack_array::<80, 7>(),
+    );
+
+    let signature_hex: str<144> = "3045022100aac857ecbc5a35c079a923eddc78650bae6036a47b626e3c4089166e2747c76902203641ff9721d47134d2eafb6523df00d0dd37103143479243b6c63a920ec4146883";
+    let signature_bytes = hex_to_bytes(signature_hex);
+
+    let pubkey_hex: str<130> = "041428f3a3532ff4f1cac70f7292bfad06d1037f800ee8839b56ebba917a22e900ac5879295520ae5690ab668f57f8fdf6d06e410e7de064b676ce8561ec626f57";
+    let pubkey_bytes = hex_to_bytes(pubkey_hex);
+
+    stack.push_bytes(signature_bytes);
+    stack.push_bytes(pubkey_bytes);
+    stack.op_checksig::<26, 34, 0, 0, 1>(Address::new_p2wpkh(), true);
 }
