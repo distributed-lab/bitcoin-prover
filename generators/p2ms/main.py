@@ -36,6 +36,8 @@ def main():
     PREV_TX_OUT_COUNT_LEN = prevTx._get_compact_size_size(prevTx.output_count)
     PREV_TX_OUT_SIZE = sum(prevTx._get_output_size(out) for out in prevTx.outputs) + PREV_TX_OUT_COUNT_LEN
 
+    INPUT_TO_SIGN = config["input_to_sign"]
+
     mval = script_pub_key[0]
     m = mval - 80 if mval > 80 and mval < 97 else script_pub_key[1]
 
@@ -62,7 +64,11 @@ def main():
         stackSize=script.require_stack_size,
         maxStackElementSize=script.max_element_size,
         n1=n,
-        m1=m
+        m1=m,
+        nOutputSize=curTx._get_output_size(curTx.outputs[INPUT_TO_SIGN]),
+        inputToSign=INPUT_TO_SIGN,
+        inputToSignLen=curTx._get_compact_size_size(INPUT_TO_SIGN),
+        nInputSize=curTx._get_input_size(curTx.inputs[INPUT_TO_SIGN]),
     )
 
     with open(config["file_path"] + "/src/globals.nr", "w") as file:
@@ -78,7 +84,7 @@ def main():
         curTxData=curTxData,
         prevTxData=prevTxData,
         script_sig=config["script_sig"],
-        input_to_sign=config["input_to_sign"]
+        input_to_sign=INPUT_TO_SIGN
     )
 
     with open(config["file_path"] + "/Prover.toml", "w") as file:

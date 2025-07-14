@@ -24,3 +24,8 @@ pub global PREV_TX_WITNESS_SIZE: u32 = {PREV_TX_WITNESS_SIZE};
 pub global PREV_IS_GEGWIT: bool = {PREV_IS_GEGWIT};
 
 pub global OPCODES_AMOUNT: u32 = {opcodesAmount};
+pub global N_OUTPUT_SIZE: u32 = {nOutputSize};
+pub global INPUT_TO_SIGN: u32 = {inputToSign};
+pub global INPUT_TO_SIGN_LEN: u32 = {inputToSignLen};
+pub global N_INPUT_SIZE: u32 = {nInputSize};
+

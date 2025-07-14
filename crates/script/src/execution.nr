@@ -19,7 +19,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         Self { stack: stack }
     }
 
-    pub fn execute<let SCRIPT_SIZE: u32, let MAX_NUMBER_OF_OPCODES: u32, let STACK_ELEMENT_LENGTH_1: u32, let STACK_ELEMENT_LENGTH_2: u32, let STACK_ELEMENT_LENGTH_3: u32, let STACK_ELEMENT_LENGTH_4: u32, let STACK_ELEMENT_LENGTH_5: u32, let STACK_ELEMENT_LENGTH_6: u32, let SCRIPT_CODE_LEN_1: u32, let SCRIPT_CODE_LEN_2: u32, let SCRIPT_CODE_LEN_3: u32, let SCRIPT_CODE_LEN_4: u32, let SCRIPT_CODE_LEN_5: u32, let N1: u32, let M1: u32>(
+    pub fn execute<let SCRIPT_SIZE: u32, let N_OUTPUT_SIZE: u32, let INPUT_TO_SIGN: u32, let INPUT_TO_SIGN_LEN: u32, let N_INPUT_SIZE: u32, let MAX_NUMBER_OF_OPCODES: u32, let STACK_ELEMENT_LENGTH_1: u32, let STACK_ELEMENT_LENGTH_2: u32, let STACK_ELEMENT_LENGTH_3: u32, let STACK_ELEMENT_LENGTH_4: u32, let STACK_ELEMENT_LENGTH_5: u32, let STACK_ELEMENT_LENGTH_6: u32, let SCRIPT_CODE_LEN_1: u32, let SCRIPT_CODE_LEN_2: u32, let SCRIPT_CODE_LEN_3: u32, let SCRIPT_CODE_LEN_4: u32, let SCRIPT_CODE_LEN_5: u32, let N1: u32, let M1: u32>(
         &mut self,
         script: [u8; SCRIPT_SIZE],
         address: Address,
@@ -111,15 +111,40 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                     let verify = opcode == OP_CHECKSIGVERIFY;
 
                     if script_code_size == SCRIPT_CODE_LEN_1 {
-                        self.stack.op_checksig::<SCRIPT_CODE_LEN_1>(address, verify);
+                        self
+                            .stack
+                            .op_checksig::<SCRIPT_CODE_LEN_1, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
+                                address,
+                                verify,
+                            );
                     } else if script_code_size == SCRIPT_CODE_LEN_2 {
-                        self.stack.op_checksig::<SCRIPT_CODE_LEN_2>(address, verify);
+                        self
+                            .stack
+                            .op_checksig::<SCRIPT_CODE_LEN_2, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
+                                address,
+                                verify,
+                            );
                     } else if script_code_size == SCRIPT_CODE_LEN_3 {
-                        self.stack.op_checksig::<SCRIPT_CODE_LEN_3>(address, verify);
+                        self
+                            .stack
+                            .op_checksig::<SCRIPT_CODE_LEN_3, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
+                                address,
+                                verify,
+                            );
                     } else if script_code_size == SCRIPT_CODE_LEN_4 {
-                        self.stack.op_checksig::<SCRIPT_CODE_LEN_4>(address, verify);
+                        self
+                            .stack
+                            .op_checksig::<SCRIPT_CODE_LEN_4, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
+                                address,
+                                verify,
+                            );
                     } else if script_code_size == SCRIPT_CODE_LEN_5 {
-                        self.stack.op_checksig::<SCRIPT_CODE_LEN_5>(address, verify);
+                        self
+                            .stack
+                            .op_checksig::<SCRIPT_CODE_LEN_5, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
+                                address,
+                                verify,
+                            );
                     } else {
                         assert(false, "wrong script code size");
                     }
@@ -128,7 +153,12 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                     let verify = opcode == OP_CHECKMULSIGVERIFY;
 
                     if script_code_size == SCRIPT_CODE_LEN_1 {
-                        self.stack.op_checkmulsig::<SCRIPT_CODE_LEN_1, N1, M1>(address, verify);
+                        self
+                            .stack
+                            .op_checkmulsig::<SCRIPT_CODE_LEN_1, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, N1, M1>(
+                                address,
+                                verify,
+                            );
                     } else {
                         assert(false, "wrong script code size");
                     }
@@ -184,7 +214,7 @@ fn test_p2pkh_execution() {
     let script_sig_key_bytes = hex_to_bytes(script_sig_key_hex);
 
     script_execution_engine
-        .execute::<TEST_SCRIPT_SIG_SIZE, TEST_MAX_NUMBER_OF_OPCODES, TEST_STACK_ELEMENT_LENGTH_1, TEST_STACK_ELEMENT_LENGTH_2, TEST_STACK_ELEMENT_LENGTH_3, TEST_STACK_ELEMENT_LENGTH_4, TEST_STACK_ELEMENT_LENGTH_5, TEST_STACK_ELEMENT_LENGTH_6, TEST_SCRIPT_CODE_LEN_1, TEST_SCRIPT_CODE_LEN_2, TEST_SCRIPT_CODE_LEN_3, TEST_SCRIPT_CODE_LEN_4, TEST_SCRIPT_CODE_LEN_5, 0, 0>(
+        .execute::<TEST_SCRIPT_SIG_SIZE, 34, 1, 1, 41, TEST_MAX_NUMBER_OF_OPCODES, TEST_STACK_ELEMENT_LENGTH_1, TEST_STACK_ELEMENT_LENGTH_2, TEST_STACK_ELEMENT_LENGTH_3, TEST_STACK_ELEMENT_LENGTH_4, TEST_STACK_ELEMENT_LENGTH_5, TEST_STACK_ELEMENT_LENGTH_6, TEST_SCRIPT_CODE_LEN_1, TEST_SCRIPT_CODE_LEN_2, TEST_SCRIPT_CODE_LEN_3, TEST_SCRIPT_CODE_LEN_4, TEST_SCRIPT_CODE_LEN_5, 0, 0>(
             script_sig_key_bytes,
             Address::new_script_sig(),
         );
@@ -193,7 +223,7 @@ fn test_p2pkh_execution() {
     let script_pub_key_bytes = hex_to_bytes(script_pub_key_hex);
 
     script_execution_engine
-        .execute::<TEST_SCRIPT_PUB_KEY_SIZE, TEST_MAX_NUMBER_OF_OPCODES, TEST_STACK_ELEMENT_LENGTH_1, TEST_STACK_ELEMENT_LENGTH_2, TEST_STACK_ELEMENT_LENGTH_3, TEST_STACK_ELEMENT_LENGTH_4, TEST_STACK_ELEMENT_LENGTH_5, TEST_STACK_ELEMENT_LENGTH_6, TEST_SCRIPT_CODE_LEN_1, TEST_SCRIPT_CODE_LEN_2, TEST_SCRIPT_CODE_LEN_3, TEST_SCRIPT_CODE_LEN_4, TEST_SCRIPT_CODE_LEN_5, 0, 0>(
+        .execute::<TEST_SCRIPT_PUB_KEY_SIZE, 34, 1, 1, 41, TEST_MAX_NUMBER_OF_OPCODES, TEST_STACK_ELEMENT_LENGTH_1, TEST_STACK_ELEMENT_LENGTH_2, TEST_STACK_ELEMENT_LENGTH_3, TEST_STACK_ELEMENT_LENGTH_4, TEST_STACK_ELEMENT_LENGTH_5, TEST_STACK_ELEMENT_LENGTH_6, TEST_SCRIPT_CODE_LEN_1, TEST_SCRIPT_CODE_LEN_2, TEST_SCRIPT_CODE_LEN_3, TEST_SCRIPT_CODE_LEN_4, TEST_SCRIPT_CODE_LEN_5, 0, 0>(
             script_pub_key_bytes,
             Address::new_p2pkh(),
         );

@@ -32,6 +32,8 @@ def main():
     PREV_TX_MAX_WITNESS_STACK_SIZE = 2
     PREV_TX_WITNESS_SIZE = 0 if prevTx.witness == None else sum(prevTx._get_witness_size(wit) for wit in prevTx.witness)
 
+    INPUT_TO_SIGN = config["input_to_sign"]
+
     opcodesFile = templateOpcodes.format(
         curTx=curTx, 
         prevTx=prevTx,
@@ -53,7 +55,11 @@ def main():
         curTxLen=curTx._get_transaction_size() * 2, 
         prevTxLen=prevTx._get_transaction_size() * 2, 
         signLen=len(config['signature']), 
-        pkLen=len(config['pub_key'])
+        pkLen=len(config['pub_key']),
+        nOutputSize=curTx._get_output_size(curTx.outputs[INPUT_TO_SIGN]),
+        inputToSign=INPUT_TO_SIGN,
+        inputToSignLen=curTx._get_compact_size_size(INPUT_TO_SIGN),
+        nInputSize=curTx._get_input_size(curTx.inputs[INPUT_TO_SIGN]),
     )
 
     with open(config["file_path"] + "/src/globals.nr", "w") as file:
@@ -70,7 +76,7 @@ def main():
         prevTxData=prevTxData,
         signature=config["signature"],
         pub_key=config["pub_key"],
-        input_to_sign=config["input_to_sign"]
+        input_to_sign=INPUT_TO_SIGN
     )
 
     with open(config["file_path"] + "/Prover.toml", "w") as file:

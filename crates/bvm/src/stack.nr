@@ -785,7 +785,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         }
     }
 
-    fn _op_checkmulsig<let SCRIPT_CODE_LEN: u32, let N: u32, let M: u32>(
+    fn _op_checkmulsig<let SCRIPT_CODE_LEN: u32, let N_OUTPUT_SIZE: u32, let INPUT_TO_SIGN: u32, let INPUT_TO_SIGN_LEN: u32, let N_INPUT_SIZE: u32, let N: u32, let M: u32>(
         &mut self,
         address: Address,
     ) -> bool {
@@ -818,6 +818,28 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
 
                 if hash_type == SIGHASH_ALL {
                     message_hash = self.get_sighash_all_message_hash::<SCRIPT_CODE_LEN>(address);
+                } else if hash_type == SIGHASH_NONE {
+                    message_hash = self.get_sighash_none_message_hash::<SCRIPT_CODE_LEN>(address);
+                } else if hash_type == SIGHASH_SINGLE {
+                    message_hash = self
+                        .get_sighash_single_message_hash::<SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN>(
+                            address,
+                        );
+                } else if hash_type == (SIGHASH_ALL | SIGHASH_ANYONECANPAY) {
+                    message_hash = self
+                        .get_sighash_all_anyonecanpay_message_hash::<SCRIPT_CODE_LEN, N_INPUT_SIZE>(
+                            address,
+                        );
+                } else if hash_type == (SIGHASH_NONE | SIGHASH_ANYONECANPAY) {
+                    message_hash = self
+                        .get_sighash_none_anyonecanpay_message_hash::<SCRIPT_CODE_LEN, N_INPUT_SIZE>(
+                            address,
+                        );
+                } else if hash_type == (SIGHASH_SINGLE | SIGHASH_ANYONECANPAY) {
+                    message_hash = self
+                        .get_sighash_single_anyonecanpay_message_hash::<SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
+                            address,
+                        );
                 } else {
                     assert(false, "Unsupported hash type");
                 }
@@ -831,12 +853,15 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         sig_now == -1
     }
 
-    pub fn op_checkmulsig<let SCRIPT_CODE_LEN: u32, let N: u32, let M: u32>(
+    pub fn op_checkmulsig<let SCRIPT_CODE_LEN: u32, let N_OUTPUT_SIZE: u32, let INPUT_TO_SIGN: u32, let INPUT_TO_SIGN_LEN: u32, let N_INPUT_SIZE: u32, let N: u32, let M: u32>(
         &mut self,
         address: Address,
         verify: bool,
     ) {
-        let result = self._op_checkmulsig::<SCRIPT_CODE_LEN, N, M>(address);
+        let result = self
+            ._op_checkmulsig::<SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, N, M>(
+                address,
+            );
         if verify {
             assert(result);
         } else {
@@ -1370,7 +1395,6 @@ fn test_legacy_checksig_none_anyonecanpay() {
     stack.op_checksig::<26, 0, 0, 0, 41>(Address::new_p2pkh(), true);
 }
 
-
 #[test]
 fn test_legacy_checksig_single() {
     let cur_tx_hex = "01000000056c499afac2e1a63bb6b9461a337319b970c13c2c77be53ebc1c7c870059334000800000000ffffffff00e16741107dcd7cfa2eaeb7d767e47edbec577511b3e10f16980754c3493b090900000000ffffffff078f6ec6d77fc7e0200e12fc1e2114e56e1c5bfc869d376a87b0a1bc5f8dc50e0800000000ffffffff64289405350c34a437566b764989b50381f68cf208531c54cb205f4e859e22100800000000ffffffff291cd5940ac16559eef5a2f2b4770271959f2007b45a0d850ef5d35d134df4100900000000ffffffff010000000000000000266a24e4b883e5bda9e7a59ee4bb99e9b1bcf09f909f426974636f696e20746f20506c75746f2100000000";
@@ -1568,7 +1592,6 @@ fn test_p2wpkh_checksig_none_anyonecanpay() {
     stack.push_bytes(pubkey_bytes);
     stack.op_checksig::<26, 34, 0, 0, 1>(Address::new_p2wpkh(), true);
 }
-
 
 #[test]
 fn test_p2wpkh_checksig_single() {
