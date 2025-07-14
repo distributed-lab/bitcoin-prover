@@ -7,14 +7,10 @@ use sha1::sha1;
 use sign::address::Address;
 use sign::{
     legacy::{
-        serialize_sighash_all, serialize_sighash_all_anyonecanpay, serialize_sighash_none,
-        serialize_sighash_none_anyonecanpay, serialize_sighash_single,
-        serialize_sighash_single_anyonecanpay,
+        serialize_sighash
     },
     segwit::{
-        serialize_p2wpkh_sighash_all, serialize_p2wpkh_sighash_all_anyonecanpay,
-        serialize_p2wpkh_sighash_none, serialize_p2wpkh_sighash_none_anyonecanpay,
-        serialize_p2wpkh_sighash_single, serialize_p2wpkh_sighash_single_anyonecanpay,
+        serialize_p2wpkh_sighash
     },
     transaction::Transaction,
 };
@@ -562,167 +558,31 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         size
     }
 
-    fn get_sighash_all_message_hash<let SCRIPT_CODE_LEN: u32>(
+ fn get_sighash<let SCRIPT_CODE_LEN: u32, let N_OUTPUT_SIZE: u32, let INPUT_TO_SIGN: u32, let INPUT_TO_SIGN_LEN: u32, let N_INPUT_SIZE: u32>(
         &mut self,
         address: Address,
+        hash_type: u8,
     ) -> [u8; 32] {
         let mut message_hash = [0; 32];
-        if address.is_p2pk() | address.is_p2pkh() | address.is_p2ms() {
+        if address.is_p2pk() | address.is_p2pkh() {
             let script_code = self.prev_transaction.get_script_pub_key_with_size::<SCRIPT_CODE_LEN>(
                 self.output_to_unlock,
             );
-            message_hash =
-                serialize_sighash_all(self.cur_transaction, self.input_to_sign, script_code);
-        } else if address.is_p2wpkh() {
-            let amount = self.prev_transaction.get_amount(self.output_to_unlock);
-            let script_code = self.prev_transaction.get_p2wpkh_script_code(self.output_to_unlock);
-            message_hash = serialize_p2wpkh_sighash_all(
-                self.cur_transaction,
-                self.input_to_sign,
-                amount,
-                script_code,
-            );
-        } else {
-            assert(false, "not implemented");
-        }
-        message_hash
-    }
-
-    fn get_sighash_all_anyonecanpay_message_hash<let SCRIPT_CODE_LEN: u32, let N_INPUT_SIZE: u32>(
-        &mut self,
-        address: Address,
-    ) -> [u8; 32] {
-        let mut message_hash = [0; 32];
-        if address.is_p2pk() | address.is_p2pkh() | address.is_p2ms() {
-            let script_code = self.prev_transaction.get_script_pub_key_with_size::<SCRIPT_CODE_LEN>(
-                self.output_to_unlock,
-            );
-            message_hash = serialize_sighash_all_anyonecanpay::<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, SCRIPT_CODE_LEN, N_INPUT_SIZE>(
+            message_hash = serialize_sighash::<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
                 self.cur_transaction,
                 self.input_to_sign,
                 script_code,
+                hash_type,
             );
         } else if address.is_p2wpkh() {
             let amount = self.prev_transaction.get_amount(self.output_to_unlock);
             let script_code = self.prev_transaction.get_p2wpkh_script_code(self.output_to_unlock);
-            message_hash = serialize_p2wpkh_sighash_all_anyonecanpay(
+            message_hash = serialize_p2wpkh_sighash::<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, N_OUTPUT_SIZE>(
                 self.cur_transaction,
                 self.input_to_sign,
                 amount,
                 script_code,
-            );
-        } else {
-            assert(false, "not implemented");
-        }
-        message_hash
-    }
-
-    fn get_sighash_none_message_hash<let SCRIPT_CODE_LEN: u32>(
-        &mut self,
-        address: Address,
-    ) -> [u8; 32] {
-        let mut message_hash = [0; 32];
-        if address.is_p2pk() | address.is_p2pkh() | address.is_p2ms() {
-            let script_code = self.prev_transaction.get_script_pub_key_with_size::<SCRIPT_CODE_LEN>(
-                self.output_to_unlock,
-            );
-            message_hash =
-                serialize_sighash_none(self.cur_transaction, self.input_to_sign, script_code);
-        } else if address.is_p2wpkh() {
-            let amount = self.prev_transaction.get_amount(self.output_to_unlock);
-            let script_code = self.prev_transaction.get_p2wpkh_script_code(self.output_to_unlock);
-            message_hash = serialize_p2wpkh_sighash_none(
-                self.cur_transaction,
-                self.input_to_sign,
-                amount,
-                script_code,
-            );
-        } else {
-            assert(false, "not implemented");
-        }
-        message_hash
-    }
-
-    fn get_sighash_none_anyonecanpay_message_hash<let SCRIPT_CODE_LEN: u32, let N_INPUT_SIZE: u32>(
-        &mut self,
-        address: Address,
-    ) -> [u8; 32] {
-        let mut message_hash = [0; 32];
-        if address.is_p2pk() | address.is_p2pkh() | address.is_p2ms() {
-            let script_code = self.prev_transaction.get_script_pub_key_with_size::<SCRIPT_CODE_LEN>(
-                self.output_to_unlock,
-            );
-            message_hash = serialize_sighash_none_anyonecanpay::<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, SCRIPT_CODE_LEN, N_INPUT_SIZE>(
-                self.cur_transaction,
-                self.input_to_sign,
-                script_code,
-            );
-        } else if address.is_p2wpkh() {
-            let amount = self.prev_transaction.get_amount(self.output_to_unlock);
-            let script_code = self.prev_transaction.get_p2wpkh_script_code(self.output_to_unlock);
-            message_hash = serialize_p2wpkh_sighash_none_anyonecanpay(
-                self.cur_transaction,
-                self.input_to_sign,
-                amount,
-                script_code,
-            );
-        } else {
-            assert(false, "not implemented");
-        }
-        message_hash
-    }
-
-    fn get_sighash_single_message_hash<let SCRIPT_CODE_LEN: u32, let N_OUTPUT_SIZE: u32, let INPUT_TO_SIGN: u32, let INPUT_TO_SIGN_LEN: u32>(
-        &mut self,
-        address: Address,
-    ) -> [u8; 32] {
-        let mut message_hash = [0; 32];
-        if address.is_p2pk() | address.is_p2pkh() | address.is_p2ms() {
-            let script_code = self.prev_transaction.get_script_pub_key_with_size::<SCRIPT_CODE_LEN>(
-                self.output_to_unlock,
-            );
-            message_hash = serialize_sighash_single::<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN>(
-                self.cur_transaction,
-                self.input_to_sign,
-                script_code,
-            );
-        } else if address.is_p2wpkh() {
-            let amount = self.prev_transaction.get_amount(self.output_to_unlock);
-            let script_code = self.prev_transaction.get_p2wpkh_script_code(self.output_to_unlock);
-            message_hash = serialize_p2wpkh_sighash_single::<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, N_OUTPUT_SIZE>(
-                self.cur_transaction,
-                self.input_to_sign,
-                amount,
-                script_code,
-            );
-        } else {
-            assert(false, "not implemented");
-        }
-        message_hash
-    }
-
-    fn get_sighash_single_anyonecanpay_message_hash<let SCRIPT_CODE_LEN: u32, let N_OUTPUT_SIZE: u32, let INPUT_TO_SIGN: u32, let INPUT_TO_SIGN_LEN: u32, let N_INPUT_SIZE: u32>(
-        &mut self,
-        address: Address,
-    ) -> [u8; 32] {
-        let mut message_hash = [0; 32];
-        if address.is_p2pk() | address.is_p2pkh() | address.is_p2ms() {
-            let script_code = self.prev_transaction.get_script_pub_key_with_size::<SCRIPT_CODE_LEN>(
-                self.output_to_unlock,
-            );
-            message_hash = serialize_sighash_single_anyonecanpay::<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
-                self.cur_transaction,
-                self.input_to_sign,
-                script_code,
-            );
-        } else if address.is_p2wpkh() {
-            let amount = self.prev_transaction.get_amount(self.output_to_unlock);
-            let script_code = self.prev_transaction.get_p2wpkh_script_code(self.output_to_unlock);
-            message_hash = serialize_p2wpkh_sighash_single_anyonecanpay::<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, N_OUTPUT_SIZE>(
-                self.cur_transaction,
-                self.input_to_sign,
-                amount,
-                script_code,
+                hash_type,
             );
         } else {
             assert(false, "not implemented");
@@ -737,36 +597,16 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         let mut message_hash = [0; 32];
 
         let (pub_x, pub_y) = self.pop_pubkey();
-        let (mut signature, hash_type) = self.pop_signature();
+        let (signature, hash_type) = self.pop_signature();
 
-        if hash_type == SIGHASH_ALL {
-            message_hash = self.get_sighash_all_message_hash::<SCRIPT_CODE_LEN>(address);
-        } else if hash_type == SIGHASH_NONE {
-            message_hash = self.get_sighash_none_message_hash::<SCRIPT_CODE_LEN>(address);
-        } else if hash_type == SIGHASH_SINGLE {
-            message_hash = self
-                .get_sighash_single_message_hash::<SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN>(
-                    address,
-                );
-        } else if hash_type == (SIGHASH_ALL | SIGHASH_ANYONECANPAY) {
-            message_hash = self
-                .get_sighash_all_anyonecanpay_message_hash::<SCRIPT_CODE_LEN, N_INPUT_SIZE>(address)
-                ;
-            } else if hash_type == (SIGHASH_NONE | SIGHASH_ANYONECANPAY) {
-                message_hash = self
-                    .get_sighash_none_anyonecanpay_message_hash::<SCRIPT_CODE_LEN, N_INPUT_SIZE>(
-                        address,
-                    );
-            } else if hash_type == (SIGHASH_SINGLE | SIGHASH_ANYONECANPAY) {
-                message_hash = self
-                    .get_sighash_single_anyonecanpay_message_hash::<SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
-                        address,
-                    );
-            } else {
-                assert(false, "Unsupported hash type");
-            }
-            ecdsa_verify(pub_x, pub_y, signature, message_hash)
-        }
+        message_hash = self
+            .get_sighash::<SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
+                address,
+                hash_type,
+            );
+
+        ecdsa_verify(pub_x, pub_y, signature, message_hash)
+    }
 
     pub fn op_checksig<let SCRIPT_CODE_LEN: u32, let N_OUTPUT_SIZE: u32, let INPUT_TO_SIGN: u32, let INPUT_TO_SIGN_LEN: u32, let N_INPUT_SIZE: u32>(
         &mut self,
@@ -816,33 +656,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                 let (pub_x, pub_y) = keys[N - 1 - i];
                 let (signature, hash_type) = sigs[sig_now];
 
-                if hash_type == SIGHASH_ALL {
-                    message_hash = self.get_sighash_all_message_hash::<SCRIPT_CODE_LEN>(address);
-                } else if hash_type == SIGHASH_NONE {
-                    message_hash = self.get_sighash_none_message_hash::<SCRIPT_CODE_LEN>(address);
-                } else if hash_type == SIGHASH_SINGLE {
-                    message_hash = self
-                        .get_sighash_single_message_hash::<SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN>(
-                            address,
-                        );
-                } else if hash_type == (SIGHASH_ALL | SIGHASH_ANYONECANPAY) {
-                    message_hash = self
-                        .get_sighash_all_anyonecanpay_message_hash::<SCRIPT_CODE_LEN, N_INPUT_SIZE>(
-                            address,
-                        );
-                } else if hash_type == (SIGHASH_NONE | SIGHASH_ANYONECANPAY) {
-                    message_hash = self
-                        .get_sighash_none_anyonecanpay_message_hash::<SCRIPT_CODE_LEN, N_INPUT_SIZE>(
-                            address,
-                        );
-                } else if hash_type == (SIGHASH_SINGLE | SIGHASH_ANYONECANPAY) {
-                    message_hash = self
-                        .get_sighash_single_anyonecanpay_message_hash::<SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
-                            address,
-                        );
-                } else {
-                    assert(false, "Unsupported hash type");
-                }
+                message_hash = self.get_sighash::<SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(address,hash_type); 
 
                 if ecdsa_verify(pub_x, pub_y, signature, message_hash) {
                     sig_now -= 1;
