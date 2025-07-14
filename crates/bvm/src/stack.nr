@@ -1,10 +1,6 @@
-use bignum::{BigNum, fields::{U256::U256, U768::U768}};
-use crypto::{
-    ecdsa::{
-        ecdsa_verify, get_rs_from_signature, get_xy_from_compressed_pubkey,
-        get_xy_from_uncompressed_pubkey,
-    },
-    types::I768,
+use crypto::ecdsa::{
+    ecdsa_verify, get_rs_from_signature, get_xy_from_compressed_pubkey,
+    get_xy_from_uncompressed_pubkey,
 };
 use ripemd160::ripemd160;
 use sha1::sha1;
@@ -25,8 +21,8 @@ use sign::{
 use sign::sig_types::{SIGHASH_ALL, SIGHASH_ANYONECANPAY, SIGHASH_NONE, SIGHASH_SINGLE};
 use std::collections::bounded_vec::BoundedVec;
 use utils::convert::{
-    bytes_to_hex, bytes_to_vec, get_256_bits_from_768, hex_to_bytes, i32_to_le_bytes, i32_to_vec,
-    u32_to_le_bytes, vec_to_array, vec_to_i32, vec_to_u32,
+    bytes_to_vec, hex_to_bytes, i32_to_le_bytes, i32_to_vec, u32_to_le_bytes, vec_to_array,
+    vec_to_i32, vec_to_u32,
 };
 
 pub fn empty_stack_array<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32>() -> [BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>; MAX_STACK_SIZE] {
@@ -556,7 +552,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
 
     pub fn get_script_code_size(&mut self, address: Address) -> u32 {
         let mut size = 0;
-        if address.is_p2pk() | address.is_p2pkh() {
+        if address.is_p2pk() | address.is_p2pkh() | address.is_p2ms() {
             size = self.prev_transaction.get_script_pub_key_size(self.output_to_unlock);
         } else if address.is_p2wpkh() {
             size = 26;
@@ -571,7 +567,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         address: Address,
     ) -> [u8; 32] {
         let mut message_hash = [0; 32];
-        if address.is_p2pk() | address.is_p2pkh() {
+        if address.is_p2pk() | address.is_p2pkh() | address.is_p2ms() {
             let script_code = self.prev_transaction.get_script_pub_key_with_size::<SCRIPT_CODE_LEN>(
                 self.output_to_unlock,
             );
@@ -597,7 +593,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         address: Address,
     ) -> [u8; 32] {
         let mut message_hash = [0; 32];
-        if address.is_p2pk() | address.is_p2pkh() {
+        if address.is_p2pk() | address.is_p2pkh() | address.is_p2ms() {
             let script_code = self.prev_transaction.get_script_pub_key_with_size::<SCRIPT_CODE_LEN>(
                 self.output_to_unlock,
             );
@@ -626,7 +622,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         address: Address,
     ) -> [u8; 32] {
         let mut message_hash = [0; 32];
-        if address.is_p2pk() | address.is_p2pkh() {
+        if address.is_p2pk() | address.is_p2pkh() | address.is_p2ms() {
             let script_code = self.prev_transaction.get_script_pub_key_with_size::<SCRIPT_CODE_LEN>(
                 self.output_to_unlock,
             );
@@ -652,7 +648,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         address: Address,
     ) -> [u8; 32] {
         let mut message_hash = [0; 32];
-        if address.is_p2pk() | address.is_p2pkh() {
+        if address.is_p2pk() | address.is_p2pkh() | address.is_p2ms() {
             let script_code = self.prev_transaction.get_script_pub_key_with_size::<SCRIPT_CODE_LEN>(
                 self.output_to_unlock,
             );
@@ -681,7 +677,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         address: Address,
     ) -> [u8; 32] {
         let mut message_hash = [0; 32];
-        if address.is_p2pk() | address.is_p2pkh() {
+        if address.is_p2pk() | address.is_p2pkh() | address.is_p2ms() {
             let script_code = self.prev_transaction.get_script_pub_key_with_size::<SCRIPT_CODE_LEN>(
                 self.output_to_unlock,
             );
@@ -710,7 +706,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         address: Address,
     ) -> [u8; 32] {
         let mut message_hash = [0; 32];
-        if address.is_p2pk() | address.is_p2pkh() {
+        if address.is_p2pk() | address.is_p2pkh() | address.is_p2ms() {
             let script_code = self.prev_transaction.get_script_pub_key_with_size::<SCRIPT_CODE_LEN>(
                 self.output_to_unlock,
             );
@@ -779,6 +775,91 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
     ) {
         let result = self
             ._op_checksig::<SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
+                address,
+            );
+        if verify {
+            assert(result);
+        } else {
+            let integer = i32_to_vec(if result { 1 } else { 0 });
+            self.push(integer);
+        }
+    }
+
+    fn _op_checkmulsig<let SCRIPT_CODE_LEN: u32, let N_OUTPUT_SIZE: u32, let INPUT_TO_SIGN: u32, let INPUT_TO_SIGN_LEN: u32, let N_INPUT_SIZE: u32, let N: u32, let M: u32>(
+        &mut self,
+        address: Address,
+    ) -> bool {
+        let n = vec_to_u32(self.pop());
+        assert(n == N, "Incorrect amount of keys");
+
+        let mut keys = [([0; 32], [0; 32]); N];
+        for i in 0..N {
+            keys[i] = self.pop_pubkey();
+        }
+
+        let m = vec_to_u32(self.pop());
+        assert(m == M, "Incorrect amount of signatures");
+
+        let mut sigs = [([0; 64], 0); M];
+        for i in 0..M {
+            sigs[i] = self.pop_signature();
+        }
+
+        let o = vec_to_u32(self.pop());
+        assert(o == 0, "Incorrect structure of mulsig");
+
+        let mut sig_now = M as i32 - 1;
+        for i in 0..N {
+            if sig_now >= 0 {
+                let mut message_hash = [0; 32];
+
+                let (pub_x, pub_y) = keys[N - 1 - i];
+                let (signature, hash_type) = sigs[sig_now];
+
+                if hash_type == SIGHASH_ALL {
+                    message_hash = self.get_sighash_all_message_hash::<SCRIPT_CODE_LEN>(address);
+                } else if hash_type == SIGHASH_NONE {
+                    message_hash = self.get_sighash_none_message_hash::<SCRIPT_CODE_LEN>(address);
+                } else if hash_type == SIGHASH_SINGLE {
+                    message_hash = self
+                        .get_sighash_single_message_hash::<SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN>(
+                            address,
+                        );
+                } else if hash_type == (SIGHASH_ALL | SIGHASH_ANYONECANPAY) {
+                    message_hash = self
+                        .get_sighash_all_anyonecanpay_message_hash::<SCRIPT_CODE_LEN, N_INPUT_SIZE>(
+                            address,
+                        );
+                } else if hash_type == (SIGHASH_NONE | SIGHASH_ANYONECANPAY) {
+                    message_hash = self
+                        .get_sighash_none_anyonecanpay_message_hash::<SCRIPT_CODE_LEN, N_INPUT_SIZE>(
+                            address,
+                        );
+                } else if hash_type == (SIGHASH_SINGLE | SIGHASH_ANYONECANPAY) {
+                    message_hash = self
+                        .get_sighash_single_anyonecanpay_message_hash::<SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
+                            address,
+                        );
+                } else {
+                    assert(false, "Unsupported hash type");
+                }
+
+                if ecdsa_verify(pub_x, pub_y, signature, message_hash) {
+                    sig_now -= 1;
+                }
+            }
+        }
+
+        sig_now == -1
+    }
+
+    pub fn op_checkmulsig<let SCRIPT_CODE_LEN: u32, let N_OUTPUT_SIZE: u32, let INPUT_TO_SIGN: u32, let INPUT_TO_SIGN_LEN: u32, let N_INPUT_SIZE: u32, let N: u32, let M: u32>(
+        &mut self,
+        address: Address,
+        verify: bool,
+    ) {
+        let result = self
+            ._op_checkmulsig::<SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, N, M>(
                 address,
             );
         if verify {
@@ -1314,7 +1395,6 @@ fn test_legacy_checksig_none_anyonecanpay() {
     stack.op_checksig::<26, 0, 0, 0, 41>(Address::new_p2pkh(), true);
 }
 
-
 #[test]
 fn test_legacy_checksig_single() {
     let cur_tx_hex = "01000000056c499afac2e1a63bb6b9461a337319b970c13c2c77be53ebc1c7c870059334000800000000ffffffff00e16741107dcd7cfa2eaeb7d767e47edbec577511b3e10f16980754c3493b090900000000ffffffff078f6ec6d77fc7e0200e12fc1e2114e56e1c5bfc869d376a87b0a1bc5f8dc50e0800000000ffffffff64289405350c34a437566b764989b50381f68cf208531c54cb205f4e859e22100800000000ffffffff291cd5940ac16559eef5a2f2b4770271959f2007b45a0d850ef5d35d134df4100900000000ffffffff010000000000000000266a24e4b883e5bda9e7a59ee4bb99e9b1bcf09f909f426974636f696e20746f20506c75746f2100000000";
@@ -1512,7 +1592,6 @@ fn test_p2wpkh_checksig_none_anyonecanpay() {
     stack.push_bytes(pubkey_bytes);
     stack.op_checksig::<26, 34, 0, 0, 1>(Address::new_p2wpkh(), true);
 }
-
 
 #[test]
 fn test_p2wpkh_checksig_single() {

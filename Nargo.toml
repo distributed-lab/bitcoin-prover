@@ -12,5 +12,6 @@ members = [
     "app/blocks",
     "app/p2sh",
     "app/p2tr",
+    "app/p2ms",
     "app/p2pkh",
 ]
