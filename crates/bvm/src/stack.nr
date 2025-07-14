@@ -593,7 +593,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         address: Address,
     ) -> [u8; 32] {
         let mut message_hash = [0; 32];
-        if address.is_p2pk() | address.is_p2pkh() {
+        if address.is_p2pk() | address.is_p2pkh() | address.is_p2ms() {
             let script_code = self.prev_transaction.get_script_pub_key_with_size::<SCRIPT_CODE_LEN>(
                 self.output_to_unlock,
             );
@@ -622,7 +622,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         address: Address,
     ) -> [u8; 32] {
         let mut message_hash = [0; 32];
-        if address.is_p2pk() | address.is_p2pkh() {
+        if address.is_p2pk() | address.is_p2pkh() | address.is_p2ms() {
             let script_code = self.prev_transaction.get_script_pub_key_with_size::<SCRIPT_CODE_LEN>(
                 self.output_to_unlock,
             );
@@ -648,7 +648,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         address: Address,
     ) -> [u8; 32] {
         let mut message_hash = [0; 32];
-        if address.is_p2pk() | address.is_p2pkh() {
+        if address.is_p2pk() | address.is_p2pkh() | address.is_p2ms() {
             let script_code = self.prev_transaction.get_script_pub_key_with_size::<SCRIPT_CODE_LEN>(
                 self.output_to_unlock,
             );
@@ -677,7 +677,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         address: Address,
     ) -> [u8; 32] {
         let mut message_hash = [0; 32];
-        if address.is_p2pk() | address.is_p2pkh() {
+        if address.is_p2pk() | address.is_p2pkh() | address.is_p2ms() {
             let script_code = self.prev_transaction.get_script_pub_key_with_size::<SCRIPT_CODE_LEN>(
                 self.output_to_unlock,
             );
@@ -706,7 +706,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         address: Address,
     ) -> [u8; 32] {
         let mut message_hash = [0; 32];
-        if address.is_p2pk() | address.is_p2pkh() {
+        if address.is_p2pk() | address.is_p2pkh() | address.is_p2ms() {
             let script_code = self.prev_transaction.get_script_pub_key_with_size::<SCRIPT_CODE_LEN>(
                 self.output_to_unlock,
             );
