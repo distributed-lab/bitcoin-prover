@@ -5,15 +5,7 @@ use crypto::ecdsa::{
 use ripemd160::ripemd160;
 use sha1::sha1;
 use sign::address::Address;
-use sign::{
-    legacy::{
-        serialize_sighash
-    },
-    segwit::{
-        serialize_p2wpkh_sighash
-    },
-    transaction::Transaction,
-};
+use sign::{legacy::serialize_sighash, segwit::serialize_p2wpkh_sighash, transaction::Transaction};
 use sign::sig_types::{SIGHASH_ALL, SIGHASH_ANYONECANPAY, SIGHASH_NONE, SIGHASH_SINGLE};
 use std::collections::bounded_vec::BoundedVec;
 use utils::convert::{
@@ -558,13 +550,13 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         size
     }
 
- fn get_sighash<let SCRIPT_CODE_LEN: u32, let N_OUTPUT_SIZE: u32, let INPUT_TO_SIGN: u32, let INPUT_TO_SIGN_LEN: u32, let N_INPUT_SIZE: u32>(
+    fn get_sighash<let SCRIPT_CODE_LEN: u32, let N_OUTPUT_SIZE: u32, let INPUT_TO_SIGN: u32, let INPUT_TO_SIGN_LEN: u32, let N_INPUT_SIZE: u32>(
         &mut self,
         address: Address,
         hash_type: u8,
     ) -> [u8; 32] {
         let mut message_hash = [0; 32];
-        if address.is_p2pk() | address.is_p2pkh() {
+        if address.is_p2pk() | address.is_p2pkh() | address.is_p2ms() {
             let script_code = self.prev_transaction.get_script_pub_key_with_size::<SCRIPT_CODE_LEN>(
                 self.output_to_unlock,
             );
@@ -656,7 +648,11 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                 let (pub_x, pub_y) = keys[N - 1 - i];
                 let (signature, hash_type) = sigs[sig_now];
 
-                message_hash = self.get_sighash::<SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(address,hash_type); 
+                message_hash = self
+                    .get_sighash::<SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
+                        address,
+                        hash_type,
+                    );
 
                 if ecdsa_verify(pub_x, pub_y, signature, message_hash) {
                     sig_now -= 1;
