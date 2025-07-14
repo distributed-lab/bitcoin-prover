@@ -36,6 +36,12 @@ def main():
     PREV_TX_OUT_COUNT_LEN = prevTx._get_compact_size_size(prevTx.output_count)
     PREV_TX_OUT_SIZE = sum(prevTx._get_output_size(out) for out in prevTx.outputs) + PREV_TX_OUT_COUNT_LEN
 
+    mval = script_pub_key[0]
+    m = mval - 80 if mval > 80 and mval < 97 else script_pub_key[1]
+
+    nval = script_pub_key[len(script_pub_key) - 2]
+    n = nval - 80 if nval > 80 and nval < 97 else nval
+
     opcodesFile = templateOpcodes.format(
         curTx=curTx, 
         prevTx=prevTx,
@@ -55,9 +61,8 @@ def main():
         scriptPubKeyLenLen=curTx._get_compact_size_size(script_pub_key_size),
         stackSize=script.require_stack_size,
         maxStackElementSize=script.max_element_size,
-        # todo: size can be more than 1 byte
-        n1=script_pub_key[len(script_pub_key) - 2] - 80,
-        m1=script_pub_key[0] - 80
+        n1=n,
+        m1=m
     )
 
     with open(config["file_path"] + "/src/globals.nr", "w") as file:
