@@ -117,6 +117,24 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                 encoded_signature[i] = encoded_signature_with_hash_type[i];
             }
             signature = get_rs_from_signature(encoded_signature);
+        } else if encoded_signature_vec.len() - 1 == 70 {
+            let encoded_signature_with_hash_type =
+                vec_to_array::<MAX_STACK_ELEMENT_SIZE, 71>(encoded_signature_vec);
+            hash_type = encoded_signature_with_hash_type[70];
+            let mut encoded_signature = [0; 70];
+            for i in 0..70 {
+                encoded_signature[i] = encoded_signature_with_hash_type[i];
+            }
+            signature = get_rs_from_signature(encoded_signature);
+        } else if encoded_signature_vec.len() - 1 == 72 {
+            let encoded_signature_with_hash_type =
+                vec_to_array::<MAX_STACK_ELEMENT_SIZE, 73>(encoded_signature_vec);
+            hash_type = encoded_signature_with_hash_type[72];
+            let mut encoded_signature = [0; 72];
+            for i in 0..72 {
+                encoded_signature[i] = encoded_signature_with_hash_type[i];
+            }
+            signature = get_rs_from_signature(encoded_signature);
         } else {
             assert(false, "Invalid signature length");
         }
@@ -124,7 +142,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         (signature, hash_type)
     }
 
-    // OP_0 ... OP_16
+    // OP_0 ... OP_16 AND OP_1NEGATE
     pub fn op_num(&mut self, num: i8) {
         assert(num >= -1 & num <= 16);
         self.push(i32_to_vec(num as i32));
@@ -169,7 +187,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         self.push(i32_to_vec(value3));
     }
 
-    pub fn verify(&mut self) -> bool {
+    pub fn op_verify(&mut self) -> bool {
         if self.data.len() == 0 {
             false
         } else {
