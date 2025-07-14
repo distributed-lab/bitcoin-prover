@@ -1,14 +1,13 @@
 use crate::transaction::Transaction;
-use dep::bignum::{BigNum, U256};
-use crypto::ecdsa::ecdsa_verify;
 use utils::convert::{bytes_to_hex, hex_to_bytes, u32_to_le_bytes};
+use super::sig_types::{SIGHASH_ALL, SIGHASH_NONE, SIGHASH_SINGLE, SIGHASH_ANYONECANPAY};
 
 fn prepare_preimage_hash_for_sighash_all<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_COUNT_LEN: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32, let SCRIPT_PUB_KEY_SIZE: u32>(
     transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
     input_to_sign: u32,
     script_pub_key: [u8; SCRIPT_PUB_KEY_SIZE],
-) -> [u8; 4 + INPUT_SIZE + OUTPUT_SIZE + 4 + SCRIPT_PUB_KEY_SIZE + 4 - 1] {
-    let mut data = [0; 4 + INPUT_SIZE + OUTPUT_SIZE + 4 + SCRIPT_PUB_KEY_SIZE + 4 - 1];
+) -> [u8; 4 + INPUT_SIZE + OUTPUT_SIZE + 4 + (SCRIPT_PUB_KEY_SIZE - 1) + 4] {
+    let mut data = [0; 4 + INPUT_SIZE + OUTPUT_SIZE + 4 + (SCRIPT_PUB_KEY_SIZE - 1) + 4];
     let mut data_pos: u32 = 0;
 
     for i in 0..4 {
@@ -55,7 +54,7 @@ fn prepare_preimage_hash_for_sighash_all<let TRANSACTION_SIZE: u32, let INPUT_CO
 
     data_pos += 4;
 
-    assert(data_pos == 4 + INPUT_SIZE + OUTPUT_SIZE + 4 + SCRIPT_PUB_KEY_SIZE + 4 - 1);
+    assert(data_pos == 4 + INPUT_SIZE + OUTPUT_SIZE + 4 + (SCRIPT_PUB_KEY_SIZE - 1) + 4);
 
     data
 }
@@ -85,8 +84,8 @@ fn prepare_preimage_hash_for_sighash_all_anyonecanpay<let TRANSACTION_SIZE: u32,
     transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
     input_to_sign: u32,
     script_pub_key: [u8; SCRIPT_PUB_KEY_SIZE],
-) -> [u8; 4 + 1 + N_INPUT_SIZE + OUTPUT_SIZE + 4 + SCRIPT_PUB_KEY_SIZE + 4 - 1] {
-    let mut data = [0; 4 + 1 + N_INPUT_SIZE + OUTPUT_SIZE + 4 + SCRIPT_PUB_KEY_SIZE + 4 - 1];
+) -> [u8; 4 + 1 + N_INPUT_SIZE + OUTPUT_SIZE + 4 + (SCRIPT_PUB_KEY_SIZE - 1) + 4] {
+    let mut data = [0; 4 + 1 + N_INPUT_SIZE + OUTPUT_SIZE + 4 + (SCRIPT_PUB_KEY_SIZE - 1) + 4];
     let mut data_pos: u32 = 0;
 
     for i in 0..4 {
@@ -133,7 +132,7 @@ fn prepare_preimage_hash_for_sighash_all_anyonecanpay<let TRANSACTION_SIZE: u32,
 
     data_pos += 4;
 
-    assert(data_pos == 4 + 1 + N_INPUT_SIZE + OUTPUT_SIZE + 4 + SCRIPT_PUB_KEY_SIZE + 4 - 1);
+    assert(data_pos == 4 + 1 + N_INPUT_SIZE + OUTPUT_SIZE + 4 + (SCRIPT_PUB_KEY_SIZE - 1) + 4);
 
     data
 }
@@ -166,7 +165,7 @@ fn prepare_preimage_hash_for_sighash_single<let TRANSACTION_SIZE: u32, let INPUT
     transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
     input_to_sign: u32,
     script_pub_key: [u8; SCRIPT_PUB_KEY_SIZE],
-    ) -> [u8; 4 + INPUT_SIZE + INPUT_TO_SIGN_LEN + ((INPUT_TO_SIGN) * 9) + N_OUTPUT_SIZE + 4 + SCRIPT_PUB_KEY_SIZE + 4 - 1] {
+    ) -> [u8; 4 + INPUT_SIZE + INPUT_TO_SIGN_LEN + ((INPUT_TO_SIGN) * 9) + N_OUTPUT_SIZE + 4 + (SCRIPT_PUB_KEY_SIZE - 1) + 4] {
     assert(input_to_sign == INPUT_TO_SIGN);
 
     let mut data = [
@@ -176,9 +175,8 @@ fn prepare_preimage_hash_for_sighash_single<let TRANSACTION_SIZE: u32, let INPUT
             + ((INPUT_TO_SIGN) * 9)
             + N_OUTPUT_SIZE
             + 4
-            + SCRIPT_PUB_KEY_SIZE
+            + (SCRIPT_PUB_KEY_SIZE - 1)
             + 4
-            - 1
     ];
     let mut data_pos: u32 = 0;
 
@@ -261,12 +259,11 @@ fn prepare_preimage_hash_for_sighash_single<let TRANSACTION_SIZE: u32, let INPUT
             == 4
                 + INPUT_SIZE
                 + INPUT_TO_SIGN_LEN
-                + ((INPUT_TO_SIGN) * 9)
+                + ((INPUT_TO_SIGN) * 8)
                 + N_OUTPUT_SIZE
                 + 4
-                + SCRIPT_PUB_KEY_SIZE
-                + 4
-                - 1,
+                + (SCRIPT_PUB_KEY_SIZE - 1)
+                + 4,
     );
 
     data
@@ -301,7 +298,7 @@ fn prepare_preimage_hash_for_sighash_single_anyonecanpay<let TRANSACTION_SIZE: u
     transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
     input_to_sign: u32,
     script_pub_key: [u8; SCRIPT_PUB_KEY_SIZE],
-    ) -> [u8; 4 + 1 + N_INPUT_SIZE + INPUT_TO_SIGN_LEN + ((INPUT_TO_SIGN) * 9) + N_OUTPUT_SIZE + 4 + SCRIPT_PUB_KEY_SIZE + 4 - 1] {
+    ) -> [u8; 4 + 1 + N_INPUT_SIZE + INPUT_TO_SIGN_LEN + ((INPUT_TO_SIGN) * 9) + N_OUTPUT_SIZE + 4 + (SCRIPT_PUB_KEY_SIZE - 1) + 4] {
     assert(input_to_sign == INPUT_TO_SIGN);
 
     let mut data = [
@@ -312,9 +309,8 @@ fn prepare_preimage_hash_for_sighash_single_anyonecanpay<let TRANSACTION_SIZE: u
             + ((INPUT_TO_SIGN) * 9)
             + N_OUTPUT_SIZE
             + 4
-            + SCRIPT_PUB_KEY_SIZE
+            + (SCRIPT_PUB_KEY_SIZE - 1)
             + 4
-            - 1
     ];
     let mut data_pos: u32 = 0;
 
@@ -387,12 +383,11 @@ fn prepare_preimage_hash_for_sighash_single_anyonecanpay<let TRANSACTION_SIZE: u
                 + 1
                 + N_INPUT_SIZE
                 + INPUT_TO_SIGN_LEN
-                + ((INPUT_TO_SIGN) * 9)
+                + ((INPUT_TO_SIGN) * 8)
                 + N_OUTPUT_SIZE
                 + 4
-                + SCRIPT_PUB_KEY_SIZE
-                + 4
-                - 1,
+                + (SCRIPT_PUB_KEY_SIZE - 1)
+                + 4,
     );
 
     data
@@ -427,8 +422,8 @@ fn prepare_preimage_hash_for_sighash_none<let TRANSACTION_SIZE: u32, let INPUT_C
     transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
     input_to_sign: u32,
     script_pub_key: [u8; SCRIPT_PUB_KEY_SIZE],
-) -> [u8; 4 + INPUT_SIZE + 1 + 4 + SCRIPT_PUB_KEY_SIZE + 4 - 1] {
-    let mut data = [0; 4 + INPUT_SIZE + 1 + 4 + SCRIPT_PUB_KEY_SIZE + 4 - 1];
+) -> [u8; 4 + INPUT_SIZE + 1 + 4 + (SCRIPT_PUB_KEY_SIZE - 1) + 4] {
+    let mut data = [0; 4 + INPUT_SIZE + 1 + 4 + (SCRIPT_PUB_KEY_SIZE - 1) + 4];
     let mut data_pos: u32 = 0;
 
     for i in 0..4 {
@@ -481,7 +476,7 @@ fn prepare_preimage_hash_for_sighash_none<let TRANSACTION_SIZE: u32, let INPUT_C
 
     data_pos += 4;
 
-    assert(data_pos == 4 + INPUT_SIZE + 1 + 4 + SCRIPT_PUB_KEY_SIZE + 4 - 1);
+    assert(data_pos == 4 + INPUT_SIZE + 1 + 4 + (SCRIPT_PUB_KEY_SIZE - 1) + 4);
 
     data
 }
@@ -511,8 +506,8 @@ fn prepare_preimage_hash_for_sighash_none_anyonecanpay<let TRANSACTION_SIZE: u32
     transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
     input_to_sign: u32,
     script_pub_key: [u8; SCRIPT_PUB_KEY_SIZE],
-) -> [u8; 4 + 1 + N_INPUT_SIZE + 1 + 4 + SCRIPT_PUB_KEY_SIZE + 4 - 1] {
-    let mut data = [0; 4 + 1 + N_INPUT_SIZE + 1 + 4 + SCRIPT_PUB_KEY_SIZE + 4 - 1];
+) -> [u8; 4 + 1 + N_INPUT_SIZE + 1 + 4 + (SCRIPT_PUB_KEY_SIZE - 1) + 4] {
+    let mut data = [0; 4 + 1 + N_INPUT_SIZE + 1 + 4 + (SCRIPT_PUB_KEY_SIZE - 1) + 4];
     let mut data_pos: u32 = 0;
 
     for i in 0..4 {
@@ -555,7 +550,7 @@ fn prepare_preimage_hash_for_sighash_none_anyonecanpay<let TRANSACTION_SIZE: u32
 
     data_pos += 4;
 
-    assert(data_pos == 4 + 1 + N_INPUT_SIZE + 1 + 4 + SCRIPT_PUB_KEY_SIZE + 4 - 1);
+    assert(data_pos == 4 + 1 + N_INPUT_SIZE + 1 + 4 + (SCRIPT_PUB_KEY_SIZE - 1) + 4);
 
     data
 }
@@ -580,6 +575,33 @@ pub fn serialize_sighash_none_anyonecanpay<let TRANSACTION_SIZE: u32, let INPUT_
     );
 
     let hashed_transaction = sha256::digest(sha256::digest(transaction_data));
+
+    hashed_transaction
+}
+
+pub fn serialize_sighash<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_COUNT_LEN: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32, let SCRIPT_PUB_KEY_SIZE: u32, let N_OUTPUT_SIZE: u32, let INPUT_TO_SIGN: u32, let INPUT_TO_SIGN_LEN: u32, let N_INPUT_SIZE: u32>(
+    transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
+    input_to_sign: u32,
+    script_pub_key: [u8; SCRIPT_PUB_KEY_SIZE],
+    hash_type: u8, 
+) -> [u8; 32] {
+    let mut hashed_transaction = [0 as u8; 32];
+
+    if hash_type == SIGHASH_ALL {
+        hashed_transaction = serialize_sighash_all(transaction, input_to_sign, script_pub_key);
+    } else if hash_type == SIGHASH_NONE {
+        hashed_transaction = serialize_sighash_none(transaction, input_to_sign, script_pub_key);
+    } else if hash_type == SIGHASH_SINGLE {
+        hashed_transaction = serialize_sighash_single::<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE, SCRIPT_PUB_KEY_SIZE, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN>(transaction, input_to_sign, script_pub_key);
+    } else if hash_type == (SIGHASH_ALL | SIGHASH_ANYONECANPAY) {
+        hashed_transaction = serialize_sighash_all_anyonecanpay::<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE, SCRIPT_PUB_KEY_SIZE, N_INPUT_SIZE>(transaction, input_to_sign, script_pub_key);
+    } else if hash_type == (SIGHASH_NONE | SIGHASH_ANYONECANPAY) {
+        hashed_transaction = serialize_sighash_none_anyonecanpay::<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE, SCRIPT_PUB_KEY_SIZE, N_INPUT_SIZE>(transaction, input_to_sign, script_pub_key);
+    } else if hash_type == (SIGHASH_SINGLE | SIGHASH_ANYONECANPAY) {
+        hashed_transaction = serialize_sighash_single_anyonecanpay::<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE, SCRIPT_PUB_KEY_SIZE, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(transaction, input_to_sign, script_pub_key);
+    } else {
+            assert(false, "Unsupported hash type");
+    }
 
     hashed_transaction
 }
@@ -727,3 +749,4 @@ fn test_serialize_legacy_transaction_sighash_none_anyonecanpay() {
         bytes_to_hex(sighash) == "35c22dea04126559fa211d7efd28c3bc16435d02e54f460d28c436d1c1a3c22f",
     );
 }
+
