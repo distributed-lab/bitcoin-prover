@@ -1,7 +1,6 @@
 use crate::transaction::Transaction;
-use dep::bignum::{BigNum, U256};
-use crypto::ecdsa::ecdsa_verify;
 use utils::convert::{bytes_to_hex, hex_to_bytes, u32_to_le_bytes};
+use super::sig_types::{SIGHASH_ALL, SIGHASH_NONE, SIGHASH_SINGLE, SIGHASH_ANYONECANPAY};
 
 fn prepare_preimage_hash_for_sighash_all<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_COUNT_LEN: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32, let SCRIPT_PUB_KEY_SIZE: u32>(
     transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
@@ -576,6 +575,33 @@ pub fn serialize_sighash_none_anyonecanpay<let TRANSACTION_SIZE: u32, let INPUT_
     );
 
     let hashed_transaction = sha256::digest(sha256::digest(transaction_data));
+
+    hashed_transaction
+}
+
+pub fn serialize_sighash<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_COUNT_LEN: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32, let SCRIPT_PUB_KEY_SIZE: u32, let N_OUTPUT_SIZE: u32, let INPUT_TO_SIGN: u32, let INPUT_TO_SIGN_LEN: u32, let N_INPUT_SIZE: u32>(
+    transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
+    input_to_sign: u32,
+    script_pub_key: [u8; SCRIPT_PUB_KEY_SIZE],
+    hash_type: u8, 
+) -> [u8; 32] {
+    let mut hashed_transaction = [0 as u8; 32];
+
+    if hash_type == SIGHASH_ALL {
+        hashed_transaction = serialize_sighash_all(transaction, input_to_sign, script_pub_key);
+    } else if hash_type == SIGHASH_NONE {
+        hashed_transaction = serialize_sighash_none(transaction, input_to_sign, script_pub_key);
+    } else if hash_type == SIGHASH_SINGLE {
+        hashed_transaction = serialize_sighash_single::<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE, SCRIPT_PUB_KEY_SIZE, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN>(transaction, input_to_sign, script_pub_key);
+    } else if hash_type == (SIGHASH_ALL | SIGHASH_ANYONECANPAY) {
+        hashed_transaction = serialize_sighash_all_anyonecanpay::<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE, SCRIPT_PUB_KEY_SIZE, N_INPUT_SIZE>(transaction, input_to_sign, script_pub_key);
+    } else if hash_type == (SIGHASH_NONE | SIGHASH_ANYONECANPAY) {
+        hashed_transaction = serialize_sighash_none_anyonecanpay::<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE, SCRIPT_PUB_KEY_SIZE, N_INPUT_SIZE>(transaction, input_to_sign, script_pub_key);
+    } else if hash_type == (SIGHASH_SINGLE | SIGHASH_ANYONECANPAY) {
+        hashed_transaction = serialize_sighash_single_anyonecanpay::<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE, SCRIPT_PUB_KEY_SIZE, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(transaction, input_to_sign, script_pub_key);
+    } else {
+            assert(false, "Unsupported hash type");
+    }
 
     hashed_transaction
 }
