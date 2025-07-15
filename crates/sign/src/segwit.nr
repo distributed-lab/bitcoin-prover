@@ -730,6 +730,106 @@ pub fn serialize_p2wpkh_sighash_single_anyonecanpay<let TRANSACTION_SIZE: u32, l
     sighash
 }
 
+pub fn serialize_p2wsh_sighash_all<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_COUNT_LEN: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32, let SCRIPT_CODE_SIZE: u32>(
+    transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
+    input_to_sign: u32,
+    prev_amount: [u8; 8],
+    script_code: [u8; SCRIPT_CODE_SIZE],
+) -> [u8; 32] {
+    let preimage_data =
+        prepare_preimage_hash_for_sighash_all(transaction, input_to_sign, script_code, prev_amount);
+
+    let sighash_all = sha256::digest(sha256::digest(preimage_data));
+
+    sighash_all
+}
+
+pub fn serialize_p2wsh_sighash_all_anyonecanpay<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_COUNT_LEN: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32, let SCRIPT_CODE_SIZE: u32>(
+    transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
+    input_to_sign: u32,
+    prev_amount: [u8; 8],
+    script_code: [u8; SCRIPT_CODE_SIZE],
+) -> [u8; 32] {
+    let preimage_data = prepare_preimage_hash_for_sighash_all_anyonecanpay(
+        transaction,
+        input_to_sign,
+        script_code,
+        prev_amount,
+    );
+
+    let sighash_all = sha256::digest(sha256::digest(preimage_data));
+
+    sighash_all
+}
+
+pub fn serialize_p2wsh_sighash_none<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_COUNT_LEN: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32, let SCRIPT_CODE_SIZE: u32>(
+    transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
+    input_to_sign: u32,
+    prev_amount: [u8; 8],
+    script_code: [u8; SCRIPT_CODE_SIZE],
+) -> [u8; 32] {
+    let preimage_data = prepare_preimage_hash_for_sighash_none(
+        transaction,
+        input_to_sign,
+        script_code,
+        prev_amount,
+    );
+
+    let sighash_none = sha256::digest(sha256::digest(preimage_data));
+    sighash_none
+}
+
+pub fn serialize_p2wsh_sighash_none_anyonecanpay<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_COUNT_LEN: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32, let SCRIPT_CODE_SIZE: u32>(
+    transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
+    input_to_sign: u32,
+    prev_amount: [u8; 8],
+    script_code: [u8; SCRIPT_CODE_SIZE],
+) -> [u8; 32] {
+    let preimage_data = prepare_preimage_hash_for_sighash_none_anyonecanpay(
+        transaction,
+        input_to_sign,
+        script_code,
+        prev_amount,
+    );
+    let sighash_none = sha256::digest(sha256::digest(preimage_data));
+
+    sighash_none
+}
+
+pub fn serialize_p2wsh_sighash_single<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_COUNT_LEN: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32, let SCRIPT_CODE_SIZE: u32, let N_OUTPUT_SIZE: u32>(
+    transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
+    input_to_sign: u32,
+    prev_amount: [u8; 8],
+    script_code: [u8; SCRIPT_CODE_SIZE],
+) -> [u8; 32] {
+    let preimage_data = prepare_preimage_hash_for_sighash_single::<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE, SCRIPT_CODE_SIZE, N_OUTPUT_SIZE>(
+        transaction,
+        input_to_sign,
+        script_code,
+        prev_amount,
+    );
+
+    let sighash = sha256::digest(sha256::digest(preimage_data));
+    sighash
+}
+
+pub fn serialize_p2wsh_sighash_single_anyonecanpay<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_COUNT_LEN: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32, let SCRIPT_CODE_SIZE: u32, let N_OUTPUT_SIZE: u32>(
+    transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
+    input_to_sign: u32,
+    prev_amount: [u8; 8],
+    script_code: [u8; SCRIPT_CODE_SIZE],
+) -> [u8; 32] {
+    let preimage_data = prepare_preimage_hash_for_sighash_single_anyonecanpay::<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE, SCRIPT_CODE_SIZE, N_OUTPUT_SIZE>(
+        transaction,
+        input_to_sign,
+        script_code,
+        prev_amount,
+    );
+    let sighash = sha256::digest(sha256::digest(preimage_data));
+
+    sighash
+}
+
 #[test]
 fn test_serialize_p2wpkh_sighash_all() {
     let hex_string = "02000000000101ac4994014aa36b7f53375658ef595b3cb2891e1735fe5b441686f5e53338e76a0100000000ffffffff01204e0000000000001976a914ce72abfd0e6d9354a660c18f2825eb392f060fdc88ac0000000000";
