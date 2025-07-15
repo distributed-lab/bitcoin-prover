@@ -88,7 +88,7 @@ fn main(
     };
 
     script_execution_engine
-        .execute::<SIG_LEN / 2 + PK_LEN / 2 + 25 + 2, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, OPCODES_AMOUNT, 20, 33, 65, 70, 71, 72, 26, 0, 0, 0, 0, 0, 0>(
+        .execute::<SIG_LEN / 2 + PK_LEN / 2 + 25 + 2, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, OPCODES_AMOUNT, 25>(
             script,
             address,
         );

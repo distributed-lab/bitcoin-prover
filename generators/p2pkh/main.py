@@ -1,6 +1,9 @@
 import json
 from typing import Dict
+from bitcoin.core import CScript
 from generators.utils.tx import Transaction
+from generators.utils.script import Script
+from generators.utils.opcodes_gen import generate
 
 def get_config(path: str = "./generators/p2pkh/config.json") -> Dict:
     with open(path, "r") as f:
@@ -31,6 +34,26 @@ def main():
     PREV_TX_OUT_SIZE = sum(prevTx._get_output_size(out) for out in prevTx.outputs) + PREV_TX_OUT_COUNT_LEN
     PREV_TX_MAX_WITNESS_STACK_SIZE = 2
     PREV_TX_WITNESS_SIZE = 0 if prevTx.witness == None else sum(prevTx._get_witness_size(wit) for wit in prevTx.witness)
+
+    vout = curTx.inputs[config["input_to_sign"]].vout
+    script_pub_key = bytearray(prevTx.outputs[vout].script_pub_key)
+
+    if CUR_TX_WITNESS_SIZE != 0:
+        script_pub_key.pop(0)
+        full_script_pub_key = [118, 169]
+        full_script_pub_key.extend(list(script_pub_key))
+        full_script_pub_key.extend([136, 172])
+        script_pub_key = bytes(full_script_pub_key)
+
+    sig_bytes = bytes.fromhex(config["signature"])
+    pubkey_bytes = bytes.fromhex(config["pub_key"])
+
+    scriptSig = CScript([sig_bytes, pubkey_bytes])
+
+    full_script = bytes(scriptSig) + script_pub_key
+
+    script = Script(full_script.hex(), curTx, config["input_to_sign"])
+    generate(script.sizes)
 
     INPUT_TO_SIGN = config["input_to_sign"]
 

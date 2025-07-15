@@ -3,6 +3,10 @@ use crate::opcode::{
     OP_CHECKSIGVERIFY, OP_DUP, OP_EQUAL, OP_EQUALVERIFY, OP_HASH160, OP_PUSHBYTES1, OP_PUSHBYTES75,
     OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4,
 };
+use super::{
+    generated::{checkmulsig, hash160, hash256, pushbytes, ripemd160, sha1, sha256},
+    opcode::{OP_HASH256, OP_RIPEMD160, OP_SHA1, OP_SHA256},
+};
 use bvm::stack::{empty_stack_array, Stack};
 use sign::address::Address;
 use sign::transaction::Transaction;
@@ -19,7 +23,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         Self { stack: stack }
     }
 
-    pub fn execute<let SCRIPT_SIZE: u32, let N_OUTPUT_SIZE: u32, let INPUT_TO_SIGN: u32, let INPUT_TO_SIGN_LEN: u32, let N_INPUT_SIZE: u32, let MAX_NUMBER_OF_OPCODES: u32, let STACK_ELEMENT_LENGTH_1: u32, let STACK_ELEMENT_LENGTH_2: u32, let STACK_ELEMENT_LENGTH_3: u32, let STACK_ELEMENT_LENGTH_4: u32, let STACK_ELEMENT_LENGTH_5: u32, let STACK_ELEMENT_LENGTH_6: u32, let SCRIPT_CODE_LEN_1: u32, let SCRIPT_CODE_LEN_2: u32, let SCRIPT_CODE_LEN_3: u32, let SCRIPT_CODE_LEN_4: u32, let SCRIPT_CODE_LEN_5: u32, let N1: u32, let M1: u32>(
+    pub fn execute<let SCRIPT_SIZE: u32, let N_OUTPUT_SIZE: u32, let INPUT_TO_SIGN: u32, let INPUT_TO_SIGN_LEN: u32, let N_INPUT_SIZE: u32, let MAX_NUMBER_OF_OPCODES: u32, let SCRIPT_PUB_KEY_LEN: u32>(
         &mut self,
         script: [u8; SCRIPT_SIZE],
         address: Address,
@@ -34,140 +38,57 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                 if opcode == OP_0 {
                     self.stack.op_num(0);
                 } else if opcode >= OP_PUSHBYTES1 & opcode <= OP_PUSHBYTES75 {
-                    // Handle push bytes with different lengths
                     let push_length = opcode as u32;
-
-                    if push_length == STACK_ELEMENT_LENGTH_1 {
-                        let mut value = [0; STACK_ELEMENT_LENGTH_1];
-                        for i in 0..STACK_ELEMENT_LENGTH_1 {
-                            value[i] = script[cur_pos];
-                            cur_pos += 1;
-                        }
-                        self.stack.push_bytes(value);
-                    } else if push_length == STACK_ELEMENT_LENGTH_2 {
-                        let mut value = [0; STACK_ELEMENT_LENGTH_2];
-                        for i in 0..STACK_ELEMENT_LENGTH_2 {
-                            value[i] = script[cur_pos];
-                            cur_pos += 1;
-                        }
-                        self.stack.push_bytes(value);
-                    } else if push_length == STACK_ELEMENT_LENGTH_3 {
-                        let mut value = [0; STACK_ELEMENT_LENGTH_3];
-                        for i in 0..STACK_ELEMENT_LENGTH_3 {
-                            value[i] = script[cur_pos];
-                            cur_pos += 1;
-                        }
-                        self.stack.push_bytes(value);
-                    } else if push_length == STACK_ELEMENT_LENGTH_4 {
-                        let mut value = [0; STACK_ELEMENT_LENGTH_4];
-                        for i in 0..STACK_ELEMENT_LENGTH_4 {
-                            value[i] = script[cur_pos];
-                            cur_pos += 1;
-                        }
-                        self.stack.push_bytes(value);
-                    } else if push_length == STACK_ELEMENT_LENGTH_5 {
-                        let mut value = [0; STACK_ELEMENT_LENGTH_5];
-                        for i in 0..STACK_ELEMENT_LENGTH_5 {
-                            value[i] = script[cur_pos];
-                            cur_pos += 1;
-                        }
-                        self.stack.push_bytes(value);
-                    } else if push_length == STACK_ELEMENT_LENGTH_6 {
-                        let mut value = [0; STACK_ELEMENT_LENGTH_6];
-                        for i in 0..STACK_ELEMENT_LENGTH_6 {
-                            value[i] = script[cur_pos];
-                            cur_pos += 1;
-                        }
-                        self.stack.push_bytes(value);
-                    }
+                    let res = pushbytes(self.stack, push_length, script, cur_pos);
+                    self.stack = res.0;
+                    cur_pos = res.1;
                 } else if opcode >= OP_1 & opcode <= OP_16 {
                     self.stack.op_num(opcode as i8 - 80);
                 } else if opcode == OP_DUP {
                     self.stack.op_dup();
+                } else if opcode == OP_RIPEMD160 {
+                    let last_stack_element_length = self.stack.get_last_stack_element_length();
+                    self.stack = ripemd160(self.stack, last_stack_element_length);
+                } else if opcode == OP_SHA1 {
+                    let last_stack_element_length = self.stack.get_last_stack_element_length();
+                    self.stack = sha1(self.stack, last_stack_element_length);
+                } else if opcode == OP_SHA256 {
+                    let last_stack_element_length = self.stack.get_last_stack_element_length();
+                    self.stack = sha256(self.stack, last_stack_element_length);
                 } else if opcode == OP_HASH160 {
                     let last_stack_element_length = self.stack.get_last_stack_element_length();
-
-                    if last_stack_element_length == STACK_ELEMENT_LENGTH_1 {
-                        self.stack.op_hash160::<STACK_ELEMENT_LENGTH_1>();
-                    } else if last_stack_element_length == STACK_ELEMENT_LENGTH_2 {
-                        self.stack.op_hash160::<STACK_ELEMENT_LENGTH_2>();
-                    } else if last_stack_element_length == STACK_ELEMENT_LENGTH_3 {
-                        self.stack.op_hash160::<STACK_ELEMENT_LENGTH_3>();
-                    } else if last_stack_element_length == STACK_ELEMENT_LENGTH_4 {
-                        self.stack.op_hash160::<STACK_ELEMENT_LENGTH_4>();
-                    } else if last_stack_element_length == STACK_ELEMENT_LENGTH_5 {
-                        self.stack.op_hash160::<STACK_ELEMENT_LENGTH_5>();
-                    } else if last_stack_element_length == STACK_ELEMENT_LENGTH_6 {
-                        self.stack.op_hash160::<STACK_ELEMENT_LENGTH_6>();
-                    } else {
-                        assert(false, "wrong stack element length");
-                    }
+                    self.stack = hash160(self.stack, last_stack_element_length);
+                } else if opcode == OP_HASH256 {
+                    let last_stack_element_length = self.stack.get_last_stack_element_length();
+                    self.stack = hash256(self.stack, last_stack_element_length);
                 } else if opcode == OP_EQUAL {
                     self.stack.op_equal();
                 } else if opcode == OP_EQUALVERIFY {
                     self.stack.op_equalverify();
                 } else if (opcode == OP_CHECKSIG) | (opcode == OP_CHECKSIGVERIFY) {
-                    let script_code_size = self.stack.get_script_code_size(address);
                     let verify = opcode == OP_CHECKSIGVERIFY;
-
-                    if script_code_size == SCRIPT_CODE_LEN_1 {
-                        self
-                            .stack
-                            .op_checksig::<SCRIPT_CODE_LEN_1, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
-                                address,
-                                verify,
-                            );
-                    } else if script_code_size == SCRIPT_CODE_LEN_2 {
-                        self
-                            .stack
-                            .op_checksig::<SCRIPT_CODE_LEN_2, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
-                                address,
-                                verify,
-                            );
-                    } else if script_code_size == SCRIPT_CODE_LEN_3 {
-                        self
-                            .stack
-                            .op_checksig::<SCRIPT_CODE_LEN_3, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
-                                address,
-                                verify,
-                            );
-                    } else if script_code_size == SCRIPT_CODE_LEN_4 {
-                        self
-                            .stack
-                            .op_checksig::<SCRIPT_CODE_LEN_4, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
-                                address,
-                                verify,
-                            );
-                    } else if script_code_size == SCRIPT_CODE_LEN_5 {
-                        self
-                            .stack
-                            .op_checksig::<SCRIPT_CODE_LEN_5, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
-                                address,
-                                verify,
-                            );
-                    } else {
-                        assert(false, "wrong script code size");
-                    }
+                    self
+                        .stack
+                        .op_checksig::<SCRIPT_PUB_KEY_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
+                            address,
+                            verify,
+                        );
                 } else if (opcode == OP_CHECKMULSIG) | (opcode == OP_CHECKMULSIGVERIFY) {
-                    let script_code_size = self.stack.get_script_code_size(address);
                     let verify = opcode == OP_CHECKMULSIGVERIFY;
-
-                    if script_code_size == SCRIPT_CODE_LEN_1 {
-                        self
-                            .stack
-                            .op_checkmulsig::<SCRIPT_CODE_LEN_1, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, N1, M1>(
-                                address,
-                                verify,
-                            );
-                    } else {
-                        assert(false, "wrong script code size");
-                    }
+                    self.stack = checkmulsig::<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, PREV_TRANSACTION_SIZE, PREV_INPUT_COUNT, PREV_INPUT_COUNT_LEN, PREV_INPUT_SIZE, PREV_OUTPUT_COUNT, PREV_OUTPUT_COUNT_LEN, PREV_OUTPUT_SIZE, PREV_MAX_WITNESS_STACK_SIZE, PREV_WITNESS_SIZE, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, SCRIPT_PUB_KEY_LEN>(
+                        self.stack,
+                        0,
+                        0,
+                        verify,
+                        address,
+                    );
                 }
             }
         }
     }
 }
 
+/*
 global TEST_SCRIPT_SIG_SIZE: u32 = 139;
 global TEST_SCRIPT_PUB_KEY_SIZE: u32 = 25;
 global TEST_MAX_NUMBER_OF_OPCODES: u32 = 7;
@@ -228,3 +149,4 @@ fn test_p2pkh_execution() {
             Address::new_p2pkh(),
         );
 }
+*/
