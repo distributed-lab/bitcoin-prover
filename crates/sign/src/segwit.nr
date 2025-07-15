@@ -738,47 +738,47 @@ pub fn serialize_p2wpkh_sighash<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32,
     script_code: [u8; 26],
     hash_type: u8,
 ) -> [u8; 32] {
-    let mut hashed_transaction = [0 as u8; 32];
+    let mut preimage_data = [0 as u8; 182];
 
     if hash_type == SIGHASH_ALL {
-        hashed_transaction =
-            serialize_p2wpkh_sighash_all(transaction, input_to_sign, prev_amount, script_code);
+        preimage_data =
+            prepare_preimage_hash_for_sighash_all(transaction, input_to_sign, script_code, prev_amount);
     } else if hash_type == SIGHASH_NONE {
-        hashed_transaction =
-            serialize_p2wpkh_sighash_none(transaction, input_to_sign, prev_amount, script_code);
+        preimage_data =
+            prepare_preimage_hash_for_sighash_none(transaction, input_to_sign, script_code, prev_amount);
     } else if hash_type == SIGHASH_SINGLE {
-        hashed_transaction = serialize_p2wpkh_sighash_single::<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE, N_OUTPUT_SIZE>(
+        preimage_data = prepare_preimage_hash_for_sighash_single::<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE, 26,N_OUTPUT_SIZE>(
             transaction,
             input_to_sign,
-            prev_amount,
             script_code,
+            prev_amount,
         );
     } else if hash_type == (SIGHASH_ALL | SIGHASH_ANYONECANPAY) {
-        hashed_transaction = serialize_p2wpkh_sighash_all_anyonecanpay(
+        preimage_data = prepare_preimage_hash_for_sighash_all_anyonecanpay(
             transaction,
             input_to_sign,
-            prev_amount,
             script_code,
+            prev_amount,
         );
     } else if hash_type == (SIGHASH_NONE | SIGHASH_ANYONECANPAY) {
-        hashed_transaction = serialize_p2wpkh_sighash_none_anyonecanpay(
+        preimage_data = prepare_preimage_hash_for_sighash_none_anyonecanpay(
             transaction,
             input_to_sign,
-            prev_amount,
             script_code,
+            prev_amount,
         );
     } else if hash_type == (SIGHASH_SINGLE | SIGHASH_ANYONECANPAY) {
-        hashed_transaction = serialize_p2wpkh_sighash_single_anyonecanpay::<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE, N_OUTPUT_SIZE>(
+        preimage_data = prepare_preimage_hash_for_sighash_single_anyonecanpay::<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE, 26,N_OUTPUT_SIZE>(
             transaction,
             input_to_sign,
-            prev_amount,
             script_code,
+            prev_amount,
         );
     } else {
         assert(false, "Unsupported hash type");
     }
-
-    hashed_transaction
+    let sighash = sha256::digest(sha256::digest(preimage_data));
+    sighash
 }
 
 #[test]
@@ -816,11 +816,12 @@ fn test_serialize_p2wpkh_sighash_all_anyonecanpay() {
     let prev_amount_hex = "3075000000000000";
     let prev_amount_bytes = hex_to_bytes(prev_amount_hex);
 
-    let sighash_all_transaction_bytes = serialize_p2wpkh_sighash_all_anyonecanpay(
+    let sighash_all_transaction_bytes = serialize_p2wpkh_sighash::<88, 1, 1, 42, 1, 1, 35, 1, 1, 1>(
         transaction,
         0,
         prev_amount_bytes,
         script_pub_key_bytes,
+        SIGHASH_ALL | SIGHASH_ANYONECANPAY
     );
 
     let sighash_all_transaction = bytes_to_hex(sighash_all_transaction_bytes);
