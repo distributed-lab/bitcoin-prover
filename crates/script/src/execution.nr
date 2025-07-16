@@ -1,24 +1,23 @@
-use crate::opcode::{
-    OP_0, OP_1, OP_16, OP_1NEGATE, OP_CHECKMULSIG, OP_CHECKMULSIGVERIFY, OP_CHECKSIG,
-    OP_CHECKSIGVERIFY, OP_DUP, OP_EQUAL, OP_EQUALVERIFY, OP_HASH160, OP_PUSHBYTES1, OP_PUSHBYTES75,
-    OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4,
-};
 use super::{
-    generated::{checkmulsig, hash160, hash256, pushbytes, ripemd160, sha1, sha256},
+    generated::{
+        checkmulsig, hash160, hash256, pushbytes, pushdata1, pushdata2, pushdata4, ripemd160, sha1,
+        sha256,
+    },
     opcode::{
-        OP_0NOTEQUAL, OP_1ADD, OP_1SUB, OP_2DROP, OP_2DUP, OP_2OVER, OP_2ROT, OP_2SWAP, OP_3DUP,
-        OP_ABS, OP_ADD, OP_BOOLAND, OP_BOOLOR, OP_CHECKLOCKTIMEVERIFY, OP_CHECKSEQUENCEVERIFY,
-        OP_DEPTH, OP_DROP, OP_FROMALTSTACK, OP_GREATERTHAN, OP_GREATERTHANOREQUAL, OP_HASH256,
-        OP_IFDUP, OP_LESSTHAN, OP_LESSTHANOREQUAL, OP_MAX, OP_MIN, OP_NEGATE, OP_NIP, OP_NOT,
-        OP_NUMENOTQUAL, OP_NUMEQUAL, OP_NUMEQUALVERIFY, OP_OVER, OP_PICK, OP_RETURN, OP_RIPEMD160,
-        OP_ROLL, OP_ROT, OP_SHA1, OP_SHA256, OP_SIZE, OP_SUB, OP_SWAP, OP_TOALTSTACK, OP_TUCK,
-        OP_WITHIN,
+        OP_0, OP_0NOTEQUAL, OP_1, OP_16, OP_1ADD, OP_1NEGATE, OP_1SUB, OP_2DROP, OP_2DUP, OP_2OVER,
+        OP_2ROT, OP_2SWAP, OP_3DUP, OP_ABS, OP_ADD, OP_BOOLAND, OP_BOOLOR, OP_CHECKLOCKTIMEVERIFY,
+        OP_CHECKMULSIG, OP_CHECKMULSIGVERIFY, OP_CHECKSEQUENCEVERIFY, OP_CHECKSIG, OP_CHECKSIGADD,
+        OP_CHECKSIGVERIFY, OP_DEPTH, OP_DROP, OP_DUP, OP_EQUAL, OP_EQUALVERIFY, OP_FROMALTSTACK,
+        OP_GREATERTHAN, OP_GREATERTHANOREQUAL, OP_HASH160, OP_HASH256, OP_IFDUP, OP_LESSTHAN,
+        OP_LESSTHANOREQUAL, OP_MAX, OP_MIN, OP_NEGATE, OP_NIP, OP_NOT, OP_NUMENOTQUAL, OP_NUMEQUAL,
+        OP_NUMEQUALVERIFY, OP_OVER, OP_PICK, OP_PUSHBYTES1, OP_PUSHBYTES75, OP_PUSHDATA1,
+        OP_PUSHDATA2, OP_PUSHDATA4, OP_RETURN, OP_RIPEMD160, OP_ROLL, OP_ROT, OP_SHA1, OP_SHA256,
+        OP_SIZE, OP_SUB, OP_SWAP, OP_TOALTSTACK, OP_TUCK, OP_WITHIN,
     },
 };
-use bvm::stack::{empty_stack_array, Stack};
+use bvm::stack::Stack;
 use sign::address::Address;
-use sign::transaction::Transaction;
-use utils::convert::{hex_to_bytes, vec_to_u32};
+use utils::convert::vec_to_u32;
 
 pub struct ScriptExecutionEngine<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANSACTION_SIZE: u32, let CURRENT_INPUT_COUNT: u32, let CURRENT_INPUT_COUNT_LEN: u32, let CURRENT_INPUT_SIZE: u32, let CURRENT_OUTPUT_COUNT: u32, let CURRENT_OUTPUT_COUNT_LEN: u32, let CURRENT_OUTPUT_SIZE: u32, let CURRENT_MAX_WITNESS_STACK_SIZE: u32, let CURRENT_WITNESS_SIZE: u32, let PREV_TRANSACTION_SIZE: u32, let PREV_INPUT_COUNT: u32, let PREV_INPUT_COUNT_LEN: u32, let PREV_INPUT_SIZE: u32, let PREV_OUTPUT_COUNT: u32, let PREV_OUTPUT_COUNT_LEN: u32, let PREV_OUTPUT_SIZE: u32, let PREV_MAX_WITNESS_STACK_SIZE: u32, let PREV_WITNESS_SIZE: u32> {
     pub stack: Stack<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, PREV_TRANSACTION_SIZE, PREV_INPUT_COUNT, PREV_INPUT_COUNT_LEN, PREV_INPUT_SIZE, PREV_OUTPUT_COUNT, PREV_OUTPUT_COUNT_LEN, PREV_OUTPUT_SIZE, PREV_MAX_WITNESS_STACK_SIZE, PREV_WITNESS_SIZE>,
@@ -54,6 +53,18 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                     self.stack.op_num(-1);
                 } else if opcode >= OP_1 & opcode <= OP_16 {
                     self.stack.op_num(opcode as i8 - 80);
+                } else if opcode == OP_PUSHDATA1 {
+                    let res = pushdata1(self.stack, script, cur_pos);
+                    self.stack = res.0;
+                    cur_pos = res.1;
+                } else if opcode == OP_PUSHDATA2 {
+                    let res = pushdata2(self.stack, script, cur_pos);
+                    self.stack = res.0;
+                    cur_pos = res.1;
+                } else if opcode == OP_PUSHDATA4 {
+                    let res = pushdata4(self.stack, script, cur_pos);
+                    self.stack = res.0;
+                    cur_pos = res.1;
                 } else if opcode == OP_RETURN {
                     assert(false, "OP_RETURN");
                 } else if opcode == OP_TOALTSTACK {
@@ -158,11 +169,13 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                     self.stack.op_equalverify();
                 } else if (opcode == OP_CHECKSIG) | (opcode == OP_CHECKSIGVERIFY) {
                     let verify = opcode == OP_CHECKSIGVERIFY;
+                    let sigadd = opcode == OP_CHECKSIGADD;
                     self
                         .stack
                         .op_checksig::<SCRIPT_PUB_KEY_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
                             address,
                             verify,
+                            sigadd,
                         );
                 } else if (opcode == OP_CHECKMULSIG) | (opcode == OP_CHECKMULSIGVERIFY) {
                     let verify = opcode == OP_CHECKMULSIGVERIFY;

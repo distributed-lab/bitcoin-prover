@@ -119,8 +119,9 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         }
     }
 
-    pub fn pop_signature(&mut self) -> ([u8; 64], u8) {
+    pub fn pop_signature(&mut self) -> ([u8; 64], u8, bool) {
         let encoded_signature_vec = self.pop();
+        let is_empty = encoded_signature_vec.storage().all(|e| e == 0);
 
         let mut signature = [0; 64];
         let mut hash_type = 0;
@@ -156,7 +157,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
             assert(false, "Invalid signature length");
         }
 
-        (signature, hash_type)
+        (signature, hash_type, is_empty)
     }
 
     // OP_0 ... OP_16 AND OP_1NEGATE
@@ -568,7 +569,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
             | (num > locktime)
             | ((num >= 500000000) & (locktime < 500000000))
             | ((num < 500000000) & (locktime >= 500000000))
-            | (sequence == 0xffffffff) {
+            | (sequence as u32 == 0xffffffff) {
             assert(false);
         }
     }
@@ -840,25 +841,31 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
     fn _op_checksig<let SCRIPT_CODE_LEN: u32, let N_OUTPUT_SIZE: u32, let INPUT_TO_SIGN: u32, let INPUT_TO_SIGN_LEN: u32, let N_INPUT_SIZE: u32>(
         &mut self,
         address: Address,
-    ) -> bool {
+        sigadd: bool,
+    ) -> (bool, i32) {
         let mut message_hash = [0; 32];
+        let mut n = 0;
+        let mut res = true;
 
         let (pub_x, pub_y) = self.pop_pubkey();
-        let (mut signature, hash_type) = self.pop_signature();
+        if sigadd {
+            n = vec_to_i32(self.pop());
+        }
+        let (signature, hash_type, is_empty) = self.pop_signature();
 
-        if hash_type == SIGHASH_ALL {
-            message_hash = self.get_sighash_all_message_hash::<SCRIPT_CODE_LEN>(address);
-        } else if hash_type == SIGHASH_NONE {
-            message_hash = self.get_sighash_none_message_hash::<SCRIPT_CODE_LEN>(address);
-        } else if hash_type == SIGHASH_SINGLE {
-            message_hash = self
-                .get_sighash_single_message_hash::<SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN>(
+        if !is_empty {
+            if hash_type == SIGHASH_ALL {
+                message_hash = self.get_sighash_all_message_hash::<SCRIPT_CODE_LEN>(address);
+            } else if hash_type == SIGHASH_NONE {
+                message_hash = self.get_sighash_none_message_hash::<SCRIPT_CODE_LEN>(address);
+            } else if hash_type == SIGHASH_SINGLE {
+                message_hash = self
+                    .get_sighash_single_message_hash::<SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN>(
                     address,
                 );
-        } else if hash_type == (SIGHASH_ALL | SIGHASH_ANYONECANPAY) {
-            message_hash = self
-                .get_sighash_all_anyonecanpay_message_hash::<SCRIPT_CODE_LEN, N_INPUT_SIZE>(address)
-                ;
+            } else if hash_type == (SIGHASH_ALL | SIGHASH_ANYONECANPAY) {
+                message_hash = self
+                    .get_sighash_all_anyonecanpay_message_hash::<SCRIPT_CODE_LEN, N_INPUT_SIZE>(address);
             } else if hash_type == (SIGHASH_NONE | SIGHASH_ANYONECANPAY) {
                 message_hash = self
                     .get_sighash_none_anyonecanpay_message_hash::<SCRIPT_CODE_LEN, N_INPUT_SIZE>(
@@ -872,22 +879,32 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
             } else {
                 assert(false, "Unsupported hash type");
             }
-            ecdsa_verify(pub_x, pub_y, signature, message_hash)
+
+            res = ecdsa_verify(pub_x, pub_y, signature, message_hash);
+            n += 1;
         }
+
+        (res, n)
+    }
 
     pub fn op_checksig<let SCRIPT_CODE_LEN: u32, let N_OUTPUT_SIZE: u32, let INPUT_TO_SIGN: u32, let INPUT_TO_SIGN_LEN: u32, let N_INPUT_SIZE: u32>(
         &mut self,
         address: Address,
         verify: bool,
+        sigadd: bool,
     ) {
         let result = self
             ._op_checksig::<SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
                 address,
+                sigadd,
             );
-        if verify {
-            assert(result);
+        if sigadd {
+            assert(result.0);
+            self.push(i32_to_vec(result.1));
+        } else if verify {
+            assert(result.0);
         } else {
-            let integer = i32_to_vec(if result { 1 } else { 0 });
+            let integer = i32_to_vec(if result.0 { 1 } else { 0 });
             self.push(integer);
         }
     }
@@ -907,7 +924,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         let m = vec_to_u32(self.pop());
         assert(m == M, "Incorrect amount of signatures");
 
-        let mut sigs = [([0; 64], 0); M];
+        let mut sigs = [([0; 64], 0, false); M];
         for i in 0..M {
             sigs[i] = self.pop_signature();
         }
@@ -921,7 +938,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                 let mut message_hash = [0; 32];
 
                 let (pub_x, pub_y) = keys[N - 1 - i];
-                let (signature, hash_type) = sigs[sig_now];
+                let (signature, hash_type, _) = sigs[sig_now];
 
                 if hash_type == SIGHASH_ALL {
                     message_hash = self.get_sighash_all_message_hash::<SCRIPT_CODE_LEN>(address);
@@ -1364,7 +1381,7 @@ fn test_legacy_checksig_all() {
     stack.push_bytes(signature_bytes);
     stack.push_bytes(pubkey_bytes);
     //without 1 on N_INPUT_SIZE failing test
-    stack.op_checksig::<26, 0, 0, 0, 1>(Address::new_p2pkh(), true);
+    stack.op_checksig::<26, 0, 0, 0, 1>(Address::new_p2pkh(), true, false);
 }
 
 #[test]
@@ -1400,7 +1417,7 @@ fn test_segwit_checksig_all() {
     stack.push_bytes(signature_bytes);
     stack.push_bytes(pubkey_bytes);
 
-    stack.op_checksig::<22, 0, 0, 0, 1>(Address::new_p2wpkh(), true);
+    stack.op_checksig::<22, 0, 0, 0, 1>(Address::new_p2wpkh(), true, false);
 }
 
 #[test]
@@ -1433,7 +1450,7 @@ fn test_legacy_checksig_all_anyonecanpay() {
 
     stack.push_bytes(signature_bytes);
     stack.push_bytes(pubkey_bytes);
-    stack.op_checksig::<26, 0, 0, 0, 41>(Address::new_p2pkh(), true);
+    stack.op_checksig::<26, 0, 0, 0, 41>(Address::new_p2pkh(), true, false);
 }
 
 #[test]
@@ -1466,7 +1483,7 @@ fn test_legacy_checksig_none() {
 
     stack.push_bytes(signature_bytes);
     stack.push_bytes(pubkey_bytes);
-    stack.op_checksig::<26, 0, 0, 0, 1>(Address::new_p2pkh(), true);
+    stack.op_checksig::<26, 0, 0, 0, 1>(Address::new_p2pkh(), true, false);
 }
 
 #[test]
@@ -1499,7 +1516,7 @@ fn test_legacy_checksig_none_anyonecanpay() {
 
     stack.push_bytes(signature_bytes);
     stack.push_bytes(pubkey_bytes);
-    stack.op_checksig::<26, 0, 0, 0, 41>(Address::new_p2pkh(), true);
+    stack.op_checksig::<26, 0, 0, 0, 41>(Address::new_p2pkh(), true, false);
 }
 
 #[test]
@@ -1532,7 +1549,7 @@ fn test_legacy_checksig_single() {
 
     stack.push_bytes(signature_bytes);
     stack.push_bytes(pubkey_bytes);
-    stack.op_checksig::<26, 47, 0, 1, 1>(Address::new_p2pkh(), true);
+    stack.op_checksig::<26, 47, 0, 1, 1>(Address::new_p2pkh(), true, false);
 }
 
 #[test]
@@ -1565,7 +1582,7 @@ fn test_legacy_checksig_single_anyonecanpay() {
 
     stack.push_bytes(signature_bytes);
     stack.push_bytes(pubkey_bytes);
-    stack.op_checksig::<26, 47, 0, 1, 1>(Address::new_p2pkh(), true);
+    stack.op_checksig::<26, 47, 0, 1, 1>(Address::new_p2pkh(), true, false);
 }
 
 #[test]
@@ -1598,7 +1615,7 @@ fn test_p2wpkh_checksig_all() {
 
     stack.push_bytes(signature_bytes);
     stack.push_bytes(pubkey_bytes);
-    stack.op_checksig::<26, 35, 0, 0, 1>(Address::new_p2wpkh(), true);
+    stack.op_checksig::<26, 35, 0, 0, 1>(Address::new_p2wpkh(), true, false);
 }
 
 #[test]
@@ -1631,7 +1648,7 @@ fn test_p2wpkh_checksig_all_anyonecanpay() {
 
     stack.push_bytes(signature_bytes);
     stack.push_bytes(pubkey_bytes);
-    stack.op_checksig::<26, 35, 0, 0, 1>(Address::new_p2wpkh(), true);
+    stack.op_checksig::<26, 35, 0, 0, 1>(Address::new_p2wpkh(), true, false);
 }
 
 #[test]
@@ -1664,7 +1681,7 @@ fn test_p2wpkh_checksig_none() {
 
     stack.push_bytes(signature_bytes);
     stack.push_bytes(pubkey_bytes);
-    stack.op_checksig::<26, 35, 0, 0, 1>(Address::new_p2wpkh(), true);
+    stack.op_checksig::<26, 35, 0, 0, 1>(Address::new_p2wpkh(), true, false);
 }
 
 #[test]
@@ -1697,7 +1714,7 @@ fn test_p2wpkh_checksig_none_anyonecanpay() {
 
     stack.push_bytes(signature_bytes);
     stack.push_bytes(pubkey_bytes);
-    stack.op_checksig::<26, 34, 0, 0, 1>(Address::new_p2wpkh(), true);
+    stack.op_checksig::<26, 34, 0, 0, 1>(Address::new_p2wpkh(), true, false);
 }
 
 #[test]
@@ -1730,7 +1747,7 @@ fn test_p2wpkh_checksig_single() {
 
     stack.push_bytes(signature_bytes);
     stack.push_bytes(pubkey_bytes);
-    stack.op_checksig::<26, 34, 0, 0, 1>(Address::new_p2wpkh(), true);
+    stack.op_checksig::<26, 34, 0, 0, 1>(Address::new_p2wpkh(), true, false);
 }
 
 #[test]
@@ -1763,7 +1780,7 @@ fn test_p2wpkh_checksig_single_anyonecanpay() {
 
     stack.push_bytes(signature_bytes);
     stack.push_bytes(pubkey_bytes);
-    stack.op_checksig::<26, 34, 0, 0, 1>(Address::new_p2wpkh(), true);
+    stack.op_checksig::<26, 34, 0, 0, 1>(Address::new_p2wpkh(), true, false);
 }
 
 #[test]

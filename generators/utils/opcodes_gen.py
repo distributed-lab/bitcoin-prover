@@ -9,6 +9,9 @@ def generate(sizes: set):
     sha1 = {e for e in sizes if e[0] == 167}
     mulsig = {e for e in sizes if e[0] == 174 or e[0] == 175}
     pushbytes = {e for e in sizes if e[0] >= 1 and e[0] <= 75}
+    pushdata1 = {e for e in sizes if e[0] == 76}
+    pushdata2 = {e for e in sizes if e[0] == 77}
+    pushdata4 = {e for e in sizes if e[0] == 78}
 
     hash160ifs = "\n".join(
     f"""    if len == {e[1]} {{
@@ -57,6 +60,39 @@ def generate(sizes: set):
     }}""" for e in pushbytes
 )
     
+    pushdata1ifs = "\n".join(
+    f"""\tif len == {e[1]} {{
+        let mut value = [0; {e[1]}];
+        for i in 0..{e[1]} {{
+            value[i] = script[cur_pos];
+            cur_pos += 1;
+        }}
+        stack.push_bytes(value);
+    }}""" for e in pushdata1
+)
+    
+    pushdata2ifs = "\n".join(
+    f"""\tif len == {e[1]} {{
+        let mut value = [0; {e[1]}];
+        for i in 0..{e[1]} {{
+            value[i] = script[cur_pos];
+            cur_pos += 1;
+        }}
+        stack.push_bytes(value);
+    }}""" for e in pushdata2
+)
+    
+    pushdata4ifs = "\n".join(
+    f"""\tif len == {e[1]} {{
+        let mut value = [0; {e[1]}];
+        for i in 0..{e[1]} {{
+            value[i] = script[cur_pos];
+            cur_pos += 1;
+        }}
+        stack.push_bytes(value);
+    }}""" for e in pushdata4
+)
+    
     with open(PATH + ".template") as file:
         templateGenerated = file.read()
 
@@ -68,6 +104,9 @@ def generate(sizes: set):
         sha1=sha1ifs,
         checkmulsig=mulsigifs,
         byshbytes=pushbytesifs,
+        pushdata1=pushdata1ifs,
+        pushdata2=pushdata2ifs,
+        pushdata4=pushdata4ifs,
     )
 
     with open(PATH, 'w') as file:

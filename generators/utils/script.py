@@ -48,18 +48,21 @@ class Script:
                 cur_stack_size += 1
             elif bytes[i] == 76:
                 size = bytes[i + 1]
+                self.sizes.add((bytes[i], size, 0, 0))
                 i += size + 1
                 cur_stack_size += 1
                 if self.max_element_size < size:
                     self.max_element_size = size
             elif bytes[i] == 77:
                 size = bytes[i + 1] + (bytes[i + 2] << 8)
+                self.sizes.add((bytes[i], size, 0, 0))
                 i += size + 2
                 cur_stack_size += 1
                 if self.max_element_size < size:
                     self.max_element_size = size
             elif bytes[i] == 78:
                 size = bytes[i + 1] + (bytes[i + 2] << 8) + (bytes[i + 3] << 16) + (bytes[i + 4] << 24)
+                self.sizes.add((bytes[i], size, 0, 0))
                 i += size + 4
                 cur_stack_size += 1
                 if self.max_element_size < size:
