@@ -861,11 +861,13 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
             } else if hash_type == SIGHASH_SINGLE {
                 message_hash = self
                     .get_sighash_single_message_hash::<SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN>(
-                    address,
-                );
+                        address,
+                    );
             } else if hash_type == (SIGHASH_ALL | SIGHASH_ANYONECANPAY) {
                 message_hash = self
-                    .get_sighash_all_anyonecanpay_message_hash::<SCRIPT_CODE_LEN, N_INPUT_SIZE>(address);
+                    .get_sighash_all_anyonecanpay_message_hash::<SCRIPT_CODE_LEN, N_INPUT_SIZE>(
+                        address,
+                    );
             } else if hash_type == (SIGHASH_NONE | SIGHASH_ANYONECANPAY) {
                 message_hash = self
                     .get_sighash_none_anyonecanpay_message_hash::<SCRIPT_CODE_LEN, N_INPUT_SIZE>(
