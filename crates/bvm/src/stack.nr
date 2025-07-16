@@ -33,8 +33,8 @@ pub fn empty_stack_array<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u3
 }
 
 pub struct Stack<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANSACTION_SIZE: u32, let CURRENT_INPUT_COUNT: u32, let CURRENT_INPUT_COUNT_LEN: u32, let CURRENT_INPUT_SIZE: u32, let CURRENT_OUTPUT_COUNT: u32, let CURRENT_OUTPUT_COUNT_LEN: u32, let CURRENT_OUTPUT_SIZE: u32, let CURRENT_MAX_WITNESS_STACK_SIZE: u32, let CURRENT_WITNESS_SIZE: u32, let PREV_TRANSACTION_SIZE: u32, let PREV_INPUT_COUNT: u32, let PREV_INPUT_COUNT_LEN: u32, let PREV_INPUT_SIZE: u32, let PREV_OUTPUT_COUNT: u32, let PREV_OUTPUT_COUNT_LEN: u32, let PREV_OUTPUT_SIZE: u32, let PREV_MAX_WITNESS_STACK_SIZE: u32, let PREV_WITNESS_SIZE: u32> {
-    data: [BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>; MAX_STACK_SIZE],
-    stack_size: u32,
+    pub data: [BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>; MAX_STACK_SIZE],
+    pub stack_size: u32,
     alt_data: [BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>; MAX_STACK_SIZE],
     alt_stack_size: u32,
     cur_transaction: Transaction<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE>,
@@ -548,9 +548,47 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         //
     }
 
-    // todo: implement this opcode
     pub fn op_size(&mut self) {
-        //
+        self.push_bytes(u32_to_le_bytes(self.get_last_stack_element_length()));
+    }
+
+    pub fn op_checklocktimeverify(&mut self) {
+        let elem = self.data[self.stack_size - 1];
+        let num = vec_to_i32(elem);
+        let ltime_offset = self.cur_transaction.lock_time.offset;
+        let sequence_offset = self.cur_transaction.inputs[self.input_to_sign].sequence.offset;
+        let mut locktime = 0;
+        let mut sequence = 0;
+        for i in 0..4 {
+            locktime += self.cur_transaction.data[ltime_offset + i] as i32 << (i * 8) as u8;
+            sequence += self.cur_transaction.data[sequence_offset + i] as i32 << (i * 8) as u8;
+        }
+
+        if (num < 0)
+            | (num > locktime)
+            | ((num >= 500000000) & (locktime < 500000000))
+            | ((num < 500000000) & (locktime >= 500000000))
+            | (sequence == 0xffffffff) {
+            assert(false);
+        }
+    }
+
+    // todo: finish it
+    pub fn op_checksequenceverify(&mut self) {
+        let elem = self.data[self.stack_size - 1];
+        let num = vec_to_i32(elem);
+        let version_offset = self.cur_transaction.version.offset;
+        let sequence_offset = self.cur_transaction.inputs[self.input_to_sign].sequence.offset;
+        let mut version = 0;
+        let mut sequence = 0;
+        for i in 0..4 {
+            version += self.cur_transaction.data[version_offset + i] as i32 << (i * 8) as u8;
+            sequence += self.cur_transaction.data[sequence_offset + i] as i32 << (i * 8) as u8;
+        }
+
+        if (num < 0) | (((num << 31) != 1) & ((version < 2) | ((sequence << 31) != 1))) {
+            assert(false);
+        }
     }
 
     pub fn get_script_code_size(&mut self, address: Address) -> u32 {

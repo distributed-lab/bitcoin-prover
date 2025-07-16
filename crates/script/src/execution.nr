@@ -5,12 +5,20 @@ use crate::opcode::{
 };
 use super::{
     generated::{checkmulsig, hash160, hash256, pushbytes, ripemd160, sha1, sha256},
-    opcode::{OP_HASH256, OP_RIPEMD160, OP_SHA1, OP_SHA256},
+    opcode::{
+        OP_0NOTEQUAL, OP_1ADD, OP_1SUB, OP_2DROP, OP_2DUP, OP_2OVER, OP_2ROT, OP_2SWAP, OP_3DUP,
+        OP_ABS, OP_ADD, OP_BOOLAND, OP_BOOLOR, OP_CHECKLOCKTIMEVERIFY, OP_CHECKSEQUENCEVERIFY,
+        OP_DEPTH, OP_DROP, OP_FROMALTSTACK, OP_GREATERTHAN, OP_GREATERTHANOREQUAL, OP_HASH256,
+        OP_IFDUP, OP_LESSTHAN, OP_LESSTHANOREQUAL, OP_MAX, OP_MIN, OP_NEGATE, OP_NIP, OP_NOT,
+        OP_NUMENOTQUAL, OP_NUMEQUAL, OP_NUMEQUALVERIFY, OP_OVER, OP_PICK, OP_RETURN, OP_RIPEMD160,
+        OP_ROLL, OP_ROT, OP_SHA1, OP_SHA256, OP_SIZE, OP_SUB, OP_SWAP, OP_TOALTSTACK, OP_TUCK,
+        OP_WITHIN,
+    },
 };
 use bvm::stack::{empty_stack_array, Stack};
 use sign::address::Address;
 use sign::transaction::Transaction;
-use utils::convert::hex_to_bytes;
+use utils::convert::{hex_to_bytes, vec_to_u32};
 
 pub struct ScriptExecutionEngine<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANSACTION_SIZE: u32, let CURRENT_INPUT_COUNT: u32, let CURRENT_INPUT_COUNT_LEN: u32, let CURRENT_INPUT_SIZE: u32, let CURRENT_OUTPUT_COUNT: u32, let CURRENT_OUTPUT_COUNT_LEN: u32, let CURRENT_OUTPUT_SIZE: u32, let CURRENT_MAX_WITNESS_STACK_SIZE: u32, let CURRENT_WITNESS_SIZE: u32, let PREV_TRANSACTION_SIZE: u32, let PREV_INPUT_COUNT: u32, let PREV_INPUT_COUNT_LEN: u32, let PREV_INPUT_SIZE: u32, let PREV_OUTPUT_COUNT: u32, let PREV_OUTPUT_COUNT_LEN: u32, let PREV_OUTPUT_SIZE: u32, let PREV_MAX_WITNESS_STACK_SIZE: u32, let PREV_WITNESS_SIZE: u32> {
     pub stack: Stack<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, PREV_TRANSACTION_SIZE, PREV_INPUT_COUNT, PREV_INPUT_COUNT_LEN, PREV_INPUT_SIZE, PREV_OUTPUT_COUNT, PREV_OUTPUT_COUNT_LEN, PREV_OUTPUT_SIZE, PREV_MAX_WITNESS_STACK_SIZE, PREV_WITNESS_SIZE>,
@@ -42,10 +50,93 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                     let res = pushbytes(self.stack, push_length, script, cur_pos);
                     self.stack = res.0;
                     cur_pos = res.1;
+                } else if opcode == OP_1NEGATE {
+                    self.stack.op_num(-1);
                 } else if opcode >= OP_1 & opcode <= OP_16 {
                     self.stack.op_num(opcode as i8 - 80);
+                } else if opcode == OP_RETURN {
+                    assert(false, "OP_RETURN");
+                } else if opcode == OP_TOALTSTACK {
+                    self.stack.op_toaltstack();
+                } else if opcode == OP_FROMALTSTACK {
+                    self.stack.op_fromaltstack();
+                } else if opcode == OP_2DROP {
+                    self.stack.op_2drop();
+                } else if opcode == OP_2DUP {
+                    self.stack.op_2dup();
+                } else if opcode == OP_3DUP {
+                    self.stack.op_3dup();
+                } else if opcode == OP_2OVER {
+                    self.stack.op_2over();
+                } else if opcode == OP_2ROT {
+                    self.stack.op_2rot();
+                } else if opcode == OP_2SWAP {
+                    self.stack.op_2swap();
+                } else if opcode == OP_IFDUP {
+                    self.stack.op_ifdup();
+                } else if opcode == OP_DEPTH {
+                    self.stack.op_depth();
+                } else if opcode == OP_DROP {
+                    self.stack.op_drop();
                 } else if opcode == OP_DUP {
                     self.stack.op_dup();
+                } else if opcode == OP_NIP {
+                    self.stack.op_nip();
+                } else if opcode == OP_OVER {
+                    self.stack.op_over();
+                } else if opcode == OP_PICK {
+                    self.stack.op_pick();
+                } else if opcode == OP_ROLL {
+                    self.stack.op_roll();
+                } else if opcode == OP_ROT {
+                    self.stack.op_rot();
+                } else if opcode == OP_SWAP {
+                    self.stack.op_swap();
+                } else if opcode == OP_TUCK {
+                    self.stack.op_tuck();
+                } else if opcode == OP_SIZE {
+                    self.stack.op_size();
+                } else if opcode == OP_1ADD {
+                    self.stack.op_1add();
+                } else if opcode == OP_1SUB {
+                    self.stack.op_1sub();
+                } else if opcode == OP_NEGATE {
+                    self.stack.op_negate();
+                } else if opcode == OP_ABS {
+                    self.stack.op_abs();
+                } else if opcode == OP_NOT {
+                    self.stack.op_not();
+                } else if opcode == OP_0NOTEQUAL {
+                    self.stack.op_0notequal();
+                } else if opcode == OP_ADD {
+                    self.stack.op_add();
+                } else if opcode == OP_SUB {
+                    self.stack.op_sub();
+                } else if opcode == OP_BOOLAND {
+                    self.stack.op_booland();
+                } else if opcode == OP_BOOLOR {
+                    self.stack.op_boolor();
+                } else if opcode == OP_NUMEQUAL {
+                    self.stack.op_numequal();
+                } else if opcode == OP_NUMEQUALVERIFY {
+                    self.stack.op_numequal();
+                    assert(self.stack.op_verify());
+                } else if opcode == OP_NUMENOTQUAL {
+                    self.stack.op_numnotequal();
+                } else if opcode == OP_LESSTHAN {
+                    self.stack.op_lessthan();
+                } else if opcode == OP_GREATERTHAN {
+                    self.stack.op_greaterthan();
+                } else if opcode == OP_LESSTHANOREQUAL {
+                    self.stack.op_lessthanorequal();
+                } else if opcode == OP_GREATERTHANOREQUAL {
+                    self.stack.op_greaterthanorequal();
+                } else if opcode == OP_MIN {
+                    self.stack.op_min();
+                } else if opcode == OP_MAX {
+                    self.stack.op_max();
+                } else if opcode == OP_WITHIN {
+                    self.stack.op_within();
                 } else if opcode == OP_RIPEMD160 {
                     let last_stack_element_length = self.stack.get_last_stack_element_length();
                     self.stack = ripemd160(self.stack, last_stack_element_length);
@@ -75,13 +166,19 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                         );
                 } else if (opcode == OP_CHECKMULSIG) | (opcode == OP_CHECKMULSIGVERIFY) {
                     let verify = opcode == OP_CHECKMULSIGVERIFY;
+                    let n = vec_to_u32(self.stack.data[self.stack.stack_size - 1]);
+                    let m = vec_to_u32(self.stack.data[self.stack.stack_size - 2 - n]);
                     self.stack = checkmulsig::<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, PREV_TRANSACTION_SIZE, PREV_INPUT_COUNT, PREV_INPUT_COUNT_LEN, PREV_INPUT_SIZE, PREV_OUTPUT_COUNT, PREV_OUTPUT_COUNT_LEN, PREV_OUTPUT_SIZE, PREV_MAX_WITNESS_STACK_SIZE, PREV_WITNESS_SIZE, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, SCRIPT_PUB_KEY_LEN>(
                         self.stack,
-                        0,
-                        0,
+                        n,
+                        m,
                         verify,
                         address,
                     );
+                } else if opcode == OP_CHECKLOCKTIMEVERIFY {
+                    self.stack.op_checklocktimeverify();
+                } else if opcode == OP_CHECKSEQUENCEVERIFY {
+                    self.stack.op_checksequenceverify();
                 }
             }
         }
