@@ -1,6 +1,7 @@
 from bitcoin.core.script import *
 from bitcoin.core import CScript, CTransaction, lx
 from bitcoin.core.scripteval import _EvalScript
+from bitcoin.core import x
 from binascii import unhexlify
 from generators.utils.tx import Transaction
 
@@ -13,18 +14,18 @@ remove_1_element = [105, 107, 117, 119, 122, 135, 147, 148, 154, 155, 156, 157, 
 remove_2_elements = [109, 136, 165, 173, 186]
 
 class Script:
-    def __init__(self, hex: str, tx: Transaction, inIdx):
-        self.script_info(hex, tx, inIdx)
+    def __init__(self, hex: str, tx: Transaction, inIdx, stack = []):
+        self.script_info(hex, tx, inIdx, stack)
 
-    def script_info(self, hex: str, tx: Transaction, inIdx):
+    def script_info(self, hex: str, tx: Transaction, inIdx, stack):
         bytes = unhexlify(hex)
         script = CScript(bytes)
-        script_elements = format_script_elements(script)
-
+        
+        self.script_elements = format_script_elements(script)
         self.opcodes = 0
         self.require_stack_size = 0
         self.max_element_size = 0
-        self.sizes = get_hashed_data_sizes(bytes, tx.to_hex(), inIdx, tuple())
+        self.sizes = get_hashed_data_sizes(bytes, tx.to_hex(), inIdx, stack, tuple())
 
         cur_stack_size = 0
         require_alt_stack_size = 0
@@ -39,6 +40,11 @@ class Script:
                 alt_stack_size += 1
             elif bytes[i] == 108:
                 alt_stack_size -= 1
+
+            if bytes[i] == 174 or bytes[i] == 175:
+                n = self.script_elements[j - 1]
+                m = self.script_elements[j - 2 - n]
+                self.sizes.add((bytes[i], 0, n, m))
 
             if bytes[i] >= 1 and bytes[i] <= 75:
                 self.sizes.add((bytes[i], 0, 0, 0))
@@ -78,11 +84,6 @@ class Script:
             elif bytes[i] in remove_2_elements:
                 cur_stack_size -= 2
 
-            if bytes[i] == 174 or bytes[i] == 175:
-                n = script_elements[j - 1]
-                m = script_elements[j - 2 - n]
-                self.sizes.add((bytes[i], 0, n, m))
-
             if cur_stack_size > self.require_stack_size:
                 self.require_stack_size = cur_stack_size
             if alt_stack_size > require_alt_stack_size:
@@ -99,20 +100,25 @@ class Script:
         # due to the specifics of implementation using noir
         self.require_stack_size += 3
 
-def get_hashed_data_sizes(script, txTo, inIdx, flags=()):
-        stack = []
-        sizes = set()
-        tx = CTransaction.deserialize(unhexlify(txTo))
+def get_hashed_data_sizes(script, txTo, inIdx, stack, flags=()):
+    sizes = set()
+    tx = CTransaction.deserialize(unhexlify(txTo))
+    stack = [to_bytes_or_keep(op) for op in stack]
+    parts = split_list_by_hash(CScript(script))
 
-        parts = split_list_by_hash(CScript(script))
+    for idx, part in enumerate(parts):
+        part_fixed = [ensure_bytes_or_opcode(el) for el in part]
+        _EvalScript(stack, CScript(part_fixed), tx, inIdx, flags)
+        if(idx != len(parts) - 1):
+            sizes.add((parts[idx + 1][0], len(stack[len(stack) - 1]), 0, 0))
 
-        for idx, part in enumerate(parts):
-            part_fixed = [ensure_bytes_or_opcode(el) for el in part]
-            _EvalScript(stack, CScript(part_fixed), tx, inIdx, flags)
-            if(idx != len(parts) - 1):
-                sizes.add((parts[idx + 1][0], len(stack[len(stack) - 1]), 0, 0))
+    return sizes
 
-        return sizes
+def to_bytes_or_keep(op):
+    if isinstance(op, str):
+        return x(op)
+    else:
+        return op
 
 def ensure_bytes_or_opcode(el):
     if isinstance(el, str):

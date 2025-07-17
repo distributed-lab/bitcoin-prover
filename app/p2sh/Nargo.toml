@@ -1,7 +1,10 @@
 [package]
-name = "p2sh_bin"
+name = "p2sh"
 type = "bin"
 
 [dependencies]
-p2sh_lib = { path = "../../crates/p2sh" }
+bvm = { path = "../../crates/bvm" }
+sign = { path = "../../crates/sign" }
 utils = { path = "../../crates/utils" }
+script = { path = "../../crates/script" }
+

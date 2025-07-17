@@ -11,6 +11,12 @@ pip3 install python-bitcoinlib
 # Generate Prover.toml
 python3 -m generators.p2ms.main
 
+# Deactivate venv
+deactivate
+
+# Format noir code
+nargo fmt
+
 # Execute the binary
 nargo execute --package p2ms
 

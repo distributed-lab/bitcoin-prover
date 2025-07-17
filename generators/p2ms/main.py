@@ -59,7 +59,7 @@ def main():
         scriptPubKeyLenLen=curTx._get_compact_size_size(script_pub_key_size),
         stackSize=script.require_stack_size,
         maxStackElementSize=script.max_element_size,
-        nOutputSize=curTx._get_output_size(curTx.outputs[INPUT_TO_SIGN]),
+        nOutputSize=curTx._get_output_size(curTx.outputs[INPUT_TO_SIGN]) if len(curTx.outputs) > INPUT_TO_SIGN else 0,
         inputToSign=INPUT_TO_SIGN,
         inputToSignLen=curTx._get_compact_size_size(INPUT_TO_SIGN),
         nInputSize=curTx._get_input_size(curTx.inputs[INPUT_TO_SIGN]),
