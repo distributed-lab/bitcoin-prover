@@ -3,7 +3,7 @@ pub global PREV_TX_LEN: u32 = 234;
 pub global SCRIPT_SIG_LEN: u32 = 290;
 pub global SCRIPT_PUB_KEY_LEN: u32 = 23;
 pub global SCRIPT_PUB_KEY_LEN_LEN: u32 = 1;
-pub global REDEEM_SCRIPT_LEN: u32 = 142;
+pub global REDEEM_SCRIPT_LEN: u32 = 71;
 pub global REDEEM_SCRIPT_OPCODES_AMOUNT: u32 = 5;
 
 pub global CUR_TX_INP_COUNT: u32 = 12;

@@ -87,7 +87,7 @@ fn main(
     let address = Address::new_p2sh();
 
     script_execution_engine
-        .execute::<SCRIPT_SIG_LEN / 2 + SCRIPT_PUB_KEY_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, OPCODES_AMOUNT, SCRIPT_PUB_KEY_LEN>(
+        .execute::<SCRIPT_SIG_LEN / 2 + SCRIPT_PUB_KEY_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, OPCODES_AMOUNT, 0>(
             script,
             address,
         );

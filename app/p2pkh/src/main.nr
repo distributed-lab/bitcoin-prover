@@ -43,9 +43,9 @@ fn main(
 
     let vout = le_bytes_to_u32(vout_bytes);
     let script_pub_key_pos = prev_tx.outputs[vout].script_pub_key.offset;
-    assert(prev_tx.data[script_pub_key_pos] == 0);
 
     if CUR_IS_GEGWIT {
+        assert(prev_tx.data[script_pub_key_pos] == 0);
         script_pub_key[0] = 118;
         script_pub_key[1] = 169;
         script_pub_key[2] = 20;

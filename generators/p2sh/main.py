@@ -26,7 +26,7 @@ def main():
     sizes = script.sizes
     redeem_script = Script(script.script_elements[-4], curTx, config["input_to_sign"], script.script_elements[0:-4])
     sizes = sizes | redeem_script.sizes
-    generate(script.sizes)
+    generate(sizes)
 
     opcodes = max(script.opcodes, redeem_script.opcodes)
     require_stack_size = max(script.require_stack_size, redeem_script.require_stack_size)
@@ -74,7 +74,7 @@ def main():
         signLen=len(config['script_sig']),
         scriptPubKeyLen=len(script_pub_key),
         scriptPubKeyLenLen=curTx._get_compact_size_size(script_pub_key_size),
-        redeemScriptLen=len(script.script_elements[-4]),
+        redeemScriptLen=len(script.script_elements[-4]) // 2,
         redeemOpcodesAmount=redeem_script.opcodes,
         stackSize=require_stack_size,
         maxStackElementSize=max_element_size,
