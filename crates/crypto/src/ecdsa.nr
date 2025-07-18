@@ -1,8 +1,7 @@
 use super::{
     point::{get_low_s_if_needed, get_y_from_x, mul_point, Point},
 };
-use dep::bignum::{BigNum, U256, U768};
-use bignum2::BigNum as BN;
+use dep::bignum::{BigNum};
 use std::ecdsa_secp256k1;
 use utils::{convert::bytes_to_hex, decode::decode_der};
 use dep::bignum::fields::{secp256k1Fq::Secp256k1_Fq, secp256k1Fr::Secp256k1_Fr};

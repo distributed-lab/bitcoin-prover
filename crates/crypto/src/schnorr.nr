@@ -1,8 +1,7 @@
 use super::{
     point::{add_point, mul_point, Point},
-    types::I768,
 };
-use dep::bignum::{BigNum, U256, U768};
+use dep::bignum::{BigNum, U256};
 use utils::convert::{bytes_to_hex, hex_to_bytes};
 use dep::bignum::fields::{secp256k1Fq::Secp256k1_Fq, secp256k1Fr::Secp256k1_Fr};
 
@@ -194,7 +193,6 @@ pub fn schnorr_verify(pub_key_x: [u8; 32], message: [u8; 32], signature: [u8; 64
 
     point_r.x == Secp256k1_Fq::from_be_bytes(r)
 }
-
 
 
 #[test]
