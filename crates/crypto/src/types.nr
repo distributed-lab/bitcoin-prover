@@ -1,6 +1,6 @@
-use dep::bignum::{BigNum, U768, U256};
+use dep::bignum::{BigNum, U768};
 use std::ops::{Add, Div, Mul, Sub};
-use dep::bignum::fields::{secp256k1Fq::Secp256k1_Fq, secp256k1Fr::Secp256k1_Fr};
+use dep::bignum::fields::{secp256k1Fq::Secp256k1_Fq};
 
 pub struct I768 {
     pub num: U768,
@@ -81,7 +81,7 @@ impl Div for I768 {
 
 pub fn sqrt_secp256k1(value: Secp256k1_Fq) -> Secp256k1_Fq {
     // Safety:
-    let mut res = unsafe { _sqrt_secp256k(value) };
+    let mut res = unsafe { value.__tonelli_shanks_sqrt().unwrap() };
     assert(res * res == value);
 
     if res.get_limb(0) % 2 == 1 {
@@ -92,23 +92,23 @@ pub fn sqrt_secp256k1(value: Secp256k1_Fq) -> Secp256k1_Fq {
 }
 
 // Tonelli-Shanks algorithm
-unconstrained fn _sqrt_secp256k(value: Secp256k1_Fq) -> Secp256k1_Fq {
-    let mut e = U256::from_be_bytes([0 as u8].as_slice().append(Secp256k1_Fq::modulus().to_be_bytes()).as_array::<33>());
-    e = (e + U256::from(1)).udiv(U256::from(4));
-    let mut res1 = Secp256k1_Fq::one();
-    let mut res2 = value;
+// unconstrained fn _sqrt_secp256k(value: Secp256k1_Fq) -> Secp256k1_Fq {
+//     let mut e = U256::from_be_bytes([0 as u8].as_slice().append(Secp256k1_Fq::modulus().to_be_bytes()).as_array::<33>());
+//     e = (e + U256::from(1)).udiv(U256::from(4));
+//     let mut res1 = Secp256k1_Fq::one();
+//     let mut res2 = value;
 
-    for _ in 0..256 {
-        if !e.is_zero() {
-            if e.get_limb(0) % 2 == 1 {
-                res1 = (res1 * res2);
-            }
-            res2 = (res2 * res2);
-            e = e.udiv(U256::from(2));
-        }
-    }
-    res1
-}
+//     for _ in 0..256 {
+//         if !e.is_zero() {
+//             if e.get_limb(0) % 2 == 1 {
+//                 res1 = (res1 * res2);
+//             }
+//             res2 = (res2 * res2);
+//             e = e.udiv(U256::from(2));
+//         }
+//     }
+//     res1
+// }
 
 #[test]
 fn sqrt_test() {

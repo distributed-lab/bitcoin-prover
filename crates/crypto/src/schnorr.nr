@@ -1,33 +1,10 @@
 use super::{
-    point::{add_point, get_y_from_x, mul_point, Point},
+    point::{add_point, mul_point, Point},
     types::I768,
 };
 use dep::bignum::{BigNum, U256, U768};
-use utils::{convert::{get_256_bits_from_768}};
 use utils::convert::{bytes_to_hex, hex_to_bytes};
 use dep::bignum::fields::{secp256k1Fq::Secp256k1_Fq, secp256k1Fr::Secp256k1_Fr};
-
-fn U256_to_be_bytes(val: U256) -> [u8; 32]{
-    let mut result = [0 as u8; 32];
-    
-    let bytes_of_num = val.to_be_bytes();
-    for i in 0..32{
-        result[i] = bytes_of_num[i + 1];
-    }
-
-    result
-}
-
-fn U768_to_be_bytes(val: U768) -> [u8; 32]{
-    let mut result = [0 as u8; 32];
-    
-    let bytes_of_num = val.to_be_bytes();
-    for i in 0..32{
-        result[i] = bytes_of_num[i + 65];
-    }
-
-    result
-}
 
 
 fn xor_bytes_array(a: [u8; 32], b: [u8; 32]) -> [u8; 32]{

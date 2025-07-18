@@ -1,7 +1,6 @@
 use super::types::{I768, sqrt_secp256k1};
 use dep::bignum::{BigNum, U256, U768};
 use dep::bignum::fields::{secp256k1Fq::Secp256k1_Fq, secp256k1Fr::Secp256k1_Fr};
-use std::ops::{Add, Mul};
 
 // Modulo: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
 

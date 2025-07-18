@@ -1,12 +1,10 @@
 use super::{
-    point::{add_point, get_low_s_if_needed, get_y_from_x, inv_mod, mul_point, Point},
-    types::I768,
+    point::{get_low_s_if_needed, get_y_from_x, mul_point, Point},
 };
 use dep::bignum::{BigNum, U256, U768};
 use bignum2::BigNum as BN;
-use noir_ecdsa::ecdsa::verify_ecdsa;
 use std::ecdsa_secp256k1;
-use utils::{convert::get_256_bits_from_768, convert::bytes_to_hex, decode::decode_der};
+use utils::{convert::bytes_to_hex, decode::decode_der};
 use dep::bignum::fields::{secp256k1Fq::Secp256k1_Fq, secp256k1Fr::Secp256k1_Fr};
 
 pub fn ecdsa_sign(message: [u8; 32], priv_key: Secp256k1_Fr, nonce: Secp256k1_Fr) -> (Secp256k1_Fq, Secp256k1_Fr) {
