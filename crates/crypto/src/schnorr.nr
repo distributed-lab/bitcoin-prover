@@ -180,8 +180,11 @@ pub fn schnorr_verify(pub_key_x: [u8; 32], message: [u8; 32], signature: [u8; 64
 
     let pub_key_x_num = Secp256k1_Fq::from_be_bytes(pub_key_x);
 
+    let c = pub_key_x_num * pub_key_x_num * pub_key_x_num + Secp256k1_Fq::from(7);
     // Safety: sqrt of x^3 + 7
-    let mut pub_key_y = unsafe{ (pub_key_x_num * pub_key_x_num * pub_key_x_num + Secp256k1_Fq::from(7)).__tonelli_shanks_sqrt().unwrap() }; 
+    let mut pub_key_y = unsafe{ c.__tonelli_shanks_sqrt().unwrap() }; 
+    assert((pub_key_y * pub_key_y) == c);
+
 
     if(pub_key_y.get_limb(0) % 2 != 0){
         pub_key_y = -pub_key_y; 
