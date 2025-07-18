@@ -34,3 +34,27 @@ pub fn get_compact_size<let N: u32>(data: [u8; N], offset: u32) -> PositionField
     }
     result
 }
+
+pub fn u32_to_compact_size_array<let ARRAY_SIZE: u32>(size: u32) -> [u8; ARRAY_SIZE] {
+    let mut res = [0; ARRAY_SIZE];
+    if size <= 252 {
+        assert(ARRAY_SIZE == 1);
+        res[0] = size as u8;
+    } else if size <= 65535 {
+        assert(ARRAY_SIZE == 3);
+        res[0] = 253;
+        res[1] = size as u8;
+        res[2] = (size >> 8) as u8;
+    } else if size == 254 {
+        assert(ARRAY_SIZE == 5);
+        res[0] = 254;
+        res[1] = size as u8;
+        res[2] = (size >> 8) as u8;
+        res[3] = (size >> 16) as u8;
+        res[4] = (size >> 24) as u8;
+    } else {
+        assert(false, "not implemented");
+    }
+
+    res
+}

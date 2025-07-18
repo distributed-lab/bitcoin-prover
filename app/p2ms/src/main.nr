@@ -52,6 +52,7 @@ fn main(
         input_to_sign,
         vout,
         empty_stack_array::<MAX_STACK_ELEMENT_SIZE, STACK_SIZE>(),
+        [],
     );
 
     let mut script_execution_engine = ScriptExecutionEngine::new(stack);

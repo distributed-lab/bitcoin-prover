@@ -75,6 +75,7 @@ def main():
         scriptPubKeyLen=len(script_pub_key),
         scriptPubKeyLenLen=curTx._get_compact_size_size(script_pub_key_size),
         redeemScriptLen=len(script.script_elements[-4]) // 2,
+        redeemScriptLenLen=curTx._get_compact_size_size(len(script.script_elements[-4])),
         redeemOpcodesAmount=redeem_script.opcodes,
         stackSize=require_stack_size,
         maxStackElementSize=max_element_size,

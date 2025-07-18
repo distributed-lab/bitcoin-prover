@@ -442,28 +442,28 @@ fn prepare_preimage_hash_for_sighash_none<let TRANSACTION_SIZE: u32, let INPUT_C
     let i_when_change_offset = transaction.inputs[input_to_sign].script_sig_size.offset;
     let i_change_offset = transaction.inputs[input_to_sign].script_sig_size.size;
 
-    for i in 0..(INPUT_SIZE - 1) {
+    for i in 0..(INPUT_SIZE) {
         if transaction_offset + i == i_when_change_offset {
             for j in 0..SCRIPT_PUB_KEY_SIZE {
                 data[data_pos] = script_pub_key[j];
                 data_pos += 1;
             }
 
-            transaction_offset += i_change_offset;
-        }
-
-        if (i >= INPUT_COUNT_LEN) {
-            if (((i - INPUT_COUNT_LEN + 1) % 41 >= 36) & ((i - INPUT_COUNT_LEN + 1) % 41 <= 40))
-                & !((i - INPUT_COUNT_LEN + 1) / 41 == input_to_sign) {
-                data[data_pos] = 0;
+            transaction_offset += i_change_offset - 1;
+        } else {
+            if (i >= INPUT_COUNT_LEN) {
+                if ((i - INPUT_COUNT_LEN) % 41 >= 36)
+                    & ((i - INPUT_COUNT_LEN) % 41 < 41)
+                    & ((i - INPUT_COUNT_LEN) / 41 != input_to_sign) {
+                    data[data_pos] = 0;
+                } else {
+                    data[data_pos] = transaction.data[transaction_offset + i];
+                }
             } else {
                 data[data_pos] = transaction.data[transaction_offset + i];
             }
-        } else {
-            data[data_pos] = transaction.data[transaction_offset + i];
+            data_pos += 1;
         }
-
-        data_pos += 1;
     }
 
     data[data_pos] = 0;

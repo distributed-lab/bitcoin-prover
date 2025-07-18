@@ -8,11 +8,11 @@ use globals::{
     N_OUTPUT_SIZE, OPCODES_AMOUNT, PREV_IS_GEGWIT, PREV_TX_INP_COUNT, PREV_TX_INP_COUNT_LEN,
     PREV_TX_INP_SIZE, PREV_TX_LEN, PREV_TX_MAX_WITNESS_STACK_SIZE, PREV_TX_OUT_COUNT,
     PREV_TX_OUT_COUNT_LEN, PREV_TX_OUT_SIZE, PREV_TX_WITNESS_SIZE, REDEEM_SCRIPT_LEN,
-    REDEEM_SCRIPT_OPCODES_AMOUNT, SCRIPT_PUB_KEY_LEN, SCRIPT_PUB_KEY_LEN_LEN, SCRIPT_SIG_LEN,
-    STACK_SIZE,
+    REDEEM_SCRIPT_LEN_LEN, REDEEM_SCRIPT_OPCODES_AMOUNT, SCRIPT_PUB_KEY_LEN, SCRIPT_PUB_KEY_LEN_LEN,
+    SCRIPT_SIG_LEN, STACK_SIZE,
 };
 use script::execution::ScriptExecutionEngine;
-use sign::{address::Address, transaction::Transaction};
+use sign::{address::Address, compact_size::u32_to_compact_size_array, transaction::Transaction};
 use utils::convert::{hex_to_bytes, le_bytes_to_u32};
 
 fn main(
@@ -61,16 +61,6 @@ fn main(
         }
     }
 
-    let mut stack = Stack::new(
-        cur_tx,
-        prev_tx,
-        input_to_sign,
-        vout,
-        empty_stack_array::<MAX_STACK_ELEMENT_SIZE, STACK_SIZE>(),
-    );
-
-    let mut script_execution_engine = ScriptExecutionEngine::new(stack);
-
     let script_sig_bytes = hex_to_bytes(script_sig);
 
     let mut redeem_script = [0; REDEEM_SCRIPT_LEN];
@@ -78,6 +68,20 @@ fn main(
     for i in 0..REDEEM_SCRIPT_LEN {
         redeem_script[REDEEM_SCRIPT_LEN - 1 - i] = script_sig_bytes[(SCRIPT_SIG_LEN / 2) - 1 - i];
     }
+
+    let mut stack = Stack::new(
+        cur_tx,
+        prev_tx,
+        input_to_sign,
+        vout,
+        empty_stack_array::<MAX_STACK_ELEMENT_SIZE, STACK_SIZE>(),
+        u32_to_compact_size_array::<REDEEM_SCRIPT_LEN_LEN>(REDEEM_SCRIPT_LEN)
+            .as_slice()
+            .append(redeem_script)
+            .as_array::<REDEEM_SCRIPT_LEN_LEN + REDEEM_SCRIPT_LEN>(),
+    );
+
+    let mut script_execution_engine = ScriptExecutionEngine::new(stack);
 
     let script = script_sig_bytes
         .as_slice()
@@ -95,7 +99,7 @@ fn main(
     assert(script_execution_engine.stack.op_verify());
 
     script_execution_engine
-        .execute::<REDEEM_SCRIPT_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, REDEEM_SCRIPT_OPCODES_AMOUNT, REDEEM_SCRIPT_LEN>(
+        .execute::<REDEEM_SCRIPT_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, REDEEM_SCRIPT_OPCODES_AMOUNT, 0>(
             redeem_script,
             address,
         );
