@@ -1,5 +1,6 @@
 use dep::bignum::{BigNum, U768};
 use std::ops::{Add, Div, Mul, Sub};
+use dep::bignum::fields::{secp256k1Fq::Secp256k1_Fq};
 
 pub struct I768 {
     pub num: U768,
@@ -78,51 +79,40 @@ impl Div for I768 {
     }
 }
 
-pub fn sqrt_secp256k1(value: I768) -> I768 {
-    let modulo: U768 = U768::from_be_bytes([
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFE, 0xFF, 0xFF, 0xFC, 0x2F,
-    ]);
-
+pub fn sqrt_secp256k1(value: Secp256k1_Fq) -> Secp256k1_Fq {
     // Safety:
-    let mut res = unsafe { _sqrt_secp256k(value, modulo) };
-    assert(res.mul(res).umod(modulo).num == value.num);
+    let mut res = unsafe { value.__tonelli_shanks_sqrt().unwrap() };
+    assert(res * res == value);
 
-    if res.num.get_limb(0) % 2 == 1 {
-        res.num = modulo - res.num;
+    if res.get_limb(0) % 2 == 1 {
+        res = -res;
     }
 
     res
 }
 
 // Tonelli-Shanks algorithm
-unconstrained fn _sqrt_secp256k(value: I768, modulo: U768) -> I768 {
-    let mut e = modulo.add(U768::one()).udiv(U768::from(4));
+// unconstrained fn _sqrt_secp256k(value: Secp256k1_Fq) -> Secp256k1_Fq {
+//     let mut e = U256::from_be_bytes([0 as u8].as_slice().append(Secp256k1_Fq::modulus().to_be_bytes()).as_array::<33>());
+//     e = (e + U256::from(1)).udiv(U256::from(4));
+//     let mut res1 = Secp256k1_Fq::one();
+//     let mut res2 = value;
 
-    let mut res1 = U768::one();
-    let mut res2 = value.num;
-
-    for _ in 0..256 {
-        if !e.is_zero() {
-            if e.get_limb(0) % 2 == 1 {
-                res1 = (res1 * res2).umod(modulo);
-            }
-            res2 = (res2 * res2).umod(modulo);
-            e = e.udiv(U768::from(2));
-        }
-    }
-
-    I768 { num: res1, is_neg: false }
-}
+//     for _ in 0..256 {
+//         if !e.is_zero() {
+//             if e.get_limb(0) % 2 == 1 {
+//                 res1 = (res1 * res2);
+//             }
+//             res2 = (res2 * res2);
+//             e = e.udiv(U256::from(2));
+//         }
+//     }
+//     res1
+// }
 
 #[test]
 fn sqrt_test() {
     // We don't need to check the result (check only odd or even) because of assert into this function
-    let num = sqrt_secp256k1(I768::from(34));
-    assert(num.num.get_limb(0) % 2 == 0);
+    let num = sqrt_secp256k1(Secp256k1_Fq::from(34));
+    assert(num.get_limb(0) % 2 == 0);
 }
