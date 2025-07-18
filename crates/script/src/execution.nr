@@ -1,7 +1,7 @@
 use super::{
     generated::{
-        checkmulsig, hash160, hash256, pushbytes, pushdata1, pushdata2, pushdata4, ripemd160, sha1,
-        sha256,
+        checkmulsig, checksig, hash160, hash256, pushbytes, pushdata1, pushdata2, pushdata4,
+        ripemd160, sha1, sha256,
     },
     opcode::{
         OP_0, OP_0NOTEQUAL, OP_1, OP_16, OP_1ADD, OP_1NEGATE, OP_1SUB, OP_2DROP, OP_2DUP, OP_2OVER,
@@ -170,13 +170,12 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                 } else if (opcode == OP_CHECKSIG) | (opcode == OP_CHECKSIGVERIFY) {
                     let verify = opcode == OP_CHECKSIGVERIFY;
                     let sigadd = opcode == OP_CHECKSIGADD;
-                    self
-                        .stack
-                        .op_checksig::<SCRIPT_PUB_KEY_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
-                            address,
-                            verify,
-                            sigadd,
-                        );
+                    self.stack = checksig::<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, PREV_TRANSACTION_SIZE, PREV_INPUT_COUNT, PREV_INPUT_COUNT_LEN, PREV_INPUT_SIZE, PREV_OUTPUT_COUNT, PREV_OUTPUT_COUNT_LEN, PREV_OUTPUT_SIZE, PREV_MAX_WITNESS_STACK_SIZE, PREV_WITNESS_SIZE, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, SCRIPT_PUB_KEY_LEN, REDEEM_SCRIPT_LEN>(
+                        self.stack,
+                        verify,
+                        sigadd,
+                        address,
+                    );
                 } else if (opcode == OP_CHECKMULSIG) | (opcode == OP_CHECKMULSIGVERIFY) {
                     let verify = opcode == OP_CHECKMULSIGVERIFY;
                     let n = vec_to_u32(self.stack.data[self.stack.stack_size - 1]);

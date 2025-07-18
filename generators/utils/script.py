@@ -41,6 +41,9 @@ class Script:
             elif bytes[i] == 108:
                 alt_stack_size -= 1
 
+            if bytes[i] == 172 or bytes[i] == 173:
+                self.sizes.add((bytes[i], 0, 0, 0))
+
             if bytes[i] == 174 or bytes[i] == 175:
                 n = self.script_elements[j - 1]
                 m = self.script_elements[j - 2 - n]
@@ -117,6 +120,8 @@ def get_hashed_data_sizes(script, txTo, inIdx, stack, flags=()):
 def to_bytes_or_keep(op):
     if isinstance(op, str):
         return x(op)
+    elif isinstance(op, int):
+        return op.to_bytes((op.bit_length() + 7) // 8 or 1, 'little', signed=True)
     else:
         return op
 

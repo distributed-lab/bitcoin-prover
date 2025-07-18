@@ -7,6 +7,7 @@ def generate(sizes: set):
     ripemd160 = {e for e in sizes if e[0] == 166}
     sha256 = {e for e in sizes if e[0] == 168}
     sha1 = {e for e in sizes if e[0] == 167}
+    checksig = any(e[0] == 172 or e[0] == 173 for e in sizes)
     mulsig = {e for e in sizes if e[0] == 174 or e[0] == 175}
     pushbytes = {e for e in sizes if e[0] >= 1 and e[0] <= 75}
     pushdata1 = {e for e in sizes if e[0] == 76}
@@ -42,6 +43,13 @@ def generate(sizes: set):
         stack.op_sha1::<{e[1]}>();
     }}""" for e in sha1
 )
+    
+    checksigif = ("""stack
+    .op_checksig::<SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
+        address,
+        verify,
+        sigadd,
+    );""") if checksig else ""
     
     mulsigifs = "\n".join(
     f"""    if (n == {e[2]}) & (m == {e[3]}) {{
@@ -102,6 +110,7 @@ def generate(sizes: set):
         ripemd160=ripemd160ifs,
         sha256=sha256ifs,
         sha1=sha1ifs,
+        checksig=checksigif,
         checkmulsig=mulsigifs,
         byshbytes=pushbytesifs,
         pushdata1=pushdata1ifs,
