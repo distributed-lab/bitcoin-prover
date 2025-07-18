@@ -1,13 +1,9 @@
 use super::{
-    point::{add_point, get_low_s_if_needed, get_y_from_x, inv_mod, mul_point, Point},
+    point::{add_point, get_y_from_x, mul_point, Point},
     types::I768,
 };
 use dep::bignum::{BigNum, U256, U768};
-use bigcurve::curves::secp256k1::{Secp256k1_Fq, Secp256k1_Fr, Secp256k1_Params};
-use bignum2::BigNum as BN;
-use noir_ecdsa::ecdsa::verify_ecdsa;
-use std::ecdsa_secp256k1;
-use utils::{convert::{get_256_bits_from_768}, decode::decode_der};
+use utils::{convert::{get_256_bits_from_768}};
 use utils::convert::{bytes_to_hex, hex_to_bytes};
 
 fn U256_to_be_bytes(val: U256) -> [u8; 32]{
