@@ -1,6 +1,6 @@
 use dep::bignum::{BigNum, U768};
+use dep::bignum::fields::secp256k1Fq::Secp256k1_Fq;
 use std::ops::{Add, Div, Mul, Sub};
-use dep::bignum::fields::{secp256k1Fq::Secp256k1_Fq};
 
 pub struct I768 {
     pub num: U768,
