@@ -48,10 +48,10 @@ fn main(
     if CUR_IS_GEGWIT {
         assert(prev_tx.data[script_pub_key_pos] == 0);
         assert(SCRIPT_PUB_KEY_LEN == 35);
-        script_pub_key[0] = 169;
+        script_pub_key[0] = 168;
         script_pub_key[1] = 32;
         for i in 2..34 {
-            script_pub_key[i] = prev_tx.data[script_pub_key_pos + i - 1];
+            script_pub_key[i] = prev_tx.data[script_pub_key_pos + i];
         }
         script_pub_key[34] = 135;
     } else {
@@ -88,7 +88,11 @@ fn main(
         .append(script_pub_key.as_slice())
         .as_array::<SCRIPT_SIG_LEN / 2 + SCRIPT_PUB_KEY_LEN>();
 
-    let address = Address::new_p2sh();
+    let address = if CUR_IS_GEGWIT {
+        Address::new_p2wsh()
+    } else {
+        Address::new_p2sh()
+    };
 
     script_execution_engine
         .execute::<SCRIPT_SIG_LEN / 2 + SCRIPT_PUB_KEY_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, OPCODES_AMOUNT, 0>(

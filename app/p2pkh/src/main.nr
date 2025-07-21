@@ -44,7 +44,27 @@ fn main(
     let vout = le_bytes_to_u32(vout_bytes);
     let script_pub_key_pos = prev_tx.outputs[vout].script_pub_key.offset;
 
+    let mut signature_bytes = [0; SIG_LEN / 2];
+    let mut pub_key_bytes = [0; PK_LEN / 2];
+
     if CUR_IS_GEGWIT {
+        let witness = cur_tx.witness.unwrap()[input_to_sign];
+        let sig_item = witness.items.get(0).unwrap().item;
+        assert(sig_item.size == (SIG_LEN / 2));
+        let signature_bytes_offset = sig_item.offset;
+
+        for i in 0..(SIG_LEN / 2) {
+            signature_bytes[i] = cur_tx.data[signature_bytes_offset + i];
+        }
+
+        let pk_item = witness.items.get(1).unwrap().item;
+        assert(pk_item.size == (PK_LEN / 2));
+        let pk_bytes_offset = pk_item.offset;
+
+        for i in 0..(PK_LEN / 2) {
+            pub_key_bytes[i] = cur_tx.data[pk_bytes_offset + i];
+        }
+
         assert(prev_tx.data[script_pub_key_pos] == 0);
         script_pub_key[0] = 118;
         script_pub_key[1] = 169;
@@ -55,6 +75,8 @@ fn main(
         script_pub_key[23] = 136;
         script_pub_key[24] = 172;
     } else {
+        signature_bytes = hex_to_bytes(signature);
+        pub_key_bytes = hex_to_bytes(pub_key);
         for i in 0..25 {
             script_pub_key[i] = prev_tx.data[script_pub_key_pos + i];
         }
@@ -70,9 +92,6 @@ fn main(
     );
 
     let mut script_execution_engine = ScriptExecutionEngine::new(stack);
-
-    let signature_bytes = hex_to_bytes(signature);
-    let pub_key_bytes = hex_to_bytes(pub_key);
 
     let script = [signature_bytes.len() as u8]
         .as_slice()

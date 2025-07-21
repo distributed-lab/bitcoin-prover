@@ -108,6 +108,8 @@ def get_hashed_data_sizes(script, txTo, inIdx, stack, flags=()):
     tx = CTransaction.deserialize(unhexlify(txTo))
     stack = [to_bytes_or_keep(op) for op in stack]
     parts = split_list_by_hash(CScript(script))
+    if parts[0][0] in HASHES:
+        sizes.add((parts[0][0], len(stack[len(stack) - 1]), 0, 0))
 
     for idx, part in enumerate(parts):
         part_fixed = [ensure_bytes_or_opcode(el) for el in part]

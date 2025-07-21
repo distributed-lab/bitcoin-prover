@@ -19,22 +19,6 @@ def main():
     prevTx = Transaction(config["prev_tx"])
     prevTx.cut_script_sigs()
 
-    script_pub_key = prevTx.outputs[vout].script_pub_key
-    script_pub_key_size = prevTx.outputs[vout].script_pub_key_size
-
-    script = Script(config["script_sig"] + bytearray(script_pub_key).hex(), curTx, config["input_to_sign"])
-    sizes = script.sizes
-    redeem_script = Script(script.script_elements[-4], curTx, config["input_to_sign"], script.script_elements[0:-4])
-    sizes = sizes | redeem_script.sizes
-    generate(sizes)
-
-    opcodes = max(script.opcodes, redeem_script.opcodes)
-    require_stack_size = max(script.require_stack_size, redeem_script.require_stack_size)
-    max_element_size = max(script.max_element_size, redeem_script.max_element_size)
-
-    with open(config["file_path"] + "/src/globals.nr.template", "r") as file:
-        templateOpcodes = file.read()
-
     CUR_TX_INP_COUNT_LEN = curTx._get_compact_size_size(curTx.input_count)
     CUR_TX_INP_SIZE = sum(curTx._get_input_size(inp) for inp in curTx.inputs) + CUR_TX_INP_COUNT_LEN
     CUR_TX_OUT_COUNT_LEN = curTx._get_compact_size_size(curTx.output_count)
@@ -50,6 +34,30 @@ def main():
     PREV_TX_WITNESS_SIZE = 0 if prevTx.witness == None else sum(prevTx._get_witness_size(wit) for wit in prevTx.witness)
 
     INPUT_TO_SIGN = config["input_to_sign"]
+
+    script_pub_key = prevTx.outputs[vout].script_pub_key
+    script_pub_key_size = prevTx.outputs[vout].script_pub_key_size
+
+    script_sig = config["script_sig"] if CUR_TX_WITNESS_SIZE == 0 else curTx.witness_to_hex_script(INPUT_TO_SIGN)
+
+    if CUR_TX_WITNESS_SIZE != 0:
+        full_script_pub_key = [168, 32]
+        full_script_pub_key.extend(script_pub_key[2:])
+        full_script_pub_key.append(135)
+        script_pub_key = full_script_pub_key
+
+    script = Script(script_sig + bytearray(script_pub_key).hex(), curTx, config["input_to_sign"])
+    sizes = script.sizes
+    redeem_script = Script(script.script_elements[-4], curTx, config["input_to_sign"], script.script_elements[0:-4])
+    sizes = sizes | redeem_script.sizes
+    generate(sizes)
+
+    opcodes = max(script.opcodes, redeem_script.opcodes)
+    require_stack_size = max(script.require_stack_size, redeem_script.require_stack_size)
+    max_element_size = max(script.max_element_size, redeem_script.max_element_size)
+
+    with open(config["file_path"] + "/src/globals.nr.template", "r") as file:
+        templateOpcodes = file.read()
 
     opcodesFile = templateOpcodes.format(
         curTx=curTx, 
@@ -68,10 +76,10 @@ def main():
         PREV_TX_MAX_WITNESS_STACK_SIZE=PREV_TX_MAX_WITNESS_STACK_SIZE,
         PREV_TX_WITNESS_SIZE=PREV_TX_WITNESS_SIZE,
         PREV_IS_GEGWIT=str(PREV_TX_WITNESS_SIZE != 0).lower(),
-        opcodesAmount=opcodes,
+        opcodesAmount=opcodes + 1,
         curTxLen=curTx._get_transaction_size() * 2, 
         prevTxLen=prevTx._get_transaction_size() * 2, 
-        signLen=len(config['script_sig']),
+        signLen=len(script_sig),
         scriptPubKeyLen=len(script_pub_key),
         scriptPubKeyLenLen=curTx._get_compact_size_size(script_pub_key_size),
         redeemScriptLen=len(script.script_elements[-4]) // 2,
@@ -97,7 +105,7 @@ def main():
     proverFile = templateProver.format(
         curTxData=curTxData,
         prevTxData=prevTxData,
-        script_sig=config["script_sig"],
+        script_sig=script_sig,
         input_to_sign=INPUT_TO_SIGN
     )
 
