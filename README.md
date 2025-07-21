@@ -1,4 +1,4 @@
-# Wrapless Noir Prover
+# Bitcoin prover
 
 This project contains a collection of Noir circuits and their corresponding Noir implementations.
 
