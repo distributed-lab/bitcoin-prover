@@ -3,8 +3,19 @@
 # Exit on error
 set -e
 
+# Create virtual environment and install required packages
+python3 -m venv ./generators/utils/venv
+source ./generators/utils/venv/bin/activate
+pip3 install python-bitcoinlib
+
 # Generate Prover.toml
 python3 -m generators.p2pkh.main
+
+# Deactivate venv
+deactivate
+
+# Format noir code
+nargo fmt
 
 # Execute the binary
 nargo execute --package p2pkh

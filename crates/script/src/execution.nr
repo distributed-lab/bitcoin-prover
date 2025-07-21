@@ -1,25 +1,36 @@
-use crate::opcode::{
-    OP_0, OP_1, OP_16, OP_1NEGATE, OP_CHECKMULSIG, OP_CHECKMULSIGVERIFY, OP_CHECKSIG,
-    OP_CHECKSIGVERIFY, OP_DUP, OP_EQUAL, OP_EQUALVERIFY, OP_HASH160, OP_PUSHBYTES1, OP_PUSHBYTES75,
-    OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4,
+use super::{
+    generated::{
+        checkmulsig, checksig, hash160, hash256, pushbytes, pushdata1, pushdata2, pushdata4,
+        ripemd160, sha1, sha256,
+    },
+    opcode::{
+        OP_0, OP_0NOTEQUAL, OP_1, OP_16, OP_1ADD, OP_1NEGATE, OP_1SUB, OP_2DROP, OP_2DUP, OP_2OVER,
+        OP_2ROT, OP_2SWAP, OP_3DUP, OP_ABS, OP_ADD, OP_BOOLAND, OP_BOOLOR, OP_CHECKLOCKTIMEVERIFY,
+        OP_CHECKMULSIG, OP_CHECKMULSIGVERIFY, OP_CHECKSEQUENCEVERIFY, OP_CHECKSIG, OP_CHECKSIGADD,
+        OP_CHECKSIGVERIFY, OP_DEPTH, OP_DROP, OP_DUP, OP_EQUAL, OP_EQUALVERIFY, OP_FROMALTSTACK,
+        OP_GREATERTHAN, OP_GREATERTHANOREQUAL, OP_HASH160, OP_HASH256, OP_IFDUP, OP_LESSTHAN,
+        OP_LESSTHANOREQUAL, OP_MAX, OP_MIN, OP_NEGATE, OP_NIP, OP_NOT, OP_NUMENOTQUAL, OP_NUMEQUAL,
+        OP_NUMEQUALVERIFY, OP_OVER, OP_PICK, OP_PUSHBYTES1, OP_PUSHBYTES75, OP_PUSHDATA1,
+        OP_PUSHDATA2, OP_PUSHDATA4, OP_RETURN, OP_RIPEMD160, OP_ROLL, OP_ROT, OP_SHA1, OP_SHA256,
+        OP_SIZE, OP_SUB, OP_SWAP, OP_TOALTSTACK, OP_TUCK, OP_WITHIN,
+    },
 };
-use bvm::stack::{empty_stack_array, Stack};
+use bvm::stack::Stack;
 use sign::address::Address;
-use sign::transaction::Transaction;
-use utils::convert::hex_to_bytes;
+use utils::convert::vec_to_u32;
 
-pub struct ScriptExecutionEngine<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANSACTION_SIZE: u32, let CURRENT_INPUT_COUNT: u32, let CURRENT_INPUT_COUNT_LEN: u32, let CURRENT_INPUT_SIZE: u32, let CURRENT_OUTPUT_COUNT: u32, let CURRENT_OUTPUT_COUNT_LEN: u32, let CURRENT_OUTPUT_SIZE: u32, let CURRENT_MAX_WITNESS_STACK_SIZE: u32, let CURRENT_WITNESS_SIZE: u32, let PREV_TRANSACTION_SIZE: u32, let PREV_INPUT_COUNT: u32, let PREV_INPUT_COUNT_LEN: u32, let PREV_INPUT_SIZE: u32, let PREV_OUTPUT_COUNT: u32, let PREV_OUTPUT_COUNT_LEN: u32, let PREV_OUTPUT_SIZE: u32, let PREV_MAX_WITNESS_STACK_SIZE: u32, let PREV_WITNESS_SIZE: u32> {
-    pub stack: Stack<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, PREV_TRANSACTION_SIZE, PREV_INPUT_COUNT, PREV_INPUT_COUNT_LEN, PREV_INPUT_SIZE, PREV_OUTPUT_COUNT, PREV_OUTPUT_COUNT_LEN, PREV_OUTPUT_SIZE, PREV_MAX_WITNESS_STACK_SIZE, PREV_WITNESS_SIZE>,
+pub struct ScriptExecutionEngine<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANSACTION_SIZE: u32, let CURRENT_INPUT_COUNT: u32, let CURRENT_INPUT_COUNT_LEN: u32, let CURRENT_INPUT_SIZE: u32, let CURRENT_OUTPUT_COUNT: u32, let CURRENT_OUTPUT_COUNT_LEN: u32, let CURRENT_OUTPUT_SIZE: u32, let CURRENT_MAX_WITNESS_STACK_SIZE: u32, let CURRENT_WITNESS_SIZE: u32, let PREV_TRANSACTION_SIZE: u32, let PREV_INPUT_COUNT: u32, let PREV_INPUT_COUNT_LEN: u32, let PREV_INPUT_SIZE: u32, let PREV_OUTPUT_COUNT: u32, let PREV_OUTPUT_COUNT_LEN: u32, let PREV_OUTPUT_SIZE: u32, let PREV_MAX_WITNESS_STACK_SIZE: u32, let PREV_WITNESS_SIZE: u32, let REDEEM_SCRIPT_LEN: u32> {
+    pub stack: Stack<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, PREV_TRANSACTION_SIZE, PREV_INPUT_COUNT, PREV_INPUT_COUNT_LEN, PREV_INPUT_SIZE, PREV_OUTPUT_COUNT, PREV_OUTPUT_COUNT_LEN, PREV_OUTPUT_SIZE, PREV_MAX_WITNESS_STACK_SIZE, PREV_WITNESS_SIZE, REDEEM_SCRIPT_LEN>,
 }
 
-impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANSACTION_SIZE: u32, let CURRENT_INPUT_COUNT: u32, let CURRENT_INPUT_COUNT_LEN: u32, let CURRENT_INPUT_SIZE: u32, let CURRENT_OUTPUT_COUNT: u32, let CURRENT_OUTPUT_COUNT_LEN: u32, let CURRENT_OUTPUT_SIZE: u32, let CURRENT_MAX_WITNESS_STACK_SIZE: u32, let CURRENT_WITNESS_SIZE: u32, let PREV_TRANSACTION_SIZE: u32, let PREV_INPUT_COUNT: u32, let PREV_INPUT_COUNT_LEN: u32, let PREV_INPUT_SIZE: u32, let PREV_OUTPUT_COUNT: u32, let PREV_OUTPUT_COUNT_LEN: u32, let PREV_OUTPUT_SIZE: u32, let PREV_MAX_WITNESS_STACK_SIZE: u32, let PREV_WITNESS_SIZE: u32> ScriptExecutionEngine<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, PREV_TRANSACTION_SIZE, PREV_INPUT_COUNT, PREV_INPUT_COUNT_LEN, PREV_INPUT_SIZE, PREV_OUTPUT_COUNT, PREV_OUTPUT_COUNT_LEN, PREV_OUTPUT_SIZE, PREV_MAX_WITNESS_STACK_SIZE, PREV_WITNESS_SIZE> {
+impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANSACTION_SIZE: u32, let CURRENT_INPUT_COUNT: u32, let CURRENT_INPUT_COUNT_LEN: u32, let CURRENT_INPUT_SIZE: u32, let CURRENT_OUTPUT_COUNT: u32, let CURRENT_OUTPUT_COUNT_LEN: u32, let CURRENT_OUTPUT_SIZE: u32, let CURRENT_MAX_WITNESS_STACK_SIZE: u32, let CURRENT_WITNESS_SIZE: u32, let PREV_TRANSACTION_SIZE: u32, let PREV_INPUT_COUNT: u32, let PREV_INPUT_COUNT_LEN: u32, let PREV_INPUT_SIZE: u32, let PREV_OUTPUT_COUNT: u32, let PREV_OUTPUT_COUNT_LEN: u32, let PREV_OUTPUT_SIZE: u32, let PREV_MAX_WITNESS_STACK_SIZE: u32, let PREV_WITNESS_SIZE: u32, let REDEEM_SCRIPT_LEN: u32> ScriptExecutionEngine<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, PREV_TRANSACTION_SIZE, PREV_INPUT_COUNT, PREV_INPUT_COUNT_LEN, PREV_INPUT_SIZE, PREV_OUTPUT_COUNT, PREV_OUTPUT_COUNT_LEN, PREV_OUTPUT_SIZE, PREV_MAX_WITNESS_STACK_SIZE, PREV_WITNESS_SIZE, REDEEM_SCRIPT_LEN> {
     pub fn new(
-        stack: Stack<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, PREV_TRANSACTION_SIZE, PREV_INPUT_COUNT, PREV_INPUT_COUNT_LEN, PREV_INPUT_SIZE, PREV_OUTPUT_COUNT, PREV_OUTPUT_COUNT_LEN, PREV_OUTPUT_SIZE, PREV_MAX_WITNESS_STACK_SIZE, PREV_WITNESS_SIZE>,
+        stack: Stack<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, PREV_TRANSACTION_SIZE, PREV_INPUT_COUNT, PREV_INPUT_COUNT_LEN, PREV_INPUT_SIZE, PREV_OUTPUT_COUNT, PREV_OUTPUT_COUNT_LEN, PREV_OUTPUT_SIZE, PREV_MAX_WITNESS_STACK_SIZE, PREV_WITNESS_SIZE, REDEEM_SCRIPT_LEN>,
     ) -> Self {
         Self { stack: stack }
     }
 
-    pub fn execute<let SCRIPT_SIZE: u32, let N_OUTPUT_SIZE: u32, let INPUT_TO_SIGN: u32, let INPUT_TO_SIGN_LEN: u32, let N_INPUT_SIZE: u32, let MAX_NUMBER_OF_OPCODES: u32, let STACK_ELEMENT_LENGTH_1: u32, let STACK_ELEMENT_LENGTH_2: u32, let STACK_ELEMENT_LENGTH_3: u32, let STACK_ELEMENT_LENGTH_4: u32, let STACK_ELEMENT_LENGTH_5: u32, let STACK_ELEMENT_LENGTH_6: u32, let SCRIPT_CODE_LEN_1: u32, let SCRIPT_CODE_LEN_2: u32, let SCRIPT_CODE_LEN_3: u32, let SCRIPT_CODE_LEN_4: u32, let SCRIPT_CODE_LEN_5: u32, let N1: u32, let M1: u32>(
+    pub fn execute<let SCRIPT_SIZE: u32, let N_OUTPUT_SIZE: u32, let INPUT_TO_SIGN: u32, let INPUT_TO_SIGN_LEN: u32, let N_INPUT_SIZE: u32, let MAX_NUMBER_OF_OPCODES: u32, let SCRIPT_PUB_KEY_LEN: u32>(
         &mut self,
         script: [u8; SCRIPT_SIZE],
         address: Address,
@@ -34,140 +45,159 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                 if opcode == OP_0 {
                     self.stack.op_num(0);
                 } else if opcode >= OP_PUSHBYTES1 & opcode <= OP_PUSHBYTES75 {
-                    // Handle push bytes with different lengths
                     let push_length = opcode as u32;
-
-                    if push_length == STACK_ELEMENT_LENGTH_1 {
-                        let mut value = [0; STACK_ELEMENT_LENGTH_1];
-                        for i in 0..STACK_ELEMENT_LENGTH_1 {
-                            value[i] = script[cur_pos];
-                            cur_pos += 1;
-                        }
-                        self.stack.push_bytes(value);
-                    } else if push_length == STACK_ELEMENT_LENGTH_2 {
-                        let mut value = [0; STACK_ELEMENT_LENGTH_2];
-                        for i in 0..STACK_ELEMENT_LENGTH_2 {
-                            value[i] = script[cur_pos];
-                            cur_pos += 1;
-                        }
-                        self.stack.push_bytes(value);
-                    } else if push_length == STACK_ELEMENT_LENGTH_3 {
-                        let mut value = [0; STACK_ELEMENT_LENGTH_3];
-                        for i in 0..STACK_ELEMENT_LENGTH_3 {
-                            value[i] = script[cur_pos];
-                            cur_pos += 1;
-                        }
-                        self.stack.push_bytes(value);
-                    } else if push_length == STACK_ELEMENT_LENGTH_4 {
-                        let mut value = [0; STACK_ELEMENT_LENGTH_4];
-                        for i in 0..STACK_ELEMENT_LENGTH_4 {
-                            value[i] = script[cur_pos];
-                            cur_pos += 1;
-                        }
-                        self.stack.push_bytes(value);
-                    } else if push_length == STACK_ELEMENT_LENGTH_5 {
-                        let mut value = [0; STACK_ELEMENT_LENGTH_5];
-                        for i in 0..STACK_ELEMENT_LENGTH_5 {
-                            value[i] = script[cur_pos];
-                            cur_pos += 1;
-                        }
-                        self.stack.push_bytes(value);
-                    } else if push_length == STACK_ELEMENT_LENGTH_6 {
-                        let mut value = [0; STACK_ELEMENT_LENGTH_6];
-                        for i in 0..STACK_ELEMENT_LENGTH_6 {
-                            value[i] = script[cur_pos];
-                            cur_pos += 1;
-                        }
-                        self.stack.push_bytes(value);
-                    }
+                    let res = pushbytes(self.stack, push_length, script, cur_pos);
+                    self.stack = res.0;
+                    cur_pos = res.1;
+                } else if opcode == OP_1NEGATE {
+                    self.stack.op_num(-1);
                 } else if opcode >= OP_1 & opcode <= OP_16 {
                     self.stack.op_num(opcode as i8 - 80);
+                } else if opcode == OP_PUSHDATA1 {
+                    let res = pushdata1(self.stack, script, cur_pos);
+                    self.stack = res.0;
+                    cur_pos = res.1;
+                } else if opcode == OP_PUSHDATA2 {
+                    let res = pushdata2(self.stack, script, cur_pos);
+                    self.stack = res.0;
+                    cur_pos = res.1;
+                } else if opcode == OP_PUSHDATA4 {
+                    let res = pushdata4(self.stack, script, cur_pos);
+                    self.stack = res.0;
+                    cur_pos = res.1;
+                } else if opcode == OP_RETURN {
+                    assert(false, "OP_RETURN");
+                } else if opcode == OP_TOALTSTACK {
+                    self.stack.op_toaltstack();
+                } else if opcode == OP_FROMALTSTACK {
+                    self.stack.op_fromaltstack();
+                } else if opcode == OP_2DROP {
+                    self.stack.op_2drop();
+                } else if opcode == OP_2DUP {
+                    self.stack.op_2dup();
+                } else if opcode == OP_3DUP {
+                    self.stack.op_3dup();
+                } else if opcode == OP_2OVER {
+                    self.stack.op_2over();
+                } else if opcode == OP_2ROT {
+                    self.stack.op_2rot();
+                } else if opcode == OP_2SWAP {
+                    self.stack.op_2swap();
+                } else if opcode == OP_IFDUP {
+                    self.stack.op_ifdup();
+                } else if opcode == OP_DEPTH {
+                    self.stack.op_depth();
+                } else if opcode == OP_DROP {
+                    self.stack.op_drop();
                 } else if opcode == OP_DUP {
                     self.stack.op_dup();
+                } else if opcode == OP_NIP {
+                    self.stack.op_nip();
+                } else if opcode == OP_OVER {
+                    self.stack.op_over();
+                } else if opcode == OP_PICK {
+                    self.stack.op_pick();
+                } else if opcode == OP_ROLL {
+                    self.stack.op_roll();
+                } else if opcode == OP_ROT {
+                    self.stack.op_rot();
+                } else if opcode == OP_SWAP {
+                    self.stack.op_swap();
+                } else if opcode == OP_TUCK {
+                    self.stack.op_tuck();
+                } else if opcode == OP_SIZE {
+                    self.stack.op_size();
+                } else if opcode == OP_1ADD {
+                    self.stack.op_1add();
+                } else if opcode == OP_1SUB {
+                    self.stack.op_1sub();
+                } else if opcode == OP_NEGATE {
+                    self.stack.op_negate();
+                } else if opcode == OP_ABS {
+                    self.stack.op_abs();
+                } else if opcode == OP_NOT {
+                    self.stack.op_not();
+                } else if opcode == OP_0NOTEQUAL {
+                    self.stack.op_0notequal();
+                } else if opcode == OP_ADD {
+                    self.stack.op_add();
+                } else if opcode == OP_SUB {
+                    self.stack.op_sub();
+                } else if opcode == OP_BOOLAND {
+                    self.stack.op_booland();
+                } else if opcode == OP_BOOLOR {
+                    self.stack.op_boolor();
+                } else if opcode == OP_NUMEQUAL {
+                    self.stack.op_numequal();
+                } else if opcode == OP_NUMEQUALVERIFY {
+                    self.stack.op_numequal();
+                    assert(self.stack.op_verify());
+                } else if opcode == OP_NUMENOTQUAL {
+                    self.stack.op_numnotequal();
+                } else if opcode == OP_LESSTHAN {
+                    self.stack.op_lessthan();
+                } else if opcode == OP_GREATERTHAN {
+                    self.stack.op_greaterthan();
+                } else if opcode == OP_LESSTHANOREQUAL {
+                    self.stack.op_lessthanorequal();
+                } else if opcode == OP_GREATERTHANOREQUAL {
+                    self.stack.op_greaterthanorequal();
+                } else if opcode == OP_MIN {
+                    self.stack.op_min();
+                } else if opcode == OP_MAX {
+                    self.stack.op_max();
+                } else if opcode == OP_WITHIN {
+                    self.stack.op_within();
+                } else if opcode == OP_RIPEMD160 {
+                    let last_stack_element_length = self.stack.get_last_stack_element_length();
+                    self.stack = ripemd160(self.stack, last_stack_element_length);
+                } else if opcode == OP_SHA1 {
+                    let last_stack_element_length = self.stack.get_last_stack_element_length();
+                    self.stack = sha1(self.stack, last_stack_element_length);
+                } else if opcode == OP_SHA256 {
+                    let last_stack_element_length = self.stack.get_last_stack_element_length();
+                    self.stack = sha256(self.stack, last_stack_element_length);
                 } else if opcode == OP_HASH160 {
                     let last_stack_element_length = self.stack.get_last_stack_element_length();
-
-                    if last_stack_element_length == STACK_ELEMENT_LENGTH_1 {
-                        self.stack.op_hash160::<STACK_ELEMENT_LENGTH_1>();
-                    } else if last_stack_element_length == STACK_ELEMENT_LENGTH_2 {
-                        self.stack.op_hash160::<STACK_ELEMENT_LENGTH_2>();
-                    } else if last_stack_element_length == STACK_ELEMENT_LENGTH_3 {
-                        self.stack.op_hash160::<STACK_ELEMENT_LENGTH_3>();
-                    } else if last_stack_element_length == STACK_ELEMENT_LENGTH_4 {
-                        self.stack.op_hash160::<STACK_ELEMENT_LENGTH_4>();
-                    } else if last_stack_element_length == STACK_ELEMENT_LENGTH_5 {
-                        self.stack.op_hash160::<STACK_ELEMENT_LENGTH_5>();
-                    } else if last_stack_element_length == STACK_ELEMENT_LENGTH_6 {
-                        self.stack.op_hash160::<STACK_ELEMENT_LENGTH_6>();
-                    } else {
-                        assert(false, "wrong stack element length");
-                    }
+                    self.stack = hash160(self.stack, last_stack_element_length);
+                } else if opcode == OP_HASH256 {
+                    let last_stack_element_length = self.stack.get_last_stack_element_length();
+                    self.stack = hash256(self.stack, last_stack_element_length);
                 } else if opcode == OP_EQUAL {
                     self.stack.op_equal();
                 } else if opcode == OP_EQUALVERIFY {
                     self.stack.op_equalverify();
                 } else if (opcode == OP_CHECKSIG) | (opcode == OP_CHECKSIGVERIFY) {
-                    let script_code_size = self.stack.get_script_code_size(address);
                     let verify = opcode == OP_CHECKSIGVERIFY;
-
-                    if script_code_size == SCRIPT_CODE_LEN_1 {
-                        self
-                            .stack
-                            .op_checksig::<SCRIPT_CODE_LEN_1, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
-                                address,
-                                verify,
-                            );
-                    } else if script_code_size == SCRIPT_CODE_LEN_2 {
-                        self
-                            .stack
-                            .op_checksig::<SCRIPT_CODE_LEN_2, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
-                                address,
-                                verify,
-                            );
-                    } else if script_code_size == SCRIPT_CODE_LEN_3 {
-                        self
-                            .stack
-                            .op_checksig::<SCRIPT_CODE_LEN_3, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
-                                address,
-                                verify,
-                            );
-                    } else if script_code_size == SCRIPT_CODE_LEN_4 {
-                        self
-                            .stack
-                            .op_checksig::<SCRIPT_CODE_LEN_4, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
-                                address,
-                                verify,
-                            );
-                    } else if script_code_size == SCRIPT_CODE_LEN_5 {
-                        self
-                            .stack
-                            .op_checksig::<SCRIPT_CODE_LEN_5, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
-                                address,
-                                verify,
-                            );
-                    } else {
-                        assert(false, "wrong script code size");
-                    }
+                    let sigadd = opcode == OP_CHECKSIGADD;
+                    self.stack = checksig::<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, PREV_TRANSACTION_SIZE, PREV_INPUT_COUNT, PREV_INPUT_COUNT_LEN, PREV_INPUT_SIZE, PREV_OUTPUT_COUNT, PREV_OUTPUT_COUNT_LEN, PREV_OUTPUT_SIZE, PREV_MAX_WITNESS_STACK_SIZE, PREV_WITNESS_SIZE, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, SCRIPT_PUB_KEY_LEN, REDEEM_SCRIPT_LEN>(
+                        self.stack,
+                        verify,
+                        sigadd,
+                        address,
+                    );
                 } else if (opcode == OP_CHECKMULSIG) | (opcode == OP_CHECKMULSIGVERIFY) {
-                    let script_code_size = self.stack.get_script_code_size(address);
                     let verify = opcode == OP_CHECKMULSIGVERIFY;
-
-                    if script_code_size == SCRIPT_CODE_LEN_1 {
-                        self
-                            .stack
-                            .op_checkmulsig::<SCRIPT_CODE_LEN_1, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, N1, M1>(
-                                address,
-                                verify,
-                            );
-                    } else {
-                        assert(false, "wrong script code size");
-                    }
+                    let n = vec_to_u32(self.stack.data[self.stack.stack_size - 1]);
+                    let m = vec_to_u32(self.stack.data[self.stack.stack_size - 2 - n]);
+                    self.stack = checkmulsig::<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, PREV_TRANSACTION_SIZE, PREV_INPUT_COUNT, PREV_INPUT_COUNT_LEN, PREV_INPUT_SIZE, PREV_OUTPUT_COUNT, PREV_OUTPUT_COUNT_LEN, PREV_OUTPUT_SIZE, PREV_MAX_WITNESS_STACK_SIZE, PREV_WITNESS_SIZE, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, SCRIPT_PUB_KEY_LEN, REDEEM_SCRIPT_LEN>(
+                        self.stack,
+                        n,
+                        m,
+                        verify,
+                        address,
+                    );
+                } else if opcode == OP_CHECKLOCKTIMEVERIFY {
+                    self.stack.op_checklocktimeverify();
+                } else if opcode == OP_CHECKSEQUENCEVERIFY {
+                    self.stack.op_checksequenceverify();
                 }
             }
         }
     }
 }
 
+/*
 global TEST_SCRIPT_SIG_SIZE: u32 = 139;
 global TEST_SCRIPT_PUB_KEY_SIZE: u32 = 25;
 global TEST_MAX_NUMBER_OF_OPCODES: u32 = 7;
@@ -228,3 +258,4 @@ fn test_p2pkh_execution() {
             Address::new_p2pkh(),
         );
 }
+*/

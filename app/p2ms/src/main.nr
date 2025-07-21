@@ -3,10 +3,10 @@ mod globals;
 use bvm::stack::{empty_stack_array, Stack};
 use globals::{
     CUR_TX_INP_COUNT, CUR_TX_INP_COUNT_LEN, CUR_TX_INP_SIZE, CUR_TX_LEN, CUR_TX_OUT_COUNT,
-    CUR_TX_OUT_COUNT_LEN, CUR_TX_OUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, M1,
-    MAX_STACK_ELEMENT_SIZE, N1, N_INPUT_SIZE, N_OUTPUT_SIZE, OPCODES_AMOUNT, PREV_TX_INP_COUNT,
-    PREV_TX_INP_COUNT_LEN, PREV_TX_INP_SIZE, PREV_TX_LEN, PREV_TX_OUT_COUNT, PREV_TX_OUT_COUNT_LEN,
-    PREV_TX_OUT_SIZE, SCRIPT_PUB_KEY_LEN, SCRIPT_PUB_KEY_LEN_LEN, SCRIPT_SIG_LEN, STACK_SIZE,
+    CUR_TX_OUT_COUNT_LEN, CUR_TX_OUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, MAX_STACK_ELEMENT_SIZE,
+    N_INPUT_SIZE, N_OUTPUT_SIZE, OPCODES_AMOUNT, PREV_TX_INP_COUNT, PREV_TX_INP_COUNT_LEN,
+    PREV_TX_INP_SIZE, PREV_TX_LEN, PREV_TX_OUT_COUNT, PREV_TX_OUT_COUNT_LEN, PREV_TX_OUT_SIZE,
+    SCRIPT_PUB_KEY_LEN, SCRIPT_PUB_KEY_LEN_LEN, SCRIPT_SIG_LEN, STACK_SIZE,
 };
 use script::execution::ScriptExecutionEngine;
 use sign::{address::Address, transaction::Transaction};
@@ -52,6 +52,7 @@ fn main(
         input_to_sign,
         vout,
         empty_stack_array::<MAX_STACK_ELEMENT_SIZE, STACK_SIZE>(),
+        [],
     );
 
     let mut script_execution_engine = ScriptExecutionEngine::new(stack);
@@ -64,7 +65,7 @@ fn main(
         .as_array::<SCRIPT_SIG_LEN / 2 + SCRIPT_PUB_KEY_LEN>();
 
     script_execution_engine
-        .execute::<SCRIPT_SIG_LEN / 2 + SCRIPT_PUB_KEY_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, OPCODES_AMOUNT, 0, 33, 65, 70, 71, 72, SCRIPT_PUB_KEY_LEN + SCRIPT_PUB_KEY_LEN_LEN, 0, 0, 0, 0, N1, M1>(
+        .execute::<SCRIPT_SIG_LEN / 2 + SCRIPT_PUB_KEY_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, OPCODES_AMOUNT, SCRIPT_PUB_KEY_LEN + SCRIPT_PUB_KEY_LEN_LEN>(
             script,
             Address::new_p2ms(),
         );

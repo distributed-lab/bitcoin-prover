@@ -306,8 +306,8 @@ impl<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, 
         let witness_stack_size = compact_size::compact_size_to_u32(self.data, witness.stack_size);
         let witness_item = witness.items.get(witness_stack_size - 1).unwrap();
 
-        let transaction_offset = witness_item.size.offset;        
-        
+        let transaction_offset = witness_item.size.offset;
+
         assert(
             witness_item.item.offset + witness_item.item.size - transaction_offset
                 == WITNESS_SCRIPT_SIZE,

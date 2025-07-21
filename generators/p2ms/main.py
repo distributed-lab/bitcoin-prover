@@ -2,12 +2,15 @@ import json
 from typing import Dict
 from generators.utils.tx import Transaction
 from generators.utils.script import Script
+from generators.utils.opcodes_gen import generate
 
 def get_config(path: str = "./generators/p2ms/config.json") -> Dict:
     with open(path, "r") as f:
         return json.load(f)
 
 def main():
+    print("Spending type: p2ms")
+
     config = get_config()
 
     curTx = Transaction(config["cur_tx"])
@@ -21,7 +24,8 @@ def main():
     script_pub_key = prevTx.outputs[vout].script_pub_key
     script_pub_key_size = prevTx.outputs[vout].script_pub_key_size
 
-    script = Script(config["script_sig"] + bytearray(script_pub_key).hex())
+    script = Script(config["script_sig"] + bytearray(script_pub_key).hex(), curTx, config["input_to_sign"])
+    generate(script.sizes)
 
     with open(config["file_path"] + "/src/globals.nr.template", "r") as file:
         templateOpcodes = file.read()
@@ -37,12 +41,6 @@ def main():
     PREV_TX_OUT_SIZE = sum(prevTx._get_output_size(out) for out in prevTx.outputs) + PREV_TX_OUT_COUNT_LEN
 
     INPUT_TO_SIGN = config["input_to_sign"]
-
-    mval = script_pub_key[0]
-    m = mval - 80 if mval > 80 and mval < 97 else script_pub_key[1]
-
-    nval = script_pub_key[len(script_pub_key) - 2]
-    n = nval - 80 if nval > 80 and nval < 97 else nval
 
     opcodesFile = templateOpcodes.format(
         curTx=curTx, 
@@ -63,9 +61,7 @@ def main():
         scriptPubKeyLenLen=curTx._get_compact_size_size(script_pub_key_size),
         stackSize=script.require_stack_size,
         maxStackElementSize=script.max_element_size,
-        n1=n,
-        m1=m,
-        nOutputSize=curTx._get_output_size(curTx.outputs[INPUT_TO_SIGN]),
+        nOutputSize=curTx._get_output_size(curTx.outputs[INPUT_TO_SIGN]) if len(curTx.outputs) > INPUT_TO_SIGN else 0,
         inputToSign=INPUT_TO_SIGN,
         inputToSignLen=curTx._get_compact_size_size(INPUT_TO_SIGN),
         nInputSize=curTx._get_input_size(curTx.inputs[INPUT_TO_SIGN]),
