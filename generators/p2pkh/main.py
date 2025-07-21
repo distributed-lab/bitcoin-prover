@@ -39,11 +39,14 @@ def main():
     script_pub_key = bytearray(prevTx.outputs[vout].script_pub_key)
 
     if CUR_TX_WITNESS_SIZE != 0:
+        print("Spending type: p2wpkh")
         script_pub_key.pop(0)
         full_script_pub_key = [118, 169]
         full_script_pub_key.extend(list(script_pub_key))
         full_script_pub_key.extend([136, 172])
         script_pub_key = bytes(full_script_pub_key)
+    else:
+        print("Spending type: p2pkh")
 
     sig_bytes = bytes.fromhex(config["signature"])
     pubkey_bytes = bytes.fromhex(config["pub_key"])

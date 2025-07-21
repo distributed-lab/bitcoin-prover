@@ -41,10 +41,13 @@ def main():
     script_sig = config["script_sig"] if CUR_TX_WITNESS_SIZE == 0 else curTx.witness_to_hex_script(INPUT_TO_SIGN)
 
     if CUR_TX_WITNESS_SIZE != 0:
+        print("Spending type: p2wsh")
         full_script_pub_key = [168, 32]
         full_script_pub_key.extend(script_pub_key[2:])
         full_script_pub_key.append(135)
         script_pub_key = full_script_pub_key
+    else:
+        print("Spending type: p2sh")
 
     script = Script(script_sig + bytearray(script_pub_key).hex(), curTx, config["input_to_sign"])
     sizes = script.sizes
@@ -52,7 +55,6 @@ def main():
     sizes = sizes | redeem_script.sizes
     generate(sizes)
 
-    opcodes = max(script.opcodes, redeem_script.opcodes)
     require_stack_size = max(script.require_stack_size, redeem_script.require_stack_size)
     max_element_size = max(script.max_element_size, redeem_script.max_element_size)
 
@@ -76,7 +78,7 @@ def main():
         PREV_TX_MAX_WITNESS_STACK_SIZE=PREV_TX_MAX_WITNESS_STACK_SIZE,
         PREV_TX_WITNESS_SIZE=PREV_TX_WITNESS_SIZE,
         PREV_IS_GEGWIT=str(PREV_TX_WITNESS_SIZE != 0).lower(),
-        opcodesAmount=opcodes + 1,
+        opcodesAmount=script.opcodes,
         curTxLen=curTx._get_transaction_size() * 2, 
         prevTxLen=prevTx._get_transaction_size() * 2, 
         signLen=len(script_sig),

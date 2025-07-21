@@ -9,6 +9,8 @@ def get_config(path: str = "./generators/p2ms/config.json") -> Dict:
         return json.load(f)
 
 def main():
+    print("Spending type: p2ms")
+
     config = get_config()
 
     curTx = Transaction(config["cur_tx"])

@@ -27,7 +27,7 @@ pub global PREV_TX_MAX_WITNESS_STACK_SIZE: u32 = 2;
 pub global PREV_TX_WITNESS_SIZE: u32 = 0;
 pub global PREV_IS_GEGWIT: bool = false;
 
-pub global OPCODES_AMOUNT: u32 = 6;
+pub global OPCODES_AMOUNT: u32 = 5;
 pub global STACK_SIZE: u32 = 6;
 pub global MAX_STACK_ELEMENT_SIZE: u32 = 35;
 pub global N_OUTPUT_SIZE: u32 = 34;
