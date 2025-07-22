@@ -20,19 +20,24 @@ fn prepare_preimage_hash_for_sighash_all<let TRANSACTION_SIZE: u32, let INPUT_CO
     let mut transaction_offset = transaction.input_count.offset;
     let i_when_change_offset = transaction.inputs[input_to_sign].script_sig_size.offset;
     let i_change_offset = transaction.inputs[input_to_sign].script_sig_size.size;
+    let mut data_pos_script_pub_key = 0;
 
     for i in 0..(INPUT_SIZE - 1) {
         if transaction_offset + i == i_when_change_offset {
-            for j in 0..SCRIPT_PUB_KEY_SIZE {
-                data[data_pos] = script_pub_key[j];
-                data_pos += 1;
-            }
+            data_pos_script_pub_key = data_pos;
+            data_pos += SCRIPT_PUB_KEY_SIZE;
 
             transaction_offset += i_change_offset;
         }
 
         data[data_pos] = transaction.data[transaction_offset + i];
         data_pos += 1;
+    }
+
+    if data_pos_script_pub_key != 0 {
+        for j in 0..SCRIPT_PUB_KEY_SIZE {
+            data[data_pos_script_pub_key + j] = script_pub_key[j];
+        }
     }
 
     transaction_offset = transaction.output_count.offset;
@@ -99,18 +104,24 @@ fn prepare_preimage_hash_for_sighash_all_anyonecanpay<let TRANSACTION_SIZE: u32,
     data_pos += 1;
 
     let mut transaction_offset = transaction.inputs[input_to_sign].txid.offset;
+    let mut data_pos_script_pub_key = 0;
 
     for i in 0..(N_INPUT_SIZE - 1) {
         if i == 36 {
-            for j in 0..SCRIPT_PUB_KEY_SIZE {
-                data[data_pos] = script_pub_key[j];
-                data_pos += 1;
-            }
+            data_pos_script_pub_key = data_pos;
+            data_pos += SCRIPT_PUB_KEY_SIZE;
+
             transaction_offset += 1;
         }
 
         data[data_pos] = transaction.data[transaction_offset + i];
         data_pos += 1;
+    }
+
+    if data_pos_script_pub_key != 0 {
+        for j in 0..SCRIPT_PUB_KEY_SIZE {
+            data[data_pos_script_pub_key + j] = script_pub_key[j];
+        }
     }
 
     transaction_offset = transaction.output_count.offset;
@@ -191,13 +202,12 @@ fn prepare_preimage_hash_for_sighash_single<let TRANSACTION_SIZE: u32, let INPUT
     let mut transaction_offset = transaction.input_count.offset;
     let i_when_change_offset = transaction.inputs[input_to_sign].script_sig_size.offset;
     let i_change_offset = transaction.inputs[input_to_sign].script_sig_size.size;
+    let mut data_pos_script_pub_key = 0;
 
     for i in 0..(INPUT_SIZE) {
         if transaction_offset + i == i_when_change_offset {
-            for j in 0..SCRIPT_PUB_KEY_SIZE {
-                data[data_pos] = script_pub_key[j];
-                data_pos += 1;
-            }
+            data_pos_script_pub_key = data_pos;
+            data_pos += SCRIPT_PUB_KEY_SIZE;
 
             transaction_offset += i_change_offset - 1;
         } else {
@@ -213,6 +223,12 @@ fn prepare_preimage_hash_for_sighash_single<let TRANSACTION_SIZE: u32, let INPUT
                 data[data_pos] = transaction.data[transaction_offset + i];
             }
             data_pos += 1;
+        }
+    }
+
+    if data_pos_script_pub_key != 0 {
+        for j in 0..SCRIPT_PUB_KEY_SIZE {
+            data[data_pos_script_pub_key + j] = script_pub_key[j];
         }
     }
 
@@ -329,19 +345,24 @@ fn prepare_preimage_hash_for_sighash_single_anyonecanpay<let TRANSACTION_SIZE: u
     data_pos += 1;
 
     let mut transaction_offset = transaction.inputs[input_to_sign].txid.offset;
+    let mut data_pos_script_pub_key = 0;
 
     for i in 0..(N_INPUT_SIZE - 1) {
         if i == 36 {
-            for j in 0..SCRIPT_PUB_KEY_SIZE {
-                data[data_pos] = script_pub_key[j];
-                data_pos += 1;
-            }
+            data_pos_script_pub_key = data_pos;
+            data_pos += SCRIPT_PUB_KEY_SIZE;
 
             transaction_offset += 1;
         }
 
         data[data_pos] = transaction.data[transaction_offset + i];
         data_pos += 1;
+    }
+
+    if data_pos_script_pub_key != 0 {
+        for j in 0..SCRIPT_PUB_KEY_SIZE {
+            data[data_pos_script_pub_key + j] = script_pub_key[j];
+        }
     }
 
     transaction_offset = transaction.output_count.offset;
@@ -441,13 +462,12 @@ fn prepare_preimage_hash_for_sighash_none<let TRANSACTION_SIZE: u32, let INPUT_C
     let mut transaction_offset = transaction.input_count.offset;
     let i_when_change_offset = transaction.inputs[input_to_sign].script_sig_size.offset;
     let i_change_offset = transaction.inputs[input_to_sign].script_sig_size.size;
+    let mut data_pos_script_pub_key = 0;
 
     for i in 0..(INPUT_SIZE) {
         if transaction_offset + i == i_when_change_offset {
-            for j in 0..SCRIPT_PUB_KEY_SIZE {
-                data[data_pos] = script_pub_key[j];
-                data_pos += 1;
-            }
+            data_pos_script_pub_key = data_pos;
+            data_pos += SCRIPT_PUB_KEY_SIZE;
 
             transaction_offset += i_change_offset - 1;
         } else {
@@ -463,6 +483,12 @@ fn prepare_preimage_hash_for_sighash_none<let TRANSACTION_SIZE: u32, let INPUT_C
                 data[data_pos] = transaction.data[transaction_offset + i];
             }
             data_pos += 1;
+        }
+    }
+
+    if data_pos_script_pub_key != 0 {
+        for j in 0..SCRIPT_PUB_KEY_SIZE {
+            data[data_pos_script_pub_key + j] = script_pub_key[j];
         }
     }
 
@@ -526,18 +552,24 @@ fn prepare_preimage_hash_for_sighash_none_anyonecanpay<let TRANSACTION_SIZE: u32
     data_pos += 1;
 
     let mut transaction_offset = transaction.inputs[input_to_sign].txid.offset;
+    let mut data_pos_script_pub_key = 0;
 
     for i in 0..(N_INPUT_SIZE - 1) {
         if i == 36 {
-            for j in 0..SCRIPT_PUB_KEY_SIZE {
-                data[data_pos] = script_pub_key[j];
-                data_pos += 1;
-            }
+            data_pos_script_pub_key = data_pos;
+            data_pos += SCRIPT_PUB_KEY_SIZE;
+
             transaction_offset += 1;
         }
 
         data[data_pos] = transaction.data[transaction_offset + i];
         data_pos += 1;
+    }
+
+    if data_pos_script_pub_key != 0 {
+        for j in 0..SCRIPT_PUB_KEY_SIZE {
+            data[data_pos_script_pub_key + j] = script_pub_key[j];
+        }
     }
 
     data[data_pos] = 0;
