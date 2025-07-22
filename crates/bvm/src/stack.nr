@@ -597,10 +597,10 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
 
         if (num < 0)
             | (
-                ((num >> 31) != 1)
+                ((num as u32 >> 31) != 1)
                     & (
                         (version < 2)
-                            | ((sequence >> 31) == 1)
+                            | ((sequence as u32 >> 31) == 1)
                             | !types_are_equal
                             | ((num & bip68_mask) > (sequence & bip68_mask))
                     )

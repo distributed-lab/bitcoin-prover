@@ -38,14 +38,13 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
     ) {
         let mut cur_pos: u32 = 0;
         let mut ifs_len: u32 = 1;
+        let mut ifs_active: u32 = 1;
         let mut ifs_slice: [bool] = [true].as_slice();
-        let mut exec = true;
 
         for _ in 0..MAX_NUMBER_OF_OPCODES {
             if cur_pos < SCRIPT_SIZE {
                 let opcode = script[cur_pos];
                 cur_pos += 1;
-                exec = ifs_slice.all(|e| e);
 
                 if DISABLED.any(|e| e == opcode) {
                     assert(false, "Disabled or reserved opcode!");
@@ -55,15 +54,22 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                     } else {
                         false
                     };
-                    ifs_len += 1;
                     ifs_slice = ifs_slice.push_back(if opcode == OP_IF { top } else { !top });
+                    ifs_active += ifs_slice[ifs_len] as u32;
+                    ifs_len += 1;
                 } else if opcode == OP_ENDIF {
                     assert(ifs_len > 1);
                     ifs_len -= 1;
+                    ifs_active -= ifs_slice[ifs_len] as u32;
                     ifs_slice = ifs_slice.pop_back().0;
                 } else if opcode == OP_ELSE {
                     assert(ifs_len > 1);
                     ifs_slice[ifs_len - 1] = !ifs_slice[ifs_len - 1];
+                    if ifs_slice[ifs_len - 1] {
+                        ifs_active += 1;
+                    } else {
+                        ifs_active -= 1;
+                    }
                 } else if opcode >= OP_PUSHBYTES1 & opcode <= OP_PUSHBYTES75 {
                     let push_length = opcode as u32;
                     let res = pushbytes(self.stack, push_length, script, cur_pos);
@@ -89,7 +95,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                         self.stack = res.0;
                     }
                     cur_pos = res.1;
-                } else if exec {
+                } else if (ifs_active == ifs_len) {
                     if opcode == OP_0 {
                         self.stack.op_num(0);
                     } else if opcode == OP_1NEGATE {
@@ -235,6 +241,11 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         assert(ifs_len == 1);
     }
 }
+
+// Tests fail because of empty test tx if you want to run it - comment:
+// self.stack.op_checklocktimeverify();
+// self.stack.op_checksequenceverify();
+// at the execute method
 
 #[test]
 fn test_if_opcodes() {
