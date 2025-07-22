@@ -557,6 +557,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         self.push_bytes(u32_to_le_bytes(self.get_last_stack_element_length()));
     }
 
+    // todo: replace bit shifts with more efficient operations
     pub fn op_checklocktimeverify(&mut self) {
         let elem = self.data[self.stack_size - 1];
         let num = vec_to_i32(elem);
@@ -578,7 +579,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         }
     }
 
-    // todo: finish it
+    // todo: replace bit shifts with more efficiency operations
     pub fn op_checksequenceverify(&mut self) {
         let elem = self.data[self.stack_size - 1];
         let num = vec_to_i32(elem);
@@ -591,7 +592,19 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
             sequence += self.cur_transaction.data[sequence_offset + i] as i32 << (i * 8) as u8;
         }
 
-        if (num < 0) | (((num << 31) != 1) & ((version < 2) | ((sequence << 31) != 1))) {
+        let types_are_equal = ((sequence >> 22) & 1) == ((num >> 22) & 1);
+        let bip68_mask = 0xffff;
+
+        if (num < 0)
+            | (
+                ((num >> 31) != 1)
+                    & (
+                        (version < 2)
+                            | ((sequence >> 31) == 1)
+                            | !types_are_equal
+                            | ((num & bip68_mask) > (sequence & bip68_mask))
+                    )
+            ) {
             assert(false);
         }
     }
@@ -1034,7 +1047,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
     }
 }
 
-type TestStack<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32> = Stack<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0>;
+pub type TestStack<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32> = Stack<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0>;
 
 #[test]
 fn test_addition() {
