@@ -7,13 +7,14 @@ use super::{
         DISABLED, OP_0, OP_0NOTEQUAL, OP_1, OP_16, OP_1ADD, OP_1NEGATE, OP_1SUB, OP_2DROP, OP_2DUP,
         OP_2OVER, OP_2ROT, OP_2SWAP, OP_3DUP, OP_ABS, OP_ADD, OP_BOOLAND, OP_BOOLOR,
         OP_CHECKLOCKTIMEVERIFY, OP_CHECKMULSIG, OP_CHECKMULSIGVERIFY, OP_CHECKSEQUENCEVERIFY,
-        OP_CHECKSIG, OP_CHECKSIGADD, OP_CHECKSIGVERIFY, OP_DEPTH, OP_DROP, OP_DUP, OP_ELSE,
-        OP_ENDIF, OP_EQUAL, OP_EQUALVERIFY, OP_FROMALTSTACK, OP_GREATERTHAN, OP_GREATERTHANOREQUAL,
-        OP_HASH160, OP_HASH256, OP_IF, OP_IFDUP, OP_LESSTHAN, OP_LESSTHANOREQUAL, OP_MAX, OP_MIN,
-        OP_NEGATE, OP_NIP, OP_NOT, OP_NOTIF, OP_NUMENOTQUAL, OP_NUMEQUAL, OP_NUMEQUALVERIFY,
-        OP_OVER, OP_PICK, OP_PUSHBYTES1, OP_PUSHBYTES75, OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4,
-        OP_RESERVED, OP_RESERVED1, OP_RESERVED2, OP_RETURN, OP_RIPEMD160, OP_ROLL, OP_ROT, OP_SHA1,
-        OP_SHA256, OP_SIZE, OP_SUB, OP_SWAP, OP_TOALTSTACK, OP_TUCK, OP_VER, OP_WITHIN,
+        OP_CHECKSIG, OP_CHECKSIGADD, OP_CHECKSIGVERIFY, OP_CODESEPARATOR, OP_DEPTH, OP_DROP, OP_DUP,
+        OP_ELSE, OP_ENDIF, OP_EQUAL, OP_EQUALVERIFY, OP_FROMALTSTACK, OP_GREATERTHAN,
+        OP_GREATERTHANOREQUAL, OP_HASH160, OP_HASH256, OP_IF, OP_IFDUP, OP_LESSTHAN,
+        OP_LESSTHANOREQUAL, OP_MAX, OP_MIN, OP_NEGATE, OP_NIP, OP_NOT, OP_NOTIF, OP_NUMENOTQUAL,
+        OP_NUMEQUAL, OP_NUMEQUALVERIFY, OP_OVER, OP_PICK, OP_PUSHBYTES1, OP_PUSHBYTES75,
+        OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4, OP_RESERVED, OP_RESERVED1, OP_RESERVED2,
+        OP_RETURN, OP_RIPEMD160, OP_ROLL, OP_ROT, OP_SHA1, OP_SHA256, OP_SIZE, OP_SUB, OP_SWAP,
+        OP_TOALTSTACK, OP_TUCK, OP_VER, OP_WITHIN,
     },
 };
 use bvm::stack::{Stack, TestStack};
@@ -40,6 +41,8 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         let mut ifs_len: u32 = 1;
         let mut ifs_active: u32 = 1;
         let mut ifs_slice: [bool] = [true].as_slice();
+        let mut codesep = false;
+        let mut csp_pos = 0;
 
         for _ in 0..MAX_NUMBER_OF_OPCODES {
             if cur_pos < SCRIPT_SIZE {
@@ -200,6 +203,9 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                     } else if opcode == OP_HASH256 {
                         let last_stack_element_length = self.stack.get_last_stack_element_length();
                         self.stack = hash256(self.stack, last_stack_element_length);
+                    } else if opcode == OP_CODESEPARATOR {
+                        csp_pos = cur_pos;
+                        codesep = true;
                     } else if opcode == OP_EQUAL {
                         self.stack.op_equal();
                     } else if opcode == OP_EQUALVERIFY {
@@ -239,6 +245,9 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         }
 
         assert(ifs_len == 1);
+        if codesep {
+            assert(REDEEM_SCRIPT_LEN == SCRIPT_SIZE - csp_pos);
+        }
     }
 }
 

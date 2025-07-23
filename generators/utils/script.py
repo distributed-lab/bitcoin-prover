@@ -26,6 +26,7 @@ class Script:
         self.require_stack_size = 0
         self.max_element_size = 0
         self.sizes = get_hashed_data_sizes(bytes, tx.to_hex(), inIdx, stack, tuple())
+        self.script_len_codeseparator = 0
 
         cur_stack_size = 0
         require_alt_stack_size = 0
@@ -41,6 +42,9 @@ class Script:
             elif bytes[i] == 108:
                 alt_stack_size -= 1
 
+            if bytes[i] == 171:
+                self.script_len_codeseparator = -1
+
             if bytes[i] == 172 or bytes[i] == 173:
                 self.sizes.add((bytes[i], 0, 0, 0))
 
@@ -53,11 +57,13 @@ class Script:
                 self.sizes.add((bytes[i], 0, 0, 0))
                 if self.max_element_size < bytes[i]:
                     self.max_element_size = bytes[i]
+                self.script_len_codeseparator += bytes[i]
                 i += bytes[i]
                 cur_stack_size += 1
             elif bytes[i] == 76:
                 size = bytes[i + 1]
                 self.sizes.add((bytes[i], size, 0, 0))
+                self.script_len_codeseparator += size + 1
                 i += size + 1
                 cur_stack_size += 1
                 if self.max_element_size < size:
@@ -65,6 +71,7 @@ class Script:
             elif bytes[i] == 77:
                 size = bytes[i + 1] + (bytes[i + 2] << 8)
                 self.sizes.add((bytes[i], size, 0, 0))
+                self.script_len_codeseparator += size + 2
                 i += size + 2
                 cur_stack_size += 1
                 if self.max_element_size < size:
@@ -72,6 +79,7 @@ class Script:
             elif bytes[i] == 78:
                 size = bytes[i + 1] + (bytes[i + 2] << 8) + (bytes[i + 3] << 16) + (bytes[i + 4] << 24)
                 self.sizes.add((bytes[i], size, 0, 0))
+                self.script_len_codeseparator += size + 4
                 i += size + 4
                 cur_stack_size += 1
                 if self.max_element_size < size:
@@ -96,6 +104,7 @@ class Script:
 
             i += 1
             j += 1
+            self.script_len_codeseparator += 1
 
         if require_alt_stack_size > self.require_stack_size:
             self.require_stack_size = require_alt_stack_size

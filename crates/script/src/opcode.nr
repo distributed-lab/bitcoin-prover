@@ -65,6 +65,7 @@ pub global OP_SHA1: u8 = 167;
 pub global OP_SHA256: u8 = 168;
 pub global OP_HASH160: u8 = 169;
 pub global OP_HASH256: u8 = 170;
+pub global OP_CODESEPARATOR: u8 = 171;
 
 pub global OP_EQUAL: u8 = 135;
 pub global OP_EQUALVERIFY: u8 = 136;

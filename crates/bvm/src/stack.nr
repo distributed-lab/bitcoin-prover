@@ -646,14 +646,14 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
             );
         } else if address.is_p2wsh() {
             let amount = self.prev_transaction.get_amount(self.output_to_unlock);
-            let script_code = self.cur_transaction.get_witness_script_with_size::<SCRIPT_CODE_LEN>(
-                self.input_to_sign,
-            );
+            // let script_code = self.cur_transaction.get_witness_script_with_size::<SCRIPT_CODE_LEN>(
+            //     self.input_to_sign,
+            // );
             message_hash = serialize_p2wsh_sighash_all(
                 self.cur_transaction,
                 self.input_to_sign,
                 amount,
-                script_code,
+                self.redeem_script,
             );
         } else {
             assert(false, "not implemented");
@@ -692,14 +692,14 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
             );
         } else if address.is_p2wsh() {
             let amount = self.prev_transaction.get_amount(self.output_to_unlock);
-            let script_code = self.cur_transaction.get_witness_script_with_size::<SCRIPT_CODE_LEN>(
-                self.input_to_sign,
-            );
+            // let script_code = self.cur_transaction.get_witness_script_with_size::<SCRIPT_CODE_LEN>(
+            //     self.input_to_sign,
+            // );
             message_hash = serialize_p2wsh_sighash_all_anyonecanpay(
                 self.cur_transaction,
                 self.input_to_sign,
                 amount,
-                script_code,
+                self.redeem_script,
             );
         } else {
             assert(false, "not implemented");
@@ -735,14 +735,14 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
             );
         } else if address.is_p2wsh() {
             let amount = self.prev_transaction.get_amount(self.output_to_unlock);
-            let script_code = self.cur_transaction.get_witness_script_with_size::<SCRIPT_CODE_LEN>(
-                self.input_to_sign,
-            );
+            // let script_code = self.cur_transaction.get_witness_script_with_size::<SCRIPT_CODE_LEN>(
+            //     self.input_to_sign,
+            // );
             message_hash = serialize_p2wsh_sighash_none(
                 self.cur_transaction,
                 self.input_to_sign,
                 amount,
-                script_code,
+                self.redeem_script,
             );
         } else {
             assert(false, "not implemented");
@@ -781,14 +781,14 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
             );
         } else if address.is_p2wsh() {
             let amount = self.prev_transaction.get_amount(self.output_to_unlock);
-            let script_code = self.cur_transaction.get_witness_script_with_size::<SCRIPT_CODE_LEN>(
-                self.input_to_sign,
-            );
+            // let script_code = self.cur_transaction.get_witness_script_with_size::<SCRIPT_CODE_LEN>(
+            //     self.input_to_sign,
+            // );
             message_hash = serialize_p2wsh_sighash_none_anyonecanpay(
                 self.cur_transaction,
                 self.input_to_sign,
                 amount,
-                script_code,
+                self.redeem_script,
             );
         } else {
             assert(false, "not implemented");
@@ -827,14 +827,14 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
             );
         } else if address.is_p2wsh() {
             let amount = self.prev_transaction.get_amount(self.output_to_unlock);
-            let script_code = self.cur_transaction.get_witness_script_with_size::<SCRIPT_CODE_LEN>(
-                self.input_to_sign,
-            );
-            message_hash = serialize_p2wsh_sighash_single::<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, SCRIPT_CODE_LEN, N_OUTPUT_SIZE>(
+            // let script_code = self.cur_transaction.get_witness_script_with_size::<SCRIPT_CODE_LEN>(
+            //     self.input_to_sign,
+            // );
+            message_hash = serialize_p2wsh_sighash_single::<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, REDEEM_SCRIPT_LEN, N_OUTPUT_SIZE>(
                 self.cur_transaction,
                 self.input_to_sign,
                 amount,
-                script_code,
+                self.redeem_script,
             );
         } else {
             assert(false, "not implemented");
@@ -873,14 +873,14 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
             );
         } else if address.is_p2wsh() {
             let amount = self.prev_transaction.get_amount(self.output_to_unlock);
-            let script_code = self.cur_transaction.get_witness_script_with_size::<SCRIPT_CODE_LEN>(
-                self.input_to_sign,
-            );
-            message_hash = serialize_p2wsh_sighash_single_anyonecanpay::<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, SCRIPT_CODE_LEN, N_OUTPUT_SIZE>(
+            // let script_code = self.cur_transaction.get_witness_script_with_size::<SCRIPT_CODE_LEN>(
+            //     self.input_to_sign,
+            // );
+            message_hash = serialize_p2wsh_sighash_single_anyonecanpay::<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, REDEEM_SCRIPT_LEN, N_OUTPUT_SIZE>(
                 self.cur_transaction,
                 self.input_to_sign,
                 amount,
-                script_code,
+                self.redeem_script,
             );
         } else {
             assert(false, "not implemented");
@@ -1868,7 +1868,9 @@ fn test_p2wsh_checksig_all() {
         input_to_sign,
         output_to_unlock,
         empty_stack_array::<80, 7>(),
-        [],
+        hex_to_bytes(
+            "69522103848e308569b644372a5eb26665f1a8c34ca393c130b376db2fae75c43500013c2103cec1ee615c17e06d4f4b0a08617dffb8e568936bdff18fb057832a58ad4d1b752103eed7ae80c34d70f5ba93f93965f69f3c691da0f4607f242f4fd6c7a48789233e53ae",
+        ),
     );
 
     let pubkey_hex: str<130> = "041428f3a3532ff4f1cac70f7292bfad06d1037f800ee8839b56ebba917a22e900ac5879295520ae5690ab668f57f8fdf6d06e410e7de064b676ce8561ec626f57";
@@ -1902,7 +1904,9 @@ fn test_p2wsh_checksig_all_anyonecanpay() {
         input_to_sign,
         output_to_unlock,
         empty_stack_array::<80, 7>(),
-        [],
+        hex_to_bytes(
+            "69522103848e308569b644372a5eb26665f1a8c34ca393c130b376db2fae75c43500013c2103cec1ee615c17e06d4f4b0a08617dffb8e568936bdff18fb057832a58ad4d1b752103eed7ae80c34d70f5ba93f93965f69f3c691da0f4607f242f4fd6c7a48789233e53ae",
+        ),
     );
 
     let signature_hex: str<144> = "3045022100e9e6b18959753dfe84da3e81ed2849dca4a31174b010f732f6ab083f137cedc60220073bafd23de099311bc515a80f863a3009b990ba715c73fb7316f2e3eec4a28a81";
@@ -1936,7 +1940,9 @@ fn test_p2wsh_checksig_none() {
         input_to_sign,
         output_to_unlock,
         empty_stack_array::<80, 7>(),
-        [],
+        hex_to_bytes(
+            "69522103848e308569b644372a5eb26665f1a8c34ca393c130b376db2fae75c43500013c2103cec1ee615c17e06d4f4b0a08617dffb8e568936bdff18fb057832a58ad4d1b752103eed7ae80c34d70f5ba93f93965f69f3c691da0f4607f242f4fd6c7a48789233e53ae",
+        ),
     );
 
     let signature_hex: str<144> = "3045022100c291193a2967796c726a5dccda6b4b019747b90ba94f29dac53d463381eb241a02200a762b1208d1d8092003d5c9e19cb9b33a1b05b38432397adcbeeb55fba58f9402";
@@ -1970,7 +1976,9 @@ fn test_p2wsh_checksig_none_anyonecanpay() {
         input_to_sign,
         output_to_unlock,
         empty_stack_array::<80, 7>(),
-        [],
+        hex_to_bytes(
+            "69522103848e308569b644372a5eb26665f1a8c34ca393c130b376db2fae75c43500013c2103cec1ee615c17e06d4f4b0a08617dffb8e568936bdff18fb057832a58ad4d1b752103eed7ae80c34d70f5ba93f93965f69f3c691da0f4607f242f4fd6c7a48789233e53ae",
+        ),
     );
 
     let signature_hex: str<144> = "3045022100a24292b7e40a5b3dfe67b32e9c0f144c2ad8266403798d3f1f07a559407d1718022028719cc52625eb85d79ca387a1b31d3e622c87092759a8dd8eea5f8e1c93023482";
@@ -2004,7 +2012,9 @@ fn test_p2wsh_checksig_single() {
         input_to_sign,
         output_to_unlock,
         empty_stack_array::<80, 7>(),
-        [],
+        hex_to_bytes(
+            "69522103848e308569b644372a5eb26665f1a8c34ca393c130b376db2fae75c43500013c2103cec1ee615c17e06d4f4b0a08617dffb8e568936bdff18fb057832a58ad4d1b752103eed7ae80c34d70f5ba93f93965f69f3c691da0f4607f242f4fd6c7a48789233e53ae",
+        ),
     );
 
     let signature_hex: str<142> = "304402204272771cb6fcad4c3f7ecbb6f5924d33831b4ea0861545b17a39f1c643aac43b02200379233b5228fcff3020dfb281ac411bb0bfeee06051af34020c13adf7ce14ef03";
@@ -2038,7 +2048,9 @@ fn test_p2wsh_checksig_single_anyonecanpay() {
         input_to_sign,
         output_to_unlock,
         empty_stack_array::<80, 7>(),
-        [],
+        hex_to_bytes(
+            "69522103848e308569b644372a5eb26665f1a8c34ca393c130b376db2fae75c43500013c2103cec1ee615c17e06d4f4b0a08617dffb8e568936bdff18fb057832a58ad4d1b752103eed7ae80c34d70f5ba93f93965f69f3c691da0f4607f242f4fd6c7a48789233e53ae",
+        ),
     );
 
     let signature_hex: str<142> = "3044022019a8d4e1903373f8cf13732280b73595cfaa80f77b8f563834dcda5c0d17d6510220674dc6e6fecdc4db36c92910efe8bb7ba1522e7cf44896757e848294046af68b83";
