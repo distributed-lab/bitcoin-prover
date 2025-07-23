@@ -2,14 +2,15 @@ mod globals;
 
 use bvm::stack::{empty_stack_array, Stack};
 use globals::{
-    CUR_IS_GEGWIT, CUR_TX_INP_COUNT, CUR_TX_INP_COUNT_LEN, CUR_TX_INP_SIZE, CUR_TX_LEN,
+    CODESEPARATOR_REDEEM_SCRIPT_LEN, CODESEPARATOR_REDEEM_SCRIPT_LEN_LEN, CUR_IS_GEGWIT,
+    CUR_TX_INP_COUNT, CUR_TX_INP_COUNT_LEN, CUR_TX_INP_SIZE, CUR_TX_LEN,
     CUR_TX_MAX_WITNESS_STACK_SIZE, CUR_TX_OUT_COUNT, CUR_TX_OUT_COUNT_LEN, CUR_TX_OUT_SIZE,
     CUR_TX_WITNESS_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, MAX_STACK_ELEMENT_SIZE, N_INPUT_SIZE,
     N_OUTPUT_SIZE, OPCODES_AMOUNT, PREV_IS_GEGWIT, PREV_TX_INP_COUNT, PREV_TX_INP_COUNT_LEN,
     PREV_TX_INP_SIZE, PREV_TX_LEN, PREV_TX_MAX_WITNESS_STACK_SIZE, PREV_TX_OUT_COUNT,
     PREV_TX_OUT_COUNT_LEN, PREV_TX_OUT_SIZE, PREV_TX_WITNESS_SIZE, REDEEM_SCRIPT_LEN,
-    REDEEM_SCRIPT_LEN_LEN, REDEEM_SCRIPT_OPCODES_AMOUNT, SCRIPT_PUB_KEY_LEN, SCRIPT_PUB_KEY_LEN_LEN,
-    SCRIPT_SIG_LEN, STACK_SIZE,
+    REDEEM_SCRIPT_OPCODES_AMOUNT, SCRIPT_PUB_KEY_LEN, SCRIPT_PUB_KEY_LEN_LEN, SCRIPT_SIG_LEN,
+    STACK_SIZE,
 };
 use script::execution::ScriptExecutionEngine;
 use sign::{address::Address, compact_size::u32_to_compact_size_array, transaction::Transaction};
@@ -64,9 +65,15 @@ fn main(
     let script_sig_bytes = hex_to_bytes(script_sig);
 
     let mut redeem_script = [0; REDEEM_SCRIPT_LEN];
+    let mut codeseparator_redeem_script = [0; CODESEPARATOR_REDEEM_SCRIPT_LEN];
 
     for i in 0..REDEEM_SCRIPT_LEN {
         redeem_script[REDEEM_SCRIPT_LEN - 1 - i] = script_sig_bytes[(SCRIPT_SIG_LEN / 2) - 1 - i];
+    }
+
+    for i in 0..CODESEPARATOR_REDEEM_SCRIPT_LEN {
+        codeseparator_redeem_script[CODESEPARATOR_REDEEM_SCRIPT_LEN - 1 - i] =
+            script_sig_bytes[(SCRIPT_SIG_LEN / 2) - 1 - i];
     }
 
     let mut stack = Stack::new(
@@ -75,10 +82,12 @@ fn main(
         input_to_sign,
         vout,
         empty_stack_array::<MAX_STACK_ELEMENT_SIZE, STACK_SIZE>(),
-        u32_to_compact_size_array::<REDEEM_SCRIPT_LEN_LEN>(REDEEM_SCRIPT_LEN)
+        u32_to_compact_size_array::<CODESEPARATOR_REDEEM_SCRIPT_LEN_LEN>(
+            CODESEPARATOR_REDEEM_SCRIPT_LEN,
+        )
             .as_slice()
-            .append(redeem_script)
-            .as_array::<REDEEM_SCRIPT_LEN_LEN + REDEEM_SCRIPT_LEN>(),
+            .append(codeseparator_redeem_script)
+            .as_array::<CODESEPARATOR_REDEEM_SCRIPT_LEN_LEN + CODESEPARATOR_REDEEM_SCRIPT_LEN>(),
     );
 
     let mut script_execution_engine = ScriptExecutionEngine::new(stack);

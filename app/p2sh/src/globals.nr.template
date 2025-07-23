@@ -4,7 +4,8 @@ pub global SCRIPT_SIG_LEN: u32 = {signLen};
 pub global SCRIPT_PUB_KEY_LEN: u32 = {scriptPubKeyLen};
 pub global SCRIPT_PUB_KEY_LEN_LEN: u32 = {scriptPubKeyLenLen};
 pub global REDEEM_SCRIPT_LEN: u32 = {redeemScriptLen};
-pub global REDEEM_SCRIPT_LEN_LEN: u32 = {redeemScriptLenLen};
+pub global CODESEPARATOR_REDEEM_SCRIPT_LEN: u32 = {codeseparatorRedeemScriptLen};
+pub global CODESEPARATOR_REDEEM_SCRIPT_LEN_LEN: u32 = {codeseparatorRedeemScriptLenLen};
 pub global REDEEM_SCRIPT_OPCODES_AMOUNT: u32 = {redeemOpcodesAmount};
 
 pub global CUR_TX_INP_COUNT: u32 = {curTx.input_count};

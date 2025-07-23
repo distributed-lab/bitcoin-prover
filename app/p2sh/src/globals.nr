@@ -4,7 +4,8 @@ pub global SCRIPT_SIG_LEN: u32 = 78;
 pub global SCRIPT_PUB_KEY_LEN: u32 = 35;
 pub global SCRIPT_PUB_KEY_LEN_LEN: u32 = 1;
 pub global REDEEM_SCRIPT_LEN: u32 = 35;
-pub global REDEEM_SCRIPT_LEN_LEN: u32 = 1;
+pub global CODESEPARATOR_REDEEM_SCRIPT_LEN: u32 = 35;
+pub global CODESEPARATOR_REDEEM_SCRIPT_LEN_LEN: u32 = 1;
 pub global REDEEM_SCRIPT_OPCODES_AMOUNT: u32 = 3;
 
 pub global CUR_TX_INP_COUNT: u32 = 1;
