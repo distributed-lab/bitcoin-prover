@@ -1,7 +1,7 @@
 pub global CUR_TX_LEN: u32 = 3722;
 pub global PREV_TX_LEN: u32 = 448;
-pub global SIG_LEN: u32 = 71;
-pub global PK_LEN: u32 = 33;
+pub global SIG_LEN: u32 = 142;
+pub global PK_LEN: u32 = 66;
 pub global SCRIPT_SIG_LEN: u32 = 46;
 pub global SCRIPT_PUB_KEY_LEN: u32 = 23;
 pub global SCRIPT_PUB_KEY_LEN_LEN: u32 = 1;

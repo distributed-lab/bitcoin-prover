@@ -62,8 +62,8 @@ def main():
     with open(config["file_path"] + "/src/globals.nr.template", "r") as file:
         templateOpcodes = file.read()
 
-    signature = curTx.witness[INPUT_TO_SIGN].stack_items[0].item
-    pub_key = curTx.witness[INPUT_TO_SIGN].stack_items[1].item
+    signature = curTx.witness[INPUT_TO_SIGN].stack_items[0].item.hex()
+    pub_key = curTx.witness[INPUT_TO_SIGN].stack_items[1].item.hex()
 
     opcodesFile = templateOpcodes.format(
         curTx=curTx, 
