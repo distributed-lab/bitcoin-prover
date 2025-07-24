@@ -637,7 +637,12 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                 serialize_sighash_all(self.cur_transaction, self.input_to_sign, self.redeem_script);
         } else if address.is_p2wpkh() {
             let amount = self.prev_transaction.get_amount(self.output_to_unlock);
-            let script_code = self.prev_transaction.get_p2wpkh_script_code(self.output_to_unlock);
+            let script_code = if self.redeem_script.len() == 0 {
+                self.prev_transaction.get_p2wpkh_script_code(self.output_to_unlock)
+            } else {
+                assert(REDEEM_SCRIPT_LEN == 26);
+                self.redeem_script.as_slice().as_array::<26>()
+            };
             message_hash = serialize_p2wpkh_sighash_all(
                 self.cur_transaction,
                 self.input_to_sign,
