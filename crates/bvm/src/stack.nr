@@ -688,7 +688,12 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
             );
         } else if address.is_p2wpkh() {
             let amount = self.prev_transaction.get_amount(self.output_to_unlock);
-            let script_code = self.prev_transaction.get_p2wpkh_script_code(self.output_to_unlock);
+            let script_code = if self.redeem_script.len() == 0 {
+                self.prev_transaction.get_p2wpkh_script_code(self.output_to_unlock)
+            } else {
+                assert(REDEEM_SCRIPT_LEN == 26);
+                self.redeem_script.as_slice().as_array::<26>()
+            };
             message_hash = serialize_p2wpkh_sighash_all_anyonecanpay(
                 self.cur_transaction,
                 self.input_to_sign,
@@ -731,7 +736,12 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
             );
         } else if address.is_p2wpkh() {
             let amount = self.prev_transaction.get_amount(self.output_to_unlock);
-            let script_code = self.prev_transaction.get_p2wpkh_script_code(self.output_to_unlock);
+            let script_code = if self.redeem_script.len() == 0 {
+                self.prev_transaction.get_p2wpkh_script_code(self.output_to_unlock)
+            } else {
+                assert(REDEEM_SCRIPT_LEN == 26);
+                self.redeem_script.as_slice().as_array::<26>()
+            };
             message_hash = serialize_p2wpkh_sighash_none(
                 self.cur_transaction,
                 self.input_to_sign,
@@ -777,7 +787,12 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
             );
         } else if address.is_p2wpkh() {
             let amount = self.prev_transaction.get_amount(self.output_to_unlock);
-            let script_code = self.prev_transaction.get_p2wpkh_script_code(self.output_to_unlock);
+            let script_code = if self.redeem_script.len() == 0 {
+                self.prev_transaction.get_p2wpkh_script_code(self.output_to_unlock)
+            } else {
+                assert(REDEEM_SCRIPT_LEN == 26);
+                self.redeem_script.as_slice().as_array::<26>()
+            };
             message_hash = serialize_p2wpkh_sighash_none_anyonecanpay(
                 self.cur_transaction,
                 self.input_to_sign,
@@ -823,7 +838,12 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
             );
         } else if address.is_p2wpkh() {
             let amount = self.prev_transaction.get_amount(self.output_to_unlock);
-            let script_code = self.prev_transaction.get_p2wpkh_script_code(self.output_to_unlock);
+            let script_code = if self.redeem_script.len() == 0 {
+                self.prev_transaction.get_p2wpkh_script_code(self.output_to_unlock)
+            } else {
+                assert(REDEEM_SCRIPT_LEN == 26);
+                self.redeem_script.as_slice().as_array::<26>()
+            };
             message_hash = serialize_p2wpkh_sighash_single::<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, N_OUTPUT_SIZE>(
                 self.cur_transaction,
                 self.input_to_sign,
@@ -869,7 +889,12 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
             );
         } else if address.is_p2wpkh() {
             let amount = self.prev_transaction.get_amount(self.output_to_unlock);
-            let script_code = self.prev_transaction.get_p2wpkh_script_code(self.output_to_unlock);
+            let script_code = if self.redeem_script.len() == 0 {
+                self.prev_transaction.get_p2wpkh_script_code(self.output_to_unlock)
+            } else {
+                assert(REDEEM_SCRIPT_LEN == 26);
+                self.redeem_script.as_slice().as_array::<26>()
+            };
             message_hash = serialize_p2wpkh_sighash_single_anyonecanpay::<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, N_OUTPUT_SIZE>(
                 self.cur_transaction,
                 self.input_to_sign,

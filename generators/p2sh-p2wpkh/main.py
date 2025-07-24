@@ -88,7 +88,7 @@ def main():
         signLen=len(script_sig),
         scriptPubKeyLen=len(script_pub_key),
         scriptPubKeyLenLen=curTx._get_compact_size_size(script_pub_key_size),
-        redeemScriptLen=redeem_script.script_len_codeseparator,
+        redeemScriptLen=len(rds) // 2 + 1,
         stackSize=require_stack_size,
         maxStackElementSize=max_element_size,
         nOutputSize=curTx._get_output_size(curTx.outputs[INPUT_TO_SIGN]) if len(curTx.outputs) > INPUT_TO_SIGN else 0,

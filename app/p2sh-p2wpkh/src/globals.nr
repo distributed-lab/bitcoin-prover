@@ -5,7 +5,7 @@ pub global PK_LEN: u32 = 33;
 pub global SCRIPT_SIG_LEN: u32 = 46;
 pub global SCRIPT_PUB_KEY_LEN: u32 = 23;
 pub global SCRIPT_PUB_KEY_LEN_LEN: u32 = 1;
-pub global REDEEM_SCRIPT_LEN: u32 = 131;
+pub global REDEEM_SCRIPT_LEN: u32 = 26;
 
 pub global CUR_TX_INP_COUNT: u32 = 13;
 pub global CUR_TX_INP_COUNT_LEN: u32 = 1;

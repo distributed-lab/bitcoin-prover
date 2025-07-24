@@ -73,10 +73,7 @@ fn main(
         input_to_sign,
         vout,
         empty_stack_array::<MAX_STACK_ELEMENT_SIZE, STACK_SIZE>(),
-        u32_to_compact_size_array::<1>(REDEEM_SCRIPT_LEN)
-            .as_slice()
-            .append(redeem_script)
-            .as_array::<1 + REDEEM_SCRIPT_LEN>(),
+        redeem_script,
     );
 
     let mut script_execution_engine = ScriptExecutionEngine::new(stack);
