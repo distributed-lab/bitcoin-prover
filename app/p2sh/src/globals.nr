@@ -24,7 +24,7 @@ pub global PREV_TX_INP_SIZE: u32 = 42;
 pub global PREV_TX_OUT_COUNT: u32 = 2;
 pub global PREV_TX_OUT_COUNT_LEN: u32 = 1;
 pub global PREV_TX_OUT_SIZE: u32 = 78;
-pub global PREV_TX_MAX_WITNESS_STACK_SIZE: u32 = 2;
+pub global PREV_TX_MAX_WITNESS_STACK_SIZE: u32 = 0;
 pub global PREV_TX_WITNESS_SIZE: u32 = 0;
 pub global PREV_IS_GEGWIT: bool = false;
 
