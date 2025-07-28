@@ -1,9 +1,7 @@
 use crate::compact_size;
 use crate::transaction::{Output, PositionField, Transaction};
 use crypto::schnorr::tagged_hash;
-use utils::convert::{
-    bytes_to_hex, hex_to_bytes, reverse_bytes, sha256_to_le_bytes, u32_to_le_bytes,
-};
+use utils::convert::{bytes_to_hex, hex_to_bytes, u32_to_le_bytes};
 
 fn parse_outputs<let OUTPUT_SIZE: u32, let OUTPUT_COUNT: u32>(
     data: [u8; OUTPUT_SIZE],
@@ -205,13 +203,13 @@ fn serialize_p2tr_sighash_all<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, l
     hash
 }
 
-fn prepare_preimage_hash_for_sighash_all_anyonecanpay<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_COUNT_LEN: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32, let UTXO_SIZE: u32>(
+fn prepare_preimage_hash_for_sighash_all_anyonecanpay<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_COUNT_LEN: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32>(
     transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
     input_to_sign: u32,
     extension_flag: u8,
     utxo_data: [u8; 8 + 1 + 34],
     is_annex_present: bool,
-) -> [u8;  1 + 1 + 4 + 4 + 32 + 1 + 36 + 8 + 35 + 4] {
+) -> [u8; 1 + 1 + 4 + 4 + 32 + 1 + 36 + 8 + 35 + 4] {
     let mut data = [0; 1 + 1 + 4 + 4 + 32 + 1 + 36 + 8 + 35 + 4];
     let mut cur_pos = 0;
     let mut hash_buffer = [0; 32];
@@ -234,7 +232,7 @@ fn prepare_preimage_hash_for_sighash_all_anyonecanpay<let TRANSACTION_SIZE: u32,
         data[cur_pos] = transaction.data[transaction_locktime_offset + i];
         cur_pos += 1;
     }
-    
+
     // Outputs
     let mut preimage_outputs = [0; OUTPUT_SIZE - OUTPUT_COUNT_LEN];
 
@@ -294,7 +292,7 @@ fn prepare_preimage_hash_for_sighash_all_anyonecanpay<let TRANSACTION_SIZE: u32,
     data
 }
 
-fn serialize_p2tr_sighash_all_anyonecanpay<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_COUNT_LEN: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32, let UTXO_SIZE: u32>(
+fn serialize_p2tr_sighash_all_anyonecanpay<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_COUNT_LEN: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32>(
     transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
     input_to_sign: u32,
     extension_flag: u8,
@@ -492,16 +490,16 @@ fn serialize_p2tr_sighash_none<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, 
     hash
 }
 
-fn prepare_preimage_hash_for_sighash_none_anyonecanpay<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_COUNT_LEN: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32, let UTXO_SIZE: u32>(
+fn prepare_preimage_hash_for_sighash_none_anyonecanpay<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_COUNT_LEN: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32>(
     transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
     input_to_sign: u32,
     extension_flag: u8,
     utxo_data: [u8; 8 + 1 + 34],
     is_annex_present: bool,
-) -> [u8;  1 + 1 + 4 + 4 + 1 + 36 + 8 + 35 + 4] {
+) -> [u8; 1 + 1 + 4 + 4 + 1 + 36 + 8 + 35 + 4] {
     let mut data = [0; 1 + 1 + 4 + 4 + 1 + 36 + 8 + 35 + 4];
     let mut cur_pos = 0;
-    let mut hash_buffer = [0; 32];
+
     // epoch = 0
     cur_pos += 1;
 
@@ -521,7 +519,7 @@ fn prepare_preimage_hash_for_sighash_none_anyonecanpay<let TRANSACTION_SIZE: u32
         data[cur_pos] = transaction.data[transaction_locktime_offset + i];
         cur_pos += 1;
     }
-    
+
     //spend type
     assert(extension_flag < 127);
     data[cur_pos] = extension_flag * 2;
@@ -567,7 +565,7 @@ fn prepare_preimage_hash_for_sighash_none_anyonecanpay<let TRANSACTION_SIZE: u32
     data
 }
 
-fn serialize_p2tr_sighash_none_anyonecanpay<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_COUNT_LEN: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32, let UTXO_SIZE: u32>(
+fn serialize_p2tr_sighash_none_anyonecanpay<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_COUNT_LEN: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32>(
     transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
     input_to_sign: u32,
     extension_flag: u8,
@@ -600,7 +598,6 @@ fn serialize_p2tr_sighash_none_anyonecanpay<let TRANSACTION_SIZE: u32, let INPUT
     }
     hash
 }
-
 
 fn prepare_preimage_hash_for_sighash_single<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_COUNT_LEN: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32, let UTXO_SIZE: u32, let N_OUTPUT_SIZE: u32>(
     transaction: Transaction<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE>,
@@ -726,7 +723,7 @@ fn prepare_preimage_hash_for_sighash_single<let TRANSACTION_SIZE: u32, let INPUT
 
     // output
     hash_buffer = [0; 32];
-     
+
     if input_to_sign < OUTPUT_COUNT {
         let mut preimage_outputs = [0; N_OUTPUT_SIZE];
 
@@ -735,7 +732,7 @@ fn prepare_preimage_hash_for_sighash_single<let TRANSACTION_SIZE: u32, let INPUT
             preimage_outputs[i] = transaction.data[transaction_output_offset + i];
         }
         hash_buffer = sha256::digest(preimage_outputs);
-    } 
+    }
 
     for i in 0..32 {
         data[cur_pos] = hash_buffer[i];
@@ -791,7 +788,7 @@ fn prepare_preimage_hash_for_sighash_single_anyonecanpay<let TRANSACTION_SIZE: u
     extension_flag: u8,
     utxo_data: [u8; 8 + 1 + 34],
     is_annex_present: bool,
-) -> [u8;  1 + 1 + 4 + 4 + 1 + 36 + 8 + 35 + 4 + 32] {
+) -> [u8; 1 + 1 + 4 + 4 + 1 + 36 + 8 + 35 + 4 + 32] {
     let mut data = [0; 1 + 1 + 4 + 4 + 1 + 36 + 8 + 35 + 4 + 32];
     let mut cur_pos = 0;
     let mut hash_buffer = [0; 32];
@@ -814,7 +811,7 @@ fn prepare_preimage_hash_for_sighash_single_anyonecanpay<let TRANSACTION_SIZE: u
         data[cur_pos] = transaction.data[transaction_locktime_offset + i];
         cur_pos += 1;
     }
-    
+
     //spend type
     assert(extension_flag < 127);
     data[cur_pos] = extension_flag * 2;
@@ -855,9 +852,9 @@ fn prepare_preimage_hash_for_sighash_single_anyonecanpay<let TRANSACTION_SIZE: u
         cur_pos += 1;
     }
 
-    // output 
+    // output
     hash_buffer = [0; 32];
-     
+
     if input_to_sign < OUTPUT_COUNT {
         let mut preimage_outputs = [0; N_OUTPUT_SIZE];
 
@@ -866,7 +863,7 @@ fn prepare_preimage_hash_for_sighash_single_anyonecanpay<let TRANSACTION_SIZE: u
             preimage_outputs[i] = transaction.data[transaction_output_offset + i];
         }
         hash_buffer = sha256::digest(preimage_outputs);
-    } 
+    }
 
     for i in 0..32 {
         data[cur_pos] = hash_buffer[i];
@@ -911,10 +908,6 @@ fn serialize_p2tr_sighash_single_anyonecanpay<let TRANSACTION_SIZE: u32, let INP
     hash
 }
 
-
-
-
-
 #[test]
 fn test_taproot_sighash_all() {
     let hex_string = "020000000001023cfe8b95d22502698fd98837f83d8d4be31ee3eddd9d1ab1a95654c64604c4d10100000000feffffff3cfe8b95d22502698fd98837f83d8d4be31ee3eddd9d1ab1a95654c64604c4d10000000000ffffffff023acf00000000000017a914453acd285e0b84ce01be507e1de19ebc2494c28d8734a8cc2e0000000017a9146fc16fc2550e819d837d5cc5b37237642ab131978701430141b693a0797b24bae12ed0516a2f5ba765618dca89b75e498ba5b745b71644362298a45ca39230d10a02ee6290a91cebf9839600f7e35158a447ea182ea0e022ae010188034101769105cbcbdcaaee5e58cd201ba3152477fda31410df8b91b4aee2c4864c7700615efb425e002f146a39ca0a4f2924566762d9213bd33f825fad83977fba7f0122206d4ddc0e47d2e8f82cbe2fc2d0d749e7bd3338112cecdc76d8f831ae6620dbe0ac21c0924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a33294fd80900";
@@ -950,7 +943,9 @@ fn test_taproot_sighash_all_with_leaf() {
         "983a0000000000002251203daaca9b82a51aca960c1491588246029d7e0fc49e0abdbcc8fd17574be5c74b983a3400000000002251200f0c8db753acbd17343a39c2f3f4e35e4be6da749f9e35137ab220e7b238a667",
     );
     let outputs = parse_outputs::<86, 2>(utxo_data);
-    let leaf_script = hex_to_bytes("c022206d4ddc0e47d2e8f82cbe2fc2d0d749e7bd3338112cecdc76d8f831ae6620dbe0ac");
+    let leaf_script = hex_to_bytes(
+        "c022206d4ddc0e47d2e8f82cbe2fc2d0d749e7bd3338112cecdc76d8f831ae6620dbe0ac",
+    );
     let leaf_script_hash = tagged_hash(leaf_script, "TapLeaf".as_bytes());
     assert(
         bytes_to_hex(serialize_p2tr_sighash_all(
@@ -972,7 +967,9 @@ fn test_taproot_sighash_all_anyonecanpay() {
     let bytes = hex_to_bytes(hex_string);
     let transaction = Transaction::<365, 2, 1, 83, 2, 1, 65, 1, 207>::new(bytes, true);
 
-    let utxo = hex_to_bytes("983a3400000000002251200f0c8db753acbd17343a39c2f3f4e35e4be6da749f9e35137ab220e7b238a667");
+    let utxo = hex_to_bytes(
+        "983a3400000000002251200f0c8db753acbd17343a39c2f3f4e35e4be6da749f9e35137ab220e7b238a667",
+    );
 
     assert(
         bytes_to_hex(serialize_p2tr_sighash_all_anyonecanpay(
@@ -993,11 +990,15 @@ fn test_taproot_sighash_all_anyonecanpay_with_leaf() {
     let bytes = hex_to_bytes(hex_string);
     let transaction = Transaction::<365, 2, 1, 83, 2, 1, 65, 1, 207>::new(bytes, true);
 
-    let utxo = hex_to_bytes("983a3400000000002251200f0c8db753acbd17343a39c2f3f4e35e4be6da749f9e35137ab220e7b238a667");
+    let utxo = hex_to_bytes(
+        "983a3400000000002251200f0c8db753acbd17343a39c2f3f4e35e4be6da749f9e35137ab220e7b238a667",
+    );
 
-    let leaf_script = hex_to_bytes("c022206d4ddc0e47d2e8f82cbe2fc2d0d749e7bd3338112cecdc76d8f831ae6620dbe0ac");
+    let leaf_script = hex_to_bytes(
+        "c022206d4ddc0e47d2e8f82cbe2fc2d0d749e7bd3338112cecdc76d8f831ae6620dbe0ac",
+    );
     let leaf_script_hash = tagged_hash(leaf_script, "TapLeaf".as_bytes());
-    
+
     assert(
         bytes_to_hex(serialize_p2tr_sighash_all_anyonecanpay(
             transaction,
@@ -1046,7 +1047,9 @@ fn test_taproot_sighash_none_with_leaf() {
         "983a0000000000002251203daaca9b82a51aca960c1491588246029d7e0fc49e0abdbcc8fd17574be5c74b983a3400000000002251200f0c8db753acbd17343a39c2f3f4e35e4be6da749f9e35137ab220e7b238a667",
     );
     let outputs = parse_outputs::<86, 2>(utxo_data);
-    let leaf_script = hex_to_bytes("c022206d4ddc0e47d2e8f82cbe2fc2d0d749e7bd3338112cecdc76d8f831ae6620dbe0ac");
+    let leaf_script = hex_to_bytes(
+        "c022206d4ddc0e47d2e8f82cbe2fc2d0d749e7bd3338112cecdc76d8f831ae6620dbe0ac",
+    );
     let leaf_script_hash = tagged_hash(leaf_script, "TapLeaf".as_bytes());
     assert(
         bytes_to_hex(serialize_p2tr_sighash_none(
@@ -1068,7 +1071,9 @@ fn test_taproot_sighash_none_anyonecanpay() {
     let bytes = hex_to_bytes(hex_string);
     let transaction = Transaction::<365, 2, 1, 83, 2, 1, 65, 1, 207>::new(bytes, true);
 
-    let utxo = hex_to_bytes("983a3400000000002251200f0c8db753acbd17343a39c2f3f4e35e4be6da749f9e35137ab220e7b238a667");
+    let utxo = hex_to_bytes(
+        "983a3400000000002251200f0c8db753acbd17343a39c2f3f4e35e4be6da749f9e35137ab220e7b238a667",
+    );
 
     assert(
         bytes_to_hex(serialize_p2tr_sighash_none_anyonecanpay(
@@ -1089,11 +1094,15 @@ fn test_taproot_sighash_none_anyonecanpay_with_leaf() {
     let bytes = hex_to_bytes(hex_string);
     let transaction = Transaction::<365, 2, 1, 83, 2, 1, 65, 1, 207>::new(bytes, true);
 
-    let utxo = hex_to_bytes("983a3400000000002251200f0c8db753acbd17343a39c2f3f4e35e4be6da749f9e35137ab220e7b238a667");
+    let utxo = hex_to_bytes(
+        "983a3400000000002251200f0c8db753acbd17343a39c2f3f4e35e4be6da749f9e35137ab220e7b238a667",
+    );
 
-    let leaf_script = hex_to_bytes("c022206d4ddc0e47d2e8f82cbe2fc2d0d749e7bd3338112cecdc76d8f831ae6620dbe0ac");
+    let leaf_script = hex_to_bytes(
+        "c022206d4ddc0e47d2e8f82cbe2fc2d0d749e7bd3338112cecdc76d8f831ae6620dbe0ac",
+    );
     let leaf_script_hash = tagged_hash(leaf_script, "TapLeaf".as_bytes());
-    
+
     assert(
         bytes_to_hex(serialize_p2tr_sighash_none_anyonecanpay(
             transaction,
@@ -1142,7 +1151,9 @@ fn test_taproot_sighash_single_with_leaf() {
         "983a0000000000002251203daaca9b82a51aca960c1491588246029d7e0fc49e0abdbcc8fd17574be5c74b983a3400000000002251200f0c8db753acbd17343a39c2f3f4e35e4be6da749f9e35137ab220e7b238a667",
     );
     let outputs = parse_outputs::<86, 2>(utxo_data);
-    let leaf_script = hex_to_bytes("c022206d4ddc0e47d2e8f82cbe2fc2d0d749e7bd3338112cecdc76d8f831ae6620dbe0ac");
+    let leaf_script = hex_to_bytes(
+        "c022206d4ddc0e47d2e8f82cbe2fc2d0d749e7bd3338112cecdc76d8f831ae6620dbe0ac",
+    );
     let leaf_script_hash = tagged_hash(leaf_script, "TapLeaf".as_bytes());
     assert(
         bytes_to_hex(serialize_p2tr_sighash_single::<365, 2, 1, 83, 2, 1, 65, 1, 207, 86, 32>(
@@ -1164,17 +1175,21 @@ fn test_taproot_sighash_single_anyonecanpay() {
     let bytes = hex_to_bytes(hex_string);
     let transaction = Transaction::<365, 2, 1, 83, 2, 1, 65, 1, 207>::new(bytes, true);
 
-    let utxo = hex_to_bytes("983a3400000000002251200f0c8db753acbd17343a39c2f3f4e35e4be6da749f9e35137ab220e7b238a667");
+    let utxo = hex_to_bytes(
+        "983a3400000000002251200f0c8db753acbd17343a39c2f3f4e35e4be6da749f9e35137ab220e7b238a667",
+    );
 
     assert(
-        bytes_to_hex(serialize_p2tr_sighash_single_anyonecanpay::<365, 2, 1, 83, 2, 1, 65, 1, 207, 32>(
-            transaction,
-            1,
-            0,
-            utxo,
-            false,
-            Option::none(),
-        ))
+        bytes_to_hex(
+            serialize_p2tr_sighash_single_anyonecanpay::<365, 2, 1, 83, 2, 1, 65, 1, 207, 32>(
+                transaction,
+                1,
+                0,
+                utxo,
+                false,
+                Option::none(),
+            ),
+        )
             == "1955906532c34e04ef2dfbfea304fee4662a24bfdf34e7fba8180f89f7ed2180",
     );
 }
@@ -1185,20 +1200,26 @@ fn test_taproot_sighash_single_anyonecanpay_with_leaf() {
     let bytes = hex_to_bytes(hex_string);
     let transaction = Transaction::<365, 2, 1, 83, 2, 1, 65, 1, 207>::new(bytes, true);
 
-    let utxo = hex_to_bytes("983a3400000000002251200f0c8db753acbd17343a39c2f3f4e35e4be6da749f9e35137ab220e7b238a667");
+    let utxo = hex_to_bytes(
+        "983a3400000000002251200f0c8db753acbd17343a39c2f3f4e35e4be6da749f9e35137ab220e7b238a667",
+    );
 
-    let leaf_script = hex_to_bytes("c022206d4ddc0e47d2e8f82cbe2fc2d0d749e7bd3338112cecdc76d8f831ae6620dbe0ac");
+    let leaf_script = hex_to_bytes(
+        "c022206d4ddc0e47d2e8f82cbe2fc2d0d749e7bd3338112cecdc76d8f831ae6620dbe0ac",
+    );
     let leaf_script_hash = tagged_hash(leaf_script, "TapLeaf".as_bytes());
-    
+
     assert(
-        bytes_to_hex(serialize_p2tr_sighash_single_anyonecanpay::<365, 2, 1, 83, 2, 1, 65, 1, 207, 32>(
-            transaction,
-            1,
-            1,
-            utxo,
-            false,
-            Option::some(leaf_script_hash),
-        ))
+        bytes_to_hex(
+            serialize_p2tr_sighash_single_anyonecanpay::<365, 2, 1, 83, 2, 1, 65, 1, 207, 32>(
+                transaction,
+                1,
+                1,
+                utxo,
+                false,
+                Option::some(leaf_script_hash),
+            ),
+        )
             == "c35e350da5503ed9e8199b54ad71ebdcf40583d428e3be61465379202758698d",
     );
 }
