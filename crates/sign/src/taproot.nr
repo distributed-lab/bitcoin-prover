@@ -228,3 +228,29 @@ fn test_taproot_sighash_all() {
             == "ac18154e3a7c525049208b66716ca4de989db23e338fc6552d0dec29cc65b777",
     );
 }
+
+#[test]
+fn test_taproot_sighash_all_with_leaf() {
+    let hex_string = "020000000001023cfe8b95d22502698fd98837f83d8d4be31ee3eddd9d1ab1a95654c64604c4d10100000000feffffff3cfe8b95d22502698fd98837f83d8d4be31ee3eddd9d1ab1a95654c64604c4d10000000000ffffffff023acf00000000000017a914453acd285e0b84ce01be507e1de19ebc2494c28d8734a8cc2e0000000017a9146fc16fc2550e819d837d5cc5b37237642ab131978701430141b693a0797b24bae12ed0516a2f5ba765618dca89b75e498ba5b745b71644362298a45ca39230d10a02ee6290a91cebf9839600f7e35158a447ea182ea0e022ae010188034101769105cbcbdcaaee5e58cd201ba3152477fda31410df8b91b4aee2c4864c7700615efb425e002f146a39ca0a4f2924566762d9213bd33f825fad83977fba7f0122206d4ddc0e47d2e8f82cbe2fc2d0d749e7bd3338112cecdc76d8f831ae6620dbe0ac21c0924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a33294fd80900";
+    let bytes = hex_to_bytes(hex_string);
+    let transaction = Transaction::<365, 2, 1, 83, 2, 1, 65, 1, 207>::new(bytes, true);
+
+    let utxo_data: [u8; 86] = hex_to_bytes(
+        "983a0000000000002251203daaca9b82a51aca960c1491588246029d7e0fc49e0abdbcc8fd17574be5c74b983a3400000000002251200f0c8db753acbd17343a39c2f3f4e35e4be6da749f9e35137ab220e7b238a667",
+    );
+    let outputs = parse_outputs::<86, 2>(utxo_data);
+    let leaf_script = hex_to_bytes("c022206d4ddc0e47d2e8f82cbe2fc2d0d749e7bd3338112cecdc76d8f831ae6620dbe0ac");
+    let leaf_script_hash = tagged_hash(leaf_script, "TapLeaf".as_bytes());
+    assert(
+        bytes_to_hex(serialize_p2tr_sighash_all(
+            transaction,
+            0,
+            1,
+            outputs,
+            utxo_data,
+            false,
+            Option::some(leaf_script_hash),
+        ))
+            == "f161900a3d32a400664b66c4331fe8f51ce8edfaabad562ebb34c03a10c2cf3e",
+    );
+}
