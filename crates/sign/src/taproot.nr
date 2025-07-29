@@ -648,8 +648,8 @@ fn prepare_preimage_hash_for_sighash_single<let TRANSACTION_SIZE: u32, let INPUT
     unspent_outputs: [Output; INPUT_COUNT],
     unspent_outputs_data: [u8; UTXO_SIZE],
     is_annex_present: bool,
-) -> [u8; 1 + 1 + 4 + 4 + 32 + 32 + 32 + 32 + 1 + 4 + 32] {
-    let mut data = [0; 1 + 1 + 4 + 4 + 32 + 32 + 32 + 32 + 1 + 4 + 32];
+) -> ([u8; 1 + 1 + 4 + 4 + 32 + 32 + 32 + 32 + 1 + 4], [u8; 32]) {
+    let mut data = [0; 1 + 1 + 4 + 4 + 32 + 32 + 32 + 32 + 1 + 4];
     let mut cur_pos = 0;
     let mut hash_buffer = [0; 32];
     // epoch = 0
@@ -776,14 +776,14 @@ fn prepare_preimage_hash_for_sighash_single<let TRANSACTION_SIZE: u32, let INPUT
         hash_buffer = sha256::digest(preimage_outputs);
     }
 
-    for i in 0..32 {
-        data[cur_pos] = hash_buffer[i];
-        cur_pos += 1;
-    }
+    // for i in 0..32 {
+    //     data[cur_pos] = hash_buffer[i];
+    //     cur_pos += 1;
+    // }
 
-    assert(cur_pos == 1 + 1 + 4 + 4 + 32 + 32 + 32 + 32 + 1 + 4 + 32);
+    assert(cur_pos == 1 + 1 + 4 + 4 + 32 + 32 + 32 + 32 + 1 + 4);
 
-    data
+    (data, hash_buffer)
 }
 
 fn serialize_p2tr_sighash_single<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_COUNT_LEN: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32, let UTXO_SIZE: u32, let N_OUTPUT_SIZE: u32>(
@@ -798,19 +798,22 @@ fn serialize_p2tr_sighash_single<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32
     let mut is_annex_present = annex_hash.is_some();
     let mut is_leaf_present = leaf_script_hash.is_some();
 
-    let mut preimage = prepare_preimage_hash_for_sighash_single::<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE, UTXO_SIZE, N_OUTPUT_SIZE>(
+    let (preimage, output_hash) = prepare_preimage_hash_for_sighash_single::<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE, UTXO_SIZE, N_OUTPUT_SIZE>(
         transaction,
         input_to_sign,
         extension_flag,
         unspent_outputs,
         unspent_outputs_data,
         is_annex_present,
-    )
-        .as_slice();
+    );
+
+    let mut preimage = preimage.as_slice();
 
     if (is_annex_present) {
         preimage = preimage.append(annex_hash.unwrap_unchecked());
     }
+
+    preimage = preimage.append(output_hash);
 
     if (is_leaf_present) {
         preimage = preimage.append(leaf_script_hash.unwrap_unchecked()).append([
@@ -839,8 +842,8 @@ fn prepare_preimage_hash_for_sighash_single_anyonecanpay<let TRANSACTION_SIZE: u
     extension_flag: u8,
     utxo_data: [u8; 8 + 1 + 34],
     is_annex_present: bool,
-) -> [u8; 1 + 1 + 4 + 4 + 1 + 36 + 8 + 35 + 4 + 32] {
-    let mut data = [0; 1 + 1 + 4 + 4 + 1 + 36 + 8 + 35 + 4 + 32];
+) -> ([u8; 1 + 1 + 4 + 4 + 1 + 36 + 8 + 35 + 4], [u8; 32]) {
+    let mut data = [0; 1 + 1 + 4 + 4 + 1 + 36 + 8 + 35 + 4];
     let mut cur_pos = 0;
     let mut hash_buffer = [0; 32];
     // epoch = 0
@@ -916,13 +919,9 @@ fn prepare_preimage_hash_for_sighash_single_anyonecanpay<let TRANSACTION_SIZE: u
         hash_buffer = sha256::digest(preimage_outputs);
     }
 
-    for i in 0..32 {
-        data[cur_pos] = hash_buffer[i];
-        cur_pos += 1;
-    }
-    assert(cur_pos == 1 + 1 + 4 + 4 + 1 + 36 + 8 + 35 + 4 + 32);
+    assert(cur_pos == 1 + 1 + 4 + 4 + 1 + 36 + 8 + 35 + 4);
 
-    data
+    (data, hash_buffer)
 }
 
 fn serialize_p2tr_sighash_single_anyonecanpay<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, let INPUT_SIZE: u32, let OUTPUT_COUNT: u32, let OUTPUT_COUNT_LEN: u32, let OUTPUT_SIZE: u32, let MAX_WITNESS_STACK_SIZE: u32, let WITNESS_SIZE: u32, let N_OUTPUT_SIZE: u32>(
@@ -936,19 +935,21 @@ fn serialize_p2tr_sighash_single_anyonecanpay<let TRANSACTION_SIZE: u32, let INP
     let mut is_annex_present = annex_hash.is_some();
     let mut is_leaf_present = leaf_script_hash.is_some();
 
-    let mut preimage = prepare_preimage_hash_for_sighash_single_anyonecanpay::<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE, N_OUTPUT_SIZE>(
+    let (preimage, output_hash) = prepare_preimage_hash_for_sighash_single_anyonecanpay::<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE, N_OUTPUT_SIZE>(
         transaction,
         input_to_sign,
         extension_flag,
         utxo_data,
         is_annex_present,
-    )
-        .as_slice();
+    );
+
+    let mut preimage = preimage.as_slice();
 
     if (is_annex_present) {
         preimage = preimage.append(annex_hash.unwrap_unchecked());
     }
 
+    preimage = preimage.append(output_hash);
     if (is_leaf_present) {
         preimage = preimage.append(leaf_script_hash.unwrap_unchecked()).append([
             0, 0xff, 0xff, 0xff, 0xff,
