@@ -172,34 +172,44 @@ fn serialize_p2tr_sighash_all<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, l
     extension_flag: u8,
     unspent_outputs: [Output; INPUT_COUNT],
     unspent_outputs_data: [u8; UTXO_SIZE],
-    is_annex_present: bool,
+    annex_hash: Option<[u8; 32]>,
     leaf_script_hash: Option<[u8; 32]>,
 ) -> [u8; 32] {
-    let preimage = prepare_preimage_hash_for_sighash_all(
+    let mut is_annex_present = annex_hash.is_some();
+    let mut is_leaf_present = leaf_script_hash.is_some();
+
+    let mut preimage = prepare_preimage_hash_for_sighash_all(
         transaction,
         input_to_sign,
         extension_flag,
         unspent_outputs,
         unspent_outputs_data,
         is_annex_present,
-    );
-    let mut hash = [0 as u8; 32];
+    )
+        .as_slice();
 
-    if leaf_script_hash.is_none() {
-        hash = tagged_hash(preimage, "TapSighash".as_bytes());
-    } else {
-        let leaf_script_hash_unwrap = leaf_script_hash.unwrap();
-
-        hash = tagged_hash(
-            preimage
-                .as_slice()
-                .append(leaf_script_hash_unwrap)
-                .append([0])
-                .append([0xff, 0xff, 0xff, 0xff])
-                .as_array::<175 + 37>(),
-            "TapSighash".as_bytes(),
-        );
+    if (is_annex_present) {
+        preimage = preimage.append(annex_hash.unwrap_unchecked());
     }
+
+    if (is_leaf_present) {
+        preimage = preimage.append(leaf_script_hash.unwrap_unchecked()).append([
+            0, 0xff, 0xff, 0xff, 0xff,
+        ]);
+    }
+
+    let tag = "TapSighash".as_bytes();
+    let mut hash = [0 as u8; 32];
+    if !is_annex_present & !is_leaf_present {
+        hash = tagged_hash(preimage.as_array::<175>(), tag);
+    } else if !is_annex_present & is_leaf_present {
+        hash = tagged_hash(preimage.as_array::<175 + 37>(), tag);
+    } else if is_annex_present & !is_leaf_present {
+        hash = tagged_hash(preimage.as_array::<175 + 32>(), tag);
+    } else {
+        hash = tagged_hash(preimage.as_array::<175 + 32 + 37>(), tag);
+    }
+
     hash
 }
 
@@ -297,32 +307,43 @@ fn serialize_p2tr_sighash_all_anyonecanpay<let TRANSACTION_SIZE: u32, let INPUT_
     input_to_sign: u32,
     extension_flag: u8,
     utxo_data: [u8; 8 + 1 + 34],
-    is_annex_present: bool,
+    annex_hash: Option<[u8; 32]>,
     leaf_script_hash: Option<[u8; 32]>,
 ) -> [u8; 32] {
-    let preimage = prepare_preimage_hash_for_sighash_all_anyonecanpay(
+    let mut is_annex_present = annex_hash.is_some();
+    let mut is_leaf_present = leaf_script_hash.is_some();
+
+    let mut preimage = prepare_preimage_hash_for_sighash_all_anyonecanpay(
         transaction,
         input_to_sign,
         extension_flag,
         utxo_data,
         is_annex_present,
-    );
-    let mut hash = [0 as u8; 32];
+    )
+        .as_slice();
 
-    if leaf_script_hash.is_none() {
-        hash = tagged_hash(preimage, "TapSighash".as_bytes());
-    } else {
-        let leaf_script_hash_unwrap = leaf_script_hash.unwrap();
-        hash = tagged_hash(
-            preimage
-                .as_slice()
-                .append(leaf_script_hash_unwrap)
-                .append([0])
-                .append([0xff, 0xff, 0xff, 0xff])
-                .as_array::<126 + 37>(),
-            "TapSighash".as_bytes(),
-        );
+    if (is_annex_present) {
+        preimage = preimage.append(annex_hash.unwrap_unchecked());
     }
+
+    if (is_leaf_present) {
+        preimage = preimage.append(leaf_script_hash.unwrap_unchecked()).append([
+            0, 0xff, 0xff, 0xff, 0xff,
+        ]);
+    }
+
+    let tag = "TapSighash".as_bytes();
+    let mut hash = [0 as u8; 32];
+    if !is_annex_present & !is_leaf_present {
+        hash = tagged_hash(preimage.as_array::<126>(), tag);
+    } else if !is_annex_present & is_leaf_present {
+        hash = tagged_hash(preimage.as_array::<126 + 37>(), tag);
+    } else if is_annex_present & !is_leaf_present {
+        hash = tagged_hash(preimage.as_array::<126 + 32>(), tag);
+    } else {
+        hash = tagged_hash(preimage.as_array::<126 + 32 + 37>(), tag);
+    }
+
     hash
 }
 
@@ -459,34 +480,44 @@ fn serialize_p2tr_sighash_none<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, 
     extension_flag: u8,
     unspent_outputs: [Output; INPUT_COUNT],
     unspent_outputs_data: [u8; UTXO_SIZE],
-    is_annex_present: bool,
+    annex_hash: Option<[u8; 32]>,
     leaf_script_hash: Option<[u8; 32]>,
 ) -> [u8; 32] {
-    let preimage = prepare_preimage_hash_for_sighash_none(
+    let mut is_annex_present = annex_hash.is_some();
+    let mut is_leaf_present = leaf_script_hash.is_some();
+
+    let mut preimage = prepare_preimage_hash_for_sighash_none(
         transaction,
         input_to_sign,
         extension_flag,
         unspent_outputs,
         unspent_outputs_data,
         is_annex_present,
-    );
-    let mut hash = [0 as u8; 32];
+    )
+        .as_slice();
 
-    if leaf_script_hash.is_none() {
-        hash = tagged_hash(preimage, "TapSighash".as_bytes());
-    } else {
-        let leaf_script_hash_unwrap = leaf_script_hash.unwrap();
-
-        hash = tagged_hash(
-            preimage
-                .as_slice()
-                .append(leaf_script_hash_unwrap)
-                .append([0])
-                .append([0xff, 0xff, 0xff, 0xff])
-                .as_array::<143 + 37>(),
-            "TapSighash".as_bytes(),
-        );
+    if (is_annex_present) {
+        preimage = preimage.append(annex_hash.unwrap_unchecked());
     }
+
+    if (is_leaf_present) {
+        preimage = preimage.append(leaf_script_hash.unwrap_unchecked()).append([
+            0, 0xff, 0xff, 0xff, 0xff,
+        ]);
+    }
+
+    let tag = "TapSighash".as_bytes();
+    let mut hash = [0 as u8; 32];
+    if !is_annex_present & !is_leaf_present {
+        hash = tagged_hash(preimage.as_array::<143>(), tag);
+    } else if !is_annex_present & is_leaf_present {
+        hash = tagged_hash(preimage.as_array::<143 + 37>(), tag);
+    } else if is_annex_present & !is_leaf_present {
+        hash = tagged_hash(preimage.as_array::<143 + 32>(), tag);
+    } else {
+        hash = tagged_hash(preimage.as_array::<143 + 32 + 37>(), tag);
+    }
+
     hash
 }
 
@@ -570,32 +601,43 @@ fn serialize_p2tr_sighash_none_anyonecanpay<let TRANSACTION_SIZE: u32, let INPUT
     input_to_sign: u32,
     extension_flag: u8,
     utxo_data: [u8; 8 + 1 + 34],
-    is_annex_present: bool,
+    annex_hash: Option<[u8; 32]>,
     leaf_script_hash: Option<[u8; 32]>,
 ) -> [u8; 32] {
-    let preimage = prepare_preimage_hash_for_sighash_none_anyonecanpay(
+    let mut is_annex_present = annex_hash.is_some();
+    let mut is_leaf_present = leaf_script_hash.is_some();
+
+    let mut preimage = prepare_preimage_hash_for_sighash_none_anyonecanpay(
         transaction,
         input_to_sign,
         extension_flag,
         utxo_data,
         is_annex_present,
-    );
-    let mut hash = [0 as u8; 32];
+    )
+        .as_slice();
 
-    if leaf_script_hash.is_none() {
-        hash = tagged_hash(preimage, "TapSighash".as_bytes());
-    } else {
-        let leaf_script_hash_unwrap = leaf_script_hash.unwrap();
-        hash = tagged_hash(
-            preimage
-                .as_slice()
-                .append(leaf_script_hash_unwrap)
-                .append([0])
-                .append([0xff, 0xff, 0xff, 0xff])
-                .as_array::<94 + 37>(),
-            "TapSighash".as_bytes(),
-        );
+    if (is_annex_present) {
+        preimage = preimage.append(annex_hash.unwrap_unchecked());
     }
+
+    if (is_leaf_present) {
+        preimage = preimage.append(leaf_script_hash.unwrap_unchecked()).append([
+            0, 0xff, 0xff, 0xff, 0xff,
+        ]);
+    }
+
+    let tag = "TapSighash".as_bytes();
+    let mut hash = [0 as u8; 32];
+    if !is_annex_present & !is_leaf_present {
+        hash = tagged_hash(preimage.as_array::<94>(), tag);
+    } else if !is_annex_present & is_leaf_present {
+        hash = tagged_hash(preimage.as_array::<94 + 37>(), tag);
+    } else if is_annex_present & !is_leaf_present {
+        hash = tagged_hash(preimage.as_array::<94 + 32>(), tag);
+    } else {
+        hash = tagged_hash(preimage.as_array::<94 + 32 + 37>(), tag);
+    }
+
     hash
 }
 
@@ -750,35 +792,44 @@ fn serialize_p2tr_sighash_single<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32
     extension_flag: u8,
     unspent_outputs: [Output; INPUT_COUNT],
     unspent_outputs_data: [u8; UTXO_SIZE],
-    is_annex_present: bool,
+    annex_hash: Option<[u8; 32]>,
     leaf_script_hash: Option<[u8; 32]>,
 ) -> [u8; 32] {
-    let preimage = prepare_preimage_hash_for_sighash_single::<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE, UTXO_SIZE, N_OUTPUT_SIZE>(
+    let mut is_annex_present = annex_hash.is_some();
+    let mut is_leaf_present = leaf_script_hash.is_some();
+
+    let mut preimage = prepare_preimage_hash_for_sighash_single::<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE, UTXO_SIZE, N_OUTPUT_SIZE>(
         transaction,
         input_to_sign,
         extension_flag,
         unspent_outputs,
         unspent_outputs_data,
         is_annex_present,
-    );
+    )
+        .as_slice();
 
-    let mut hash = [0 as u8; 32];
-
-    if leaf_script_hash.is_none() {
-        hash = tagged_hash(preimage, "TapSighash".as_bytes());
-    } else {
-        let leaf_script_hash_unwrap = leaf_script_hash.unwrap();
-
-        hash = tagged_hash(
-            preimage
-                .as_slice()
-                .append(leaf_script_hash_unwrap)
-                .append([0])
-                .append([0xff, 0xff, 0xff, 0xff])
-                .as_array::<175 + 37>(),
-            "TapSighash".as_bytes(),
-        );
+    if (is_annex_present) {
+        preimage = preimage.append(annex_hash.unwrap_unchecked());
     }
+
+    if (is_leaf_present) {
+        preimage = preimage.append(leaf_script_hash.unwrap_unchecked()).append([
+            0, 0xff, 0xff, 0xff, 0xff,
+        ]);
+    }
+
+    let tag = "TapSighash".as_bytes();
+    let mut hash = [0 as u8; 32];
+    if !is_annex_present & !is_leaf_present {
+        hash = tagged_hash(preimage.as_array::<175>(), tag);
+    } else if !is_annex_present & is_leaf_present {
+        hash = tagged_hash(preimage.as_array::<175 + 37>(), tag);
+    } else if is_annex_present & !is_leaf_present {
+        hash = tagged_hash(preimage.as_array::<175 + 32>(), tag);
+    } else {
+        hash = tagged_hash(preimage.as_array::<175 + 32 + 37>(), tag);
+    }
+
     hash
 }
 
@@ -879,32 +930,43 @@ fn serialize_p2tr_sighash_single_anyonecanpay<let TRANSACTION_SIZE: u32, let INP
     input_to_sign: u32,
     extension_flag: u8,
     utxo_data: [u8; 8 + 1 + 34],
-    is_annex_present: bool,
+    annex_hash: Option<[u8; 32]>,
     leaf_script_hash: Option<[u8; 32]>,
 ) -> [u8; 32] {
-    let preimage = prepare_preimage_hash_for_sighash_single_anyonecanpay::<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE, N_OUTPUT_SIZE>(
+    let mut is_annex_present = annex_hash.is_some();
+    let mut is_leaf_present = leaf_script_hash.is_some();
+
+    let mut preimage = prepare_preimage_hash_for_sighash_single_anyonecanpay::<TRANSACTION_SIZE, INPUT_COUNT, INPUT_COUNT_LEN, INPUT_SIZE, OUTPUT_COUNT, OUTPUT_COUNT_LEN, OUTPUT_SIZE, MAX_WITNESS_STACK_SIZE, WITNESS_SIZE, N_OUTPUT_SIZE>(
         transaction,
         input_to_sign,
         extension_flag,
         utxo_data,
         is_annex_present,
-    );
-    let mut hash = [0 as u8; 32];
+    )
+        .as_slice();
 
-    if leaf_script_hash.is_none() {
-        hash = tagged_hash(preimage, "TapSighash".as_bytes());
-    } else {
-        let leaf_script_hash_unwrap = leaf_script_hash.unwrap();
-        hash = tagged_hash(
-            preimage
-                .as_slice()
-                .append(leaf_script_hash_unwrap)
-                .append([0])
-                .append([0xff, 0xff, 0xff, 0xff])
-                .as_array::<126 + 37>(),
-            "TapSighash".as_bytes(),
-        );
+    if (is_annex_present) {
+        preimage = preimage.append(annex_hash.unwrap_unchecked());
     }
+
+    if (is_leaf_present) {
+        preimage = preimage.append(leaf_script_hash.unwrap_unchecked()).append([
+            0, 0xff, 0xff, 0xff, 0xff,
+        ]);
+    }
+
+    let tag = "TapSighash".as_bytes();
+    let mut hash = [0 as u8; 32];
+    if !is_annex_present & !is_leaf_present {
+        hash = tagged_hash(preimage.as_array::<126>(), tag);
+    } else if !is_annex_present & is_leaf_present {
+        hash = tagged_hash(preimage.as_array::<126 + 37>(), tag);
+    } else if is_annex_present & !is_leaf_present {
+        hash = tagged_hash(preimage.as_array::<126 + 32>(), tag);
+    } else {
+        hash = tagged_hash(preimage.as_array::<126 + 32 + 37>(), tag);
+    }
+
     hash
 }
 
@@ -926,7 +988,7 @@ fn test_taproot_sighash_all() {
             0,
             outputs,
             utxo_data,
-            false,
+            Option::none(),
             Option::none(),
         ))
             == "ac18154e3a7c525049208b66716ca4de989db23e338fc6552d0dec29cc65b777",
@@ -954,7 +1016,7 @@ fn test_taproot_sighash_all_with_leaf() {
             1,
             outputs,
             utxo_data,
-            false,
+            Option::none(),
             Option::some(leaf_script_hash),
         ))
             == "f161900a3d32a400664b66c4331fe8f51ce8edfaabad562ebb34c03a10c2cf3e",
@@ -977,7 +1039,7 @@ fn test_taproot_sighash_all_anyonecanpay() {
             1,
             0,
             utxo,
-            false,
+            Option::none(),
             Option::none(),
         ))
             == "77ad0517599d8f90722ae3b0bdd3bd3c9f40c28dcf5f1280a8083af3b5a70245",
@@ -1005,7 +1067,7 @@ fn test_taproot_sighash_all_anyonecanpay_with_leaf() {
             1,
             1,
             utxo,
-            false,
+            Option::none(),
             Option::some(leaf_script_hash),
         ))
             == "d1abdd89b1029835004a48a9fc11c8659e35c93543fda8444ec3b8eb76fe59dd",
@@ -1030,7 +1092,7 @@ fn test_taproot_sighash_none() {
             0,
             outputs,
             utxo_data,
-            false,
+            Option::none(),
             Option::none(),
         ))
             == "543fe400cb2a12e7e1903750109a1e558decf7139b99d02377a7a8b41393e986",
@@ -1058,7 +1120,7 @@ fn test_taproot_sighash_none_with_leaf() {
             1,
             outputs,
             utxo_data,
-            false,
+            Option::none(),
             Option::some(leaf_script_hash),
         ))
             == "3450da84da3c201893666bee691ab8fe6494049fa0ff6c6c2ce9169974d7b317",
@@ -1081,7 +1143,7 @@ fn test_taproot_sighash_none_anyonecanpay() {
             1,
             0,
             utxo,
-            false,
+            Option::none(),
             Option::none(),
         ))
             == "5aa697ae3b657a6e484aeddf0392130a76c7da427c833c22df47cd435837677c",
@@ -1109,7 +1171,7 @@ fn test_taproot_sighash_none_anyonecanpay_with_leaf() {
             1,
             1,
             utxo,
-            false,
+            Option::none(),
             Option::some(leaf_script_hash),
         ))
             == "6db68a736f22e21a497418a7987ae6fea734b44edf0ba0b3c64d4c7465d461d8",
@@ -1134,7 +1196,7 @@ fn test_taproot_sighash_single() {
             0,
             outputs,
             utxo_data,
-            false,
+            Option::none(),
             Option::none(),
         ))
             == "760487f9ef2f31814197c45443fb8b80cdad4821079e003f63161e591ec3b305",
@@ -1162,7 +1224,7 @@ fn test_taproot_sighash_single_with_leaf() {
             1,
             outputs,
             utxo_data,
-            false,
+            Option::none(),
             Option::some(leaf_script_hash),
         ))
             == "3160b0c02024485f61887b192109e52950aebc63c62532fe7993649ceca64923",
@@ -1186,7 +1248,7 @@ fn test_taproot_sighash_single_anyonecanpay() {
                 1,
                 0,
                 utxo,
-                false,
+                Option::none(),
                 Option::none(),
             ),
         )
@@ -1216,7 +1278,7 @@ fn test_taproot_sighash_single_anyonecanpay_with_leaf() {
                 1,
                 1,
                 utxo,
-                false,
+                Option::none(),
                 Option::some(leaf_script_hash),
             ),
         )
