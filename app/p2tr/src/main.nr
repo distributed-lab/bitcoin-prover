@@ -84,7 +84,7 @@ fn main(
             0,
             utxos_pos,
             utxos_data,
-            false,
+            Option::none(),
             Option::none(),
         )
     } else if sigtype == SIGHASH_NONE {
@@ -94,7 +94,7 @@ fn main(
             0,
             utxos_pos,
             utxos_data,
-            false,
+            Option::none(),
             Option::none(),
         )
     } else if sigtype == SIGHASH_SINGLE {
@@ -104,7 +104,7 @@ fn main(
             0,
             utxos_pos,
             utxos_data,
-            false,
+            Option::none(),
             Option::none(),
         )
     } else if sigtype == (SIGHASH_ALL | SIGHASH_ANYONECANPAY) {
@@ -113,7 +113,7 @@ fn main(
             input_to_sign,
             0,
             n_utxo,
-            false,
+            Option::none(),
             Option::none(),
         )
     } else if sigtype == (SIGHASH_NONE | SIGHASH_ANYONECANPAY) {
@@ -122,7 +122,7 @@ fn main(
             input_to_sign,
             0,
             n_utxo,
-            false,
+            Option::none(),
             Option::none(),
         )
     } else if sigtype == (SIGHASH_SINGLE | SIGHASH_ANYONECANPAY) {
@@ -131,7 +131,7 @@ fn main(
             input_to_sign,
             0,
             n_utxo,
-            false,
+            Option::none(),
             Option::none(),
         )
     } else {
