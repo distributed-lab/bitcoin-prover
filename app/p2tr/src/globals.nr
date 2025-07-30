@@ -1,0 +1,26 @@
+pub global CUR_TX_LEN: u32 = 302;
+pub global PREV_TX_LEN: u32 = 468;
+pub global UTXOS_LEN: u32 = 43;
+pub global SIGNATURE_LEN: u32 = 65;
+
+pub global CUR_TX_INP_COUNT: u32 = 1;
+pub global CUR_TX_INP_COUNT_LEN: u32 = 1;
+pub global CUR_TX_INP_SIZE: u32 = 42;
+pub global CUR_TX_OUT_COUNT: u32 = 1;
+pub global CUR_TX_OUT_COUNT_LEN: u32 = 1;
+pub global CUR_TX_OUT_SIZE: u32 = 32;
+pub global CUR_TX_MAX_WITNESS_STACK_SIZE: u32 = 1;
+pub global CUR_TX_WITNESS_SIZE: u32 = 67;
+pub global CUR_IS_GEGWIT: bool = true;
+
+pub global PREV_TX_INP_COUNT: u32 = 1;
+pub global PREV_TX_INP_COUNT_LEN: u32 = 1;
+pub global PREV_TX_INP_SIZE: u32 = 42;
+pub global PREV_TX_OUT_COUNT: u32 = 2;
+pub global PREV_TX_OUT_COUNT_LEN: u32 = 1;
+pub global PREV_TX_OUT_SIZE: u32 = 75;
+pub global PREV_TX_MAX_WITNESS_STACK_SIZE: u32 = 2;
+pub global PREV_TX_WITNESS_SIZE: u32 = 107;
+pub global PREV_IS_GEGWIT: bool = true;
+
+pub global N_OUTPUT_SIZE: u32 = 31;
