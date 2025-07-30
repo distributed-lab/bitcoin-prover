@@ -2,6 +2,7 @@ use crypto::ecdsa::{
     ecdsa_verify, get_rs_from_signature, get_xy_from_compressed_pubkey,
     get_xy_from_uncompressed_pubkey,
 };
+use crypto::schnorr::schnorr_verify;
 use ripemd160::ripemd160;
 use sha1::sha1;
 use sign::address::Address;
@@ -18,6 +19,11 @@ use sign::{
         serialize_p2wsh_sighash_all, serialize_p2wsh_sighash_all_anyonecanpay,
         serialize_p2wsh_sighash_none, serialize_p2wsh_sighash_none_anyonecanpay,
         serialize_p2wsh_sighash_single, serialize_p2wsh_sighash_single_anyonecanpay,
+    },
+    taproot::{
+        parse_outputs, serialize_p2tr_sighash_all, serialize_p2tr_sighash_all_anyonecanpay,
+        serialize_p2tr_sighash_none, serialize_p2tr_sighash_none_anyonecanpay,
+        serialize_p2tr_sighash_single, serialize_p2tr_sighash_single_anyonecanpay,
     },
     transaction::Transaction,
 };
@@ -159,6 +165,28 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
             signature = get_rs_from_signature(encoded_signature);
         } else {
             assert(false, "Invalid signature length");
+        }
+
+        (signature, hash_type, is_empty)
+    }
+
+    pub fn pop_signature_p2tr(&mut self) -> ([u8; 64], u8, bool) {
+        let signature_vec = self.pop();
+        let is_empty = signature_vec.storage().all(|e| e == 0);
+
+        let mut signature = [0; 64];
+        let mut hash_type = 0;
+
+        if signature_vec.len() == 64 {
+            signature = vec_to_array::<MAX_STACK_ELEMENT_SIZE, 64>(signature_vec);
+            hash_type = 1;
+        } else if signature_vec.len() == 65 {
+            let signature_with_hash_type =
+                vec_to_array::<MAX_STACK_ELEMENT_SIZE, 65>(signature_vec);
+            hash_type = signature_with_hash_type[64];
+            for i in 0..64 {
+                signature[i] = signature_with_hash_type[i];
+            }
         }
 
         (signature, hash_type, is_empty)
@@ -980,6 +1008,134 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                 address,
                 sigadd,
             );
+        if sigadd {
+            assert(result.0);
+            self.push(i32_to_vec(result.1));
+        } else if verify {
+            assert(result.0);
+        } else {
+            let integer = i32_to_vec(if result.0 { 1 } else { 0 });
+            self.push(integer);
+        }
+    }
+
+    fn _op_checksig_p2tr<let UTXO_SIZE: u32, let N_OUTPUT_SIZE: u32>(
+        &mut self,
+        utxo_data: [u8; UTXO_SIZE],
+        leaf_script_hash: Option<[u8; 32]>,
+        annex_hash: Option<[u8; 32]>,
+        sigadd: bool,
+    ) -> (bool, i32) {
+        let mut message_hash = [0; 32];
+        let mut n = 0;
+        let mut res = true;
+
+        let pubkey = self.pop();
+        assert(pubkey.len() == 32);
+
+        if sigadd {
+            n = vec_to_i32(self.pop());
+        }
+        let (signature, hash_type, is_empty) = self.pop_signature();
+
+        let outputs = parse_outputs::<UTXO_SIZE, CURRENT_INPUT_COUNT>(utxo_data);
+        let mut n_utxo = [0 as u8; 43];
+
+        let n_utxo_transaction_offset = outputs[self.input_to_sign].amount.offset;
+        for i in 0..43 {
+            n_utxo[i] = utxo_data[i + n_utxo_transaction_offset];
+        }
+
+        if !is_empty | !sigadd {
+            if hash_type == SIGHASH_ALL {
+                message_hash = serialize_p2tr_sighash_all(
+                    self.cur_transaction,
+                    self.input_to_sign,
+                    1,
+                    outputs,
+                    utxo_data,
+                    annex_hash,
+                    leaf_script_hash,
+                );
+            } else if hash_type == SIGHASH_NONE {
+                message_hash = serialize_p2tr_sighash_none(
+                    self.cur_transaction,
+                    self.input_to_sign,
+                    1,
+                    outputs,
+                    utxo_data,
+                    annex_hash,
+                    leaf_script_hash,
+                );
+            } else if hash_type == SIGHASH_SINGLE {
+                message_hash = serialize_p2tr_sighash_single::<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, UTXO_SIZE, N_OUTPUT_SIZE>(
+                    self.cur_transaction,
+                    self.input_to_sign,
+                    1,
+                    outputs,
+                    utxo_data,
+                    annex_hash,
+                    leaf_script_hash,
+                );
+            } else if hash_type == (SIGHASH_ALL | SIGHASH_ANYONECANPAY) {
+                message_hash = serialize_p2tr_sighash_all_anyonecanpay(
+                    self.cur_transaction,
+                    self.input_to_sign,
+                    1,
+                    n_utxo,
+                    annex_hash,
+                    leaf_script_hash,
+                );
+            } else if hash_type == (SIGHASH_NONE | SIGHASH_ANYONECANPAY) {
+                message_hash = serialize_p2tr_sighash_none_anyonecanpay(
+                    self.cur_transaction,
+                    self.input_to_sign,
+                    1,
+                    n_utxo,
+                    annex_hash,
+                    leaf_script_hash,
+                );
+            } else if hash_type == (SIGHASH_SINGLE | SIGHASH_ANYONECANPAY) {
+                message_hash = serialize_p2tr_sighash_single_anyonecanpay::<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, N_OUTPUT_SIZE>(
+                    self.cur_transaction,
+                    self.input_to_sign,
+                    1,
+                    n_utxo,
+                    annex_hash,
+                    leaf_script_hash,
+                );
+            } else {
+                assert(false, "Unsupportedmessage_hash = self
+                    .get_sighash_single_anyonecanpay_message_hash::<SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
+                        address,
+                    ); hash type");
+            }
+
+            res = schnorr_verify(
+                vec_to_array::<MAX_STACK_ELEMENT_SIZE, 32>(pubkey),
+                message_hash,
+                signature,
+            );
+            n += 1;
+        }
+
+        (res, n)
+    }
+
+    fn op_checksig_p2tr<let UTXO_SIZE: u32, let N_OUTPUT_SIZE: u32>(
+        &mut self,
+        utxo_data: [u8; UTXO_SIZE],
+        annex_hash: Option<[u8; 32]>,
+        leaf_script_hash: Option<[u8; 32]>,
+        sigadd: bool,
+        verify: bool,
+    ) {
+        let result = self._op_checksig_p2tr::<UTXO_SIZE, N_OUTPUT_SIZE>(
+            utxo_data,
+            leaf_script_hash,
+            annex_hash,
+            sigadd,
+        );
         if sigadd {
             assert(result.0);
             self.push(i32_to_vec(result.1));

@@ -3,7 +3,7 @@ use crate::transaction::{Output, PositionField, Transaction};
 use crypto::schnorr::tagged_hash;
 use utils::convert::{bytes_to_hex, hex_to_bytes, u32_to_le_bytes};
 
-fn parse_outputs<let OUTPUT_SIZE: u32, let OUTPUT_COUNT: u32>(
+pub fn parse_outputs<let OUTPUT_SIZE: u32, let OUTPUT_COUNT: u32>(
     data: [u8; OUTPUT_SIZE],
 ) -> [Output; OUTPUT_COUNT] {
     let mut cur_pos = 0;
