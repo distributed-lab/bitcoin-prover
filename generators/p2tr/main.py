@@ -1,76 +1,94 @@
 import json
 from typing import Dict
+from bitcoin.core import CScript
+from generators.utils.tx import Transaction
 
 def get_config(path: str = "./generators/p2tr/config.json") -> Dict:
     with open(path, "r") as f:
         return json.load(f)
-    
+
 def main():
     config = get_config()
 
-    with open(config["path"] + "/src/main.nr", "w") as file:
-        file.write(f"""use dep::bignum::{{BigNum, U768}};
-use utils::{{encode::encode_bech32m, convert::hex_to_bytes}};
-use p2tr_lib::keys::{{get_tweaked_pub_key}};
-use p2tr_lib::merkle_root::{{get_branch, hash_from_script}};
-use crypto::types::{{I768, sqrt_secp256k1}};
-use crypto::point::Point;
-use std::ops::{{Add, Mul}};
-                   
-global N: u32 = {len(config['script'])};
+    curTx = Transaction(config["cur_tx"])
+    curTx.cut_script_sigs()
 
-fn main(
-    address: pub str<62>, 
-    pub_key: str<64>,
-    script: str<N>,
-""")
-        
-        for idx in range(0, len(config['merklePath'])):
-            file.write(f"\tnode{idx + 1}: str<64>,\n")
-        
-        file.write(f""") -> pub bool {{        
-    let mut node: [u8; 32] = hash_from_script(script);\n""")
-                
-        for i in range(1, len(config['merklePath']) + 1):
-            file.write(f"\tnode = get_branch(node, hex_to_bytes(node{i}));\n")
+    prevTx = Transaction(config["prev_tx"])
+    prevTx.cut_script_sigs()
 
-        file.write("""  
-    let modulo: U768 = U768::from_be_bytes([
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-        0xFF, 0xFF, 0xFE, 0xFF, 0xFF, 0xFC, 0x2F,
-    ]);
-               
-    let pub_x = I768 {
-        num: U768::from_be_bytes([0; 65].as_slice().append(hex_to_bytes(pub_key)).as_array::<97>()),
-        is_neg: false
-    };
-                   
-    // y^2 = x^3 + 7
-    let pub_y = sqrt_secp256k1(pub_x.mul(pub_x).umod(modulo).mul(pub_x).add(I768::from(7)).umod(modulo));
-                   
-    let pub_key_point = Point { x: pub_x, y: pub_y, is_O: false};
+    with open(config["file_path"] + "/src/globals.nr.template", "r") as file:
+        templateOpcodes = file.read()
+
+    CUR_TX_INP_COUNT_LEN = curTx._get_compact_size_size(curTx.input_count)
+    CUR_TX_INP_SIZE = sum(curTx._get_input_size(inp) for inp in curTx.inputs) + CUR_TX_INP_COUNT_LEN
+    CUR_TX_OUT_COUNT_LEN = curTx._get_compact_size_size(curTx.output_count)
+    CUR_TX_OUT_SIZE = sum(curTx._get_output_size(out) for out in curTx.outputs) + CUR_TX_OUT_COUNT_LEN
+    CUR_TX_MAX_WITNESS_STACK_SIZE = 0 if curTx.witness is None else max(len(w.stack_items) for w in curTx.witness)
+    CUR_TX_WITNESS_SIZE = 0 if curTx.witness == None else sum(curTx._get_witness_size(wit) for wit in curTx.witness)
+
+    PREV_TX_INP_COUNT_LEN = prevTx._get_compact_size_size(prevTx.input_count)
+    PREV_TX_INP_SIZE = sum(prevTx._get_input_size(inp) for inp in prevTx.inputs) + PREV_TX_INP_COUNT_LEN
+    PREV_TX_OUT_COUNT_LEN = prevTx._get_compact_size_size(prevTx.output_count)
+    PREV_TX_OUT_SIZE = sum(prevTx._get_output_size(out) for out in prevTx.outputs) + PREV_TX_OUT_COUNT_LEN
+    PREV_TX_MAX_WITNESS_STACK_SIZE = 0 if prevTx.witness is None else max(len(w.stack_items) for w in prevTx.witness)
+    PREV_TX_WITNESS_SIZE = 0 if prevTx.witness == None else sum(prevTx._get_witness_size(wit) for wit in prevTx.witness)
+
+    INPUT_TO_SIGN = config["input_to_sign"]
+
+    outpus = curTx.get_outputs_from_inputs()
+
+    opcodesFile = templateOpcodes.format(
+        curTx=curTx, 
+        prevTx=prevTx,
+        utxosLen=len(outpus[0]),
+        signatureLen=len(curTx.witness[INPUT_TO_SIGN].stack_items[0].item),
+        CUR_TX_INP_COUNT_LEN=CUR_TX_INP_COUNT_LEN,
+        CUR_TX_INP_SIZE=CUR_TX_INP_SIZE,
+        CUR_TX_OUT_COUNT_LEN=CUR_TX_OUT_COUNT_LEN,
+        CUR_TX_OUT_SIZE=CUR_TX_OUT_SIZE,
+        CUR_TX_MAX_WITNESS_STACK_SIZE=CUR_TX_MAX_WITNESS_STACK_SIZE,
+        CUR_TX_WITNESS_SIZE=CUR_TX_WITNESS_SIZE,
+        CUR_IS_GEGWIT=str(CUR_TX_WITNESS_SIZE != 0).lower(),
+        PREV_TX_INP_COUNT_LEN=PREV_TX_INP_COUNT_LEN,
+        PREV_TX_INP_SIZE=PREV_TX_INP_SIZE,
+        PREV_TX_OUT_COUNT_LEN=PREV_TX_OUT_COUNT_LEN,
+        PREV_TX_OUT_SIZE=PREV_TX_OUT_SIZE,
+        PREV_TX_MAX_WITNESS_STACK_SIZE=PREV_TX_MAX_WITNESS_STACK_SIZE,
+        PREV_TX_WITNESS_SIZE=PREV_TX_WITNESS_SIZE,
+        PREV_IS_GEGWIT=str(PREV_TX_WITNESS_SIZE != 0).lower(),
+        curTxLen=curTx._get_transaction_size() * 2, 
+        prevTxLen=prevTx._get_transaction_size() * 2, 
+        nOutputSize=curTx._get_output_size(curTx.outputs[INPUT_TO_SIGN]),
+    )
+
+    with open(config["file_path"] + "/src/globals.nr", "w") as file:
+        file.write(opcodesFile)
+
+    with open(config["file_path"] + "/Prover.toml.template", "r") as file:
+        templateProver = file.read()
+
+    curTxData = curTx.to_hex()
+    prevTxData = prevTx.to_hex()
+        
+    proverFile = templateProver.format(
+        curTxData=curTxData,
+        prevTxData=prevTxData,
+        utxosPos=curTx.get_outputs_positions_as_toml(outpus[1]),
+        utxosData=list_to_toml(outpus[0]),
+        inputToSign=INPUT_TO_SIGN
+    )
+
+    with open(config["file_path"] + "/Prover.toml", "w") as file:
+        file.write(proverFile)
+
+def list_to_toml(list) -> str:
+    res = "["
+    for elem in list:
+        res += f'"{elem}", '
     
-    let twpk = get_tweaked_pub_key(pub_key_point, node);
-               
-    encode_bech32m(twpk.to_be_bytes().as_slice().pop_front().1.as_array()) == address
-}
-""")
-        
-    print("main.nr was generated")
-
-    with open(config["path"] + "/Prover.toml", "w") as file:
-        file.write(f'address = "{config["address"]}"\npub_key = "{config["pub_key"]}"\nscript = "{config["script"]}"\n')
-
-        for idx, script in enumerate(config['merklePath']):
-            file.write(f'node{idx + 1} = "{script}"\n')
-    
-    print("Prover.toml was generated")
-
+    res = res[:-2]
+    res += "]" 
+    return res
 
 if __name__ == "__main__":
     main()
