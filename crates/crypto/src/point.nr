@@ -1,7 +1,7 @@
 use super::{schnorr::tagged_hash, types::sqrt_secp256k1};
 use dep::bignum::{BigNum, U256};
 use dep::bignum::fields::{secp256k1Fq::Secp256k1_Fq, secp256k1Fr::Secp256k1_Fr};
-use utils::convert::hex_to_bytes;
+use utils::convert::{bytes_to_hex, hex_to_bytes};
 
 // Modulo: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
 

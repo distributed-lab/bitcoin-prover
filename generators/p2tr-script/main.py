@@ -2,13 +2,14 @@ import json
 from typing import Dict
 from bitcoin.core import CScript
 from generators.utils.tx import Transaction
+from generators.utils.script import Script
 
-def get_config(path: str = "./generators/p2tr/config.json") -> Dict:
+def get_config(path: str = "./generators/p2tr-script/config.json") -> Dict:
     with open(path, "r") as f:
         return json.load(f)
 
 def main():
-    print("Spending type: p2tr - key path spend")
+    print("Spending type: p2tr - script path spend")
     config = get_config()
 
     curTx = Transaction(config["cur_tx"])
@@ -16,6 +17,13 @@ def main():
 
     prevTx = Transaction(config["prev_tx"])
     prevTx.cut_script_sigs()
+
+    INPUT_TO_SIGN = config["input_to_sign"]
+
+    witness = curTx.witness_to_hex_script(INPUT_TO_SIGN, 2)
+    script = curTx.witness[INPUT_TO_SIGN].stack_items[-2].item
+    script_parse = Script(script.hex(), curTx, config["input_to_sign"], [elem.item for elem in curTx.witness[INPUT_TO_SIGN].stack_items[:-2]])
+    control_block = curTx.witness[INPUT_TO_SIGN].stack_items[-1].item
 
     with open(config["file_path"] + "/src/globals.nr.template", "r") as file:
         templateOpcodes = file.read()
@@ -34,15 +42,13 @@ def main():
     PREV_TX_MAX_WITNESS_STACK_SIZE = 0 if prevTx.witness is None else max(len(w.stack_items) for w in prevTx.witness)
     PREV_TX_WITNESS_SIZE = 0 if prevTx.witness == None else sum(prevTx._get_witness_size(wit) for wit in prevTx.witness)
 
-    INPUT_TO_SIGN = config["input_to_sign"]
-
     outpus = curTx.get_outputs_from_inputs()
 
     opcodesFile = templateOpcodes.format(
         curTx=curTx, 
         prevTx=prevTx,
         utxosLen=len(outpus[0]),
-        signatureLen=len(curTx.witness[INPUT_TO_SIGN].stack_items[0].item),
+        witnessScriptLen=len(witness),
         CUR_TX_INP_COUNT_LEN=CUR_TX_INP_COUNT_LEN,
         CUR_TX_INP_SIZE=CUR_TX_INP_SIZE,
         CUR_TX_OUT_COUNT_LEN=CUR_TX_OUT_COUNT_LEN,
@@ -60,6 +66,10 @@ def main():
         curTxLen=curTx._get_transaction_size() * 2, 
         prevTxLen=prevTx._get_transaction_size() * 2, 
         nOutputSize=curTx._get_output_size(curTx.outputs[INPUT_TO_SIGN]),
+        scriptLen=len(script),
+        scriptLenLen=curTx._get_compact_size_size(len(script)),
+        scriptOpcodesAmount=script_parse.opcodes,
+        controlBlockLen=len(control_block)
     )
 
     with open(config["file_path"] + "/src/globals.nr", "w") as file:
@@ -74,9 +84,9 @@ def main():
     proverFile = templateProver.format(
         curTxData=curTxData,
         prevTxData=prevTxData,
-        utxosPos=curTx.get_outputs_positions_as_toml(outpus[1]),
         utxosData=list_to_toml(outpus[0]),
-        inputToSign=INPUT_TO_SIGN
+        inputToSign=INPUT_TO_SIGN,
+        witnessScript=witness
     )
 
     with open(config["file_path"] + "/Prover.toml", "w") as file:

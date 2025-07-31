@@ -10,6 +10,7 @@ members = [
     "app/blocks",
     "app/p2sh",
     "app/p2tr",
+    "app/p2tr-script",
     "app/p2ms",
     "app/p2pkh",
     "app/p2sh-p2wpkh",

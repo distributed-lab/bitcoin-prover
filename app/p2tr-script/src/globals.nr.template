@@ -1,0 +1,32 @@
+pub global CUR_TX_LEN: u32 = {curTxLen};
+pub global PREV_TX_LEN: u32 = {prevTxLen};
+pub global UTXOS_LEN: u32 = {utxosLen};
+pub global WITNESS_SCRIPT_LEN: u32 = {witnessScriptLen};
+
+pub global CUR_TX_INP_COUNT: u32 = {curTx.input_count};
+pub global CUR_TX_INP_COUNT_LEN: u32 = {CUR_TX_INP_COUNT_LEN};
+pub global CUR_TX_INP_SIZE: u32 = {CUR_TX_INP_SIZE};
+pub global CUR_TX_OUT_COUNT: u32 = {curTx.output_count};
+pub global CUR_TX_OUT_COUNT_LEN: u32 = {CUR_TX_OUT_COUNT_LEN};
+pub global CUR_TX_OUT_SIZE: u32 = {CUR_TX_OUT_SIZE};
+pub global CUR_TX_MAX_WITNESS_STACK_SIZE: u32 = {CUR_TX_MAX_WITNESS_STACK_SIZE};
+pub global CUR_TX_WITNESS_SIZE: u32 = {CUR_TX_WITNESS_SIZE};
+pub global CUR_IS_GEGWIT: bool = {CUR_IS_GEGWIT};
+
+pub global PREV_TX_INP_COUNT: u32 = {prevTx.input_count};
+pub global PREV_TX_INP_COUNT_LEN: u32 = {PREV_TX_INP_COUNT_LEN};
+pub global PREV_TX_INP_SIZE: u32 = {PREV_TX_INP_SIZE};
+pub global PREV_TX_OUT_COUNT: u32 = {prevTx.output_count};
+pub global PREV_TX_OUT_COUNT_LEN: u32 = {PREV_TX_OUT_COUNT_LEN};
+pub global PREV_TX_OUT_SIZE: u32 = {PREV_TX_OUT_SIZE};
+pub global PREV_TX_MAX_WITNESS_STACK_SIZE: u32 = {PREV_TX_MAX_WITNESS_STACK_SIZE};
+pub global PREV_TX_WITNESS_SIZE: u32 = {PREV_TX_WITNESS_SIZE};
+pub global PREV_IS_GEGWIT: bool = {PREV_IS_GEGWIT};
+
+pub global N_OUTPUT_SIZE: u32 = {nOutputSize};
+
+pub global SCRIPT_LEN: u32 = {scriptLen};
+pub global SCRIPT_LEN_LEN: u32 = {scriptLenLen};
+pub global SCRIPT_OPCODES_AMOUNT: u32 = {scriptOpcodesAmount};
+pub global CONTROL_BLOCK_LEN: u32 = {controlBlockLen};
+

@@ -6,24 +6,28 @@ use utils::convert::{bytes_to_hex, hex_to_bytes};
 pub fn calc_merkle_root<let MERKLE_PATH_LEN: u32>(
     merkle_path: [[u8; 32]; MERKLE_PATH_LEN],
 ) -> [u8; 32] {
-    assert(MERKLE_PATH_LEN > 2);
-    let tag = "TapBranch".as_bytes();
+    assert(MERKLE_PATH_LEN > 0);
+    if MERKLE_PATH_LEN == 1 {
+        merkle_path[0]
+    } else {
+        let tag = "TapBranch".as_bytes();
 
-    let mut res = merkle_path[0];
-    let mut second = merkle_path[1];
-    for i in 0..(MERKLE_PATH_LEN - 1) {
-        if U256::from_be_bytes(res.as_slice().push_front(0).as_array::<33>())
-            > U256::from_be_bytes(merkle_path[i + 1].as_slice().push_front(0).as_array::<33>()) {
-            second = res;
-            res = merkle_path[i + 1];
-        } else {
-            second = merkle_path[i + 1];
+        let mut res = merkle_path[0];
+        let mut second = merkle_path[1];
+        for i in 0..(MERKLE_PATH_LEN - 1) {
+            if U256::from_be_bytes(res.as_slice().push_front(0).as_array::<33>())
+                > U256::from_be_bytes(merkle_path[i + 1].as_slice().push_front(0).as_array::<33>()) {
+                second = res;
+                res = merkle_path[i + 1];
+            } else {
+                second = merkle_path[i + 1];
+            }
+
+            res = tagged_hash(res.as_slice().append(second).as_array::<64>(), tag);
         }
 
-        res = tagged_hash(res.as_slice().append(second).as_array::<64>(), tag);
+        res
     }
-
-    res
 }
 
 #[test]
