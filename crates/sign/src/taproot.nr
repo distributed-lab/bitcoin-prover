@@ -652,6 +652,8 @@ fn prepare_preimage_hash_for_sighash_single<let TRANSACTION_SIZE: u32, let INPUT
     let mut data = [0; 1 + 1 + 4 + 4 + 32 + 32 + 32 + 32 + 1 + 4];
     let mut cur_pos = 0;
     let mut hash_buffer = [0; 32];
+    assert(input_to_sign < OUTPUT_COUNT);
+
     // epoch = 0
     cur_pos += 1;
 
@@ -846,6 +848,8 @@ fn prepare_preimage_hash_for_sighash_single_anyonecanpay<let TRANSACTION_SIZE: u
     let mut data = [0; 1 + 1 + 4 + 4 + 1 + 36 + 8 + 35 + 4];
     let mut cur_pos = 0;
     let mut hash_buffer = [0; 32];
+    assert(input_to_sign < OUTPUT_COUNT);
+
     // epoch = 0
     cur_pos += 1;
 
