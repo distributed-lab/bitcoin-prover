@@ -188,6 +188,9 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                 signature[i] = signature_with_hash_type[i];
             }
         }
+        else {
+            assert(false, "Invalid signature length");
+        }
 
         (signature, hash_type, is_empty)
     }
@@ -1022,13 +1025,13 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
     fn _op_checksig_p2tr<let UTXO_SIZE: u32, let N_OUTPUT_SIZE: u32>(
         &mut self,
         utxo_data: [u8; UTXO_SIZE],
+        sigadd: bool,
         leaf_script_hash: Option<[u8; 32]>,
         annex_hash: Option<[u8; 32]>,
-        sigadd: bool,
     ) -> (bool, i32) {
         let mut message_hash = [0; 32];
         let mut n = 0;
-        let mut res = true;
+        let mut res = false;
 
         let pubkey = self.pop();
         assert(pubkey.len() == 32);
@@ -1036,7 +1039,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         if sigadd {
             n = vec_to_i32(self.pop());
         }
-        let (signature, hash_type, is_empty) = self.pop_signature();
+        let (signature, hash_type, is_empty) = self.pop_signature_p2tr();
 
         let outputs = parse_outputs::<UTXO_SIZE, CURRENT_INPUT_COUNT>(utxo_data);
         let mut n_utxo = [0 as u8; 43];
@@ -1122,16 +1125,16 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
     fn op_checksig_p2tr<let UTXO_SIZE: u32, let N_OUTPUT_SIZE: u32>(
         &mut self,
         utxo_data: [u8; UTXO_SIZE],
+        verify: bool,
+        sigadd: bool,
         annex_hash: Option<[u8; 32]>,
         leaf_script_hash: Option<[u8; 32]>,
-        sigadd: bool,
-        verify: bool,
     ) {
         let result = self._op_checksig_p2tr::<UTXO_SIZE, N_OUTPUT_SIZE>(
             utxo_data,
+            sigadd,
             leaf_script_hash,
             annex_hash,
-            sigadd,
         );
         if sigadd {
             assert(result.0);
