@@ -27,7 +27,9 @@ use sign::{
     },
     transaction::Transaction,
 };
-use sign::sig_types::{SIGHASH_DEFAULT, SIGHASH_ALL, SIGHASH_ANYONECANPAY, SIGHASH_NONE, SIGHASH_SINGLE};
+use sign::sig_types::{
+    SIGHASH_ALL, SIGHASH_ANYONECANPAY, SIGHASH_DEFAULT, SIGHASH_NONE, SIGHASH_SINGLE,
+};
 use std::collections::bounded_vec::BoundedVec;
 use utils::convert::{
     bytes_to_vec, hex_to_bytes, i32_to_le_bytes, i32_to_vec, u32_to_le_bytes, vec_to_array,
@@ -187,8 +189,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
             for i in 0..64 {
                 signature[i] = signature_with_hash_type[i];
             }
-        }
-        else {
+        } else {
             assert(false, "Invalid signature length");
         }
 
