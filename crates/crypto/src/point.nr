@@ -1,6 +1,7 @@
-use super::types::sqrt_secp256k1;
+use super::{schnorr::tagged_hash, types::sqrt_secp256k1};
 use dep::bignum::{BigNum, U256};
 use dep::bignum::fields::{secp256k1Fq::Secp256k1_Fq, secp256k1Fr::Secp256k1_Fr};
+use utils::convert::hex_to_bytes;
 
 // Modulo: FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
 
@@ -110,6 +111,49 @@ pub fn mul_point(mut scalar: Secp256k1_Fr, mut point: Point) -> Point {
     }
 
     res1
+}
+
+pub fn check_tweaked_pub_key(
+    pub_key_x: [u8; 32],
+    pub_key_is_even: bool,
+    merkle_root: [u8; 32],
+    tweaked_pub_key: [u8; 32],
+) -> bool {
+    let tag = "TapTweak".as_bytes();
+    // Base point
+    let g = Point {
+        x: Secp256k1_Fq::from_be_bytes([
+            0x79, 0xBE, 0x66, 0x7E, 0xF9, 0xDC, 0xBB, 0xAC, 0x55, 0xA0, 0x62, 0x95, 0xCE, 0x87,
+            0x0B, 0x07, 0x02, 0x9B, 0xFC, 0xDB, 0x2D, 0xCE, 0x28, 0xD9, 0x59, 0xF2, 0x81, 0x5B,
+            0x16, 0xF8, 0x17, 0x98,
+        ]),
+        y: Secp256k1_Fq::from_be_bytes([
+            0x48, 0x3A, 0xDA, 0x77, 0x26, 0xA3, 0xC4, 0x65, 0x5D, 0xA4, 0xFB, 0xFC, 0x0E, 0x11,
+            0x08, 0xA8, 0xFD, 0x17, 0xB4, 0x48, 0xA6, 0x85, 0x54, 0x19, 0x9C, 0x47, 0xD0, 0x8F,
+            0xFB, 0x10, 0xD4, 0xB8,
+        ]),
+        is_O: false,
+    };
+
+    let tweak = Secp256k1_Fr::from_be_bytes(tagged_hash(
+        pub_key_x.as_slice().append(merkle_root).as_array::<64>(),
+        tag,
+    ));
+
+    let tweak_point = mul_point(tweak, g);
+
+    let sign = if pub_key_is_even { 2 } else { 3 };
+
+    let pub_key_y = get_y_from_x(pub_key_x.as_slice().push_front(sign).as_array::<33>());
+    let pub_key = Point {
+        x: Secp256k1_Fq::from_be_bytes(pub_key_x),
+        y: Secp256k1_Fq::from_be_bytes(pub_key_y),
+        is_O: false,
+    };
+
+    let calculated_tweaked_pub_key = add_point(tweak_point, pub_key).x;
+
+    Secp256k1_Fq::from_be_bytes(tweaked_pub_key) == calculated_tweaked_pub_key
 }
 
 #[test]
@@ -249,4 +293,21 @@ fn double_add_point_test() {
                 0x42, 0xFB, 0xF8, 0x18,
             ]),
     );
+}
+
+#[test]
+fn check_tweaked_pub_key_test() {
+    let pub_key_x = hex_to_bytes(
+        "a2fc329a085d8cfc4fa28795993d7b666cee024e94c40115141b8e9be4a29fa4",
+    );
+
+    let merkle_root = hex_to_bytes(
+        "b5b72eea07b3e338962944a752a98772bbe1f1b6550e6fb6ab8c6e6adb152e7c",
+    );
+
+    let expected_tweaked_pub_key = hex_to_bytes(
+        "562529047f476b9a833a5a780a75845ec32980330d76d1ac9f351dc76bce5d72",
+    );
+
+    assert(check_tweaked_pub_key(pub_key_x, true, merkle_root, expected_tweaked_pub_key));
 }
