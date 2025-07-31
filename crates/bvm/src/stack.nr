@@ -186,6 +186,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
             let signature_with_hash_type =
                 vec_to_array::<MAX_STACK_ELEMENT_SIZE, 65>(signature_vec);
             hash_type = signature_with_hash_type[64];
+            assert(hash_type != 0, "Unspecified hash type");
             for i in 0..64 {
                 signature[i] = signature_with_hash_type[i];
             }
@@ -1035,7 +1036,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         let mut res = false;
 
         let pubkey = self.pop();
-        assert(pubkey.len() == 32);
+        assert(pubkey.len() == 32, "Incorrect length of public key");
 
         if sigadd {
             n = vec_to_i32(self.pop());
@@ -1050,12 +1051,17 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
             n_utxo[i] = utxo_data[i + n_utxo_transaction_offset];
         }
 
+        let mut extension_flag = 0;
+        if (leaf_script_hash.is_some()) {
+            extension_flag = 1;
+        }
+
         if !is_empty | !sigadd {
             if (hash_type == SIGHASH_ALL) | (hash_type == SIGHASH_DEFAULT) {
                 message_hash = serialize_p2tr_sighash_all(
                     self.cur_transaction,
                     self.input_to_sign,
-                    1,
+                    extension_flag,
                     outputs,
                     utxo_data,
                     annex_hash,
@@ -1065,7 +1071,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                 message_hash = serialize_p2tr_sighash_none(
                     self.cur_transaction,
                     self.input_to_sign,
-                    1,
+                    extension_flag,
                     outputs,
                     utxo_data,
                     annex_hash,
@@ -1075,7 +1081,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                 message_hash = serialize_p2tr_sighash_single::<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, UTXO_SIZE, N_OUTPUT_SIZE>(
                     self.cur_transaction,
                     self.input_to_sign,
-                    1,
+                    extension_flag,
                     outputs,
                     utxo_data,
                     annex_hash,
@@ -1085,7 +1091,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                 message_hash = serialize_p2tr_sighash_all_anyonecanpay(
                     self.cur_transaction,
                     self.input_to_sign,
-                    1,
+                    extension_flag,
                     n_utxo,
                     annex_hash,
                     leaf_script_hash,
@@ -1094,7 +1100,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                 message_hash = serialize_p2tr_sighash_none_anyonecanpay(
                     self.cur_transaction,
                     self.input_to_sign,
-                    1,
+                    extension_flag,
                     n_utxo,
                     annex_hash,
                     leaf_script_hash,
@@ -1103,7 +1109,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                 message_hash = serialize_p2tr_sighash_single_anyonecanpay::<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, N_OUTPUT_SIZE>(
                     self.cur_transaction,
                     self.input_to_sign,
-                    1,
+                    extension_flag,
                     n_utxo,
                     annex_hash,
                     leaf_script_hash,
@@ -2394,6 +2400,45 @@ fn test_p2sh_checksig_none_anyonecanpay() {
     stack.push_bytes(signature_bytes);
     stack.push_bytes(pubkey_bytes);
     stack.op_checksig::<72, 1, 11, 1, 41>(Address::new_p2sh(), true, false);
+}
+
+#[test]
+fn test_p2tr_checksigs() {
+    let cur_tx_hex = "020000000001023cfe8b95d22502698fd98837f83d8d4be31ee3eddd9d1ab1a95654c64604c4d10100000000feffffff3cfe8b95d22502698fd98837f83d8d4be31ee3eddd9d1ab1a95654c64604c4d10000000000ffffffff023acf00000000000017a914453acd285e0b84ce01be507e1de19ebc2494c28d8734a8cc2e0000000017a9146fc16fc2550e819d837d5cc5b37237642ab131978701430141b693a0797b24bae12ed0516a2f5ba765618dca89b75e498ba5b745b71644362298a45ca39230d10a02ee6290a91cebf9839600f7e35158a447ea182ea0e022ae010188034101769105cbcbdcaaee5e58cd201ba3152477fda31410df8b91b4aee2c4864c7700615efb425e002f146a39ca0a4f2924566762d9213bd33f825fad83977fba7f0122206d4ddc0e47d2e8f82cbe2fc2d0d749e7bd3338112cecdc76d8f831ae6620dbe0ac21c0924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a33294fd80900";
+    let cur_tx_bytes = hex_to_bytes(cur_tx_hex);
+    let cur_tx = Transaction::<365, 2, 1, 83, 2, 1, 65, 1, 207>::new(cur_tx_bytes, true);
+
+    let input_to_sign = 0;
+
+    let prev_tx_hex = "0200000000010192f29384a956361b9b9ebc667d01489cb360068c22c7b89396e5fdc3ece0305a0100000000ffffffff023d0500000000000016001464193f85b629823f114c9d997ee68627d7395d5fe7a1000000000000160014d0446764c4f16f78ca0ce0b7f487cc5fe205835e024730440220598ef97f63f7648e39d03ff58383056322fa13effaee8d11c9c9e8789a72522002204dda5bbc9cba008682d62820395a2c43b9abae52d6ad81835e72bda09468fa21012103d9a4d0bbe47d58b68e366a380107ba3470f6893764a2d020127d36c169df850100000000";
+    let prev_tx_bytes = hex_to_bytes(prev_tx_hex);
+    let prev_tx = Transaction::<222, 1, 1, 42, 2, 1, 63, 2, 107>::new(prev_tx_bytes, true);
+
+    let output_to_unlock = 1;
+
+    let mut stack = Stack::new(
+        cur_tx,
+        prev_tx,
+        input_to_sign,
+        output_to_unlock,
+        empty_stack_array::<80, 7>(),
+        [],
+    );
+
+    let signature_hex = "d974287f8670912c0ed5b1446f702f5d0ac8394d5a4160b59d548bf777c0174d06cdc910226b456967da09efa6795963f9dcb8ae4b915cf8cd74a04c86961a1303";
+    let signature_bytes = hex_to_bytes(signature_hex);
+
+    let pubkey_hex = "35a6a71fdcfef1ed8c29c0c896a23fd21333fbab12e2a85165f9ced3afb5ce12";
+    let pubkey_bytes = hex_to_bytes(pubkey_hex);
+
+    stack.push_bytes(signature_bytes);
+    stack.push_bytes(pubkey_bytes);
+
+    let utxo_data: [u8; 86] = hex_to_bytes(
+        "983a0000000000002251203daaca9b82a51aca960c1491588246029d7e0fc49e0abdbcc8fd17574be5c74b983a3400000000002251200f0c8db753acbd17343a39c2f3f4e35e4be6da749f9e35137ab220e7b238a667",
+    );
+
+    stack.op_checksig_p2tr::<86, 32>(utxo_data, true, false, Option::none(), Option::none());
 }
 
 // #[test]
