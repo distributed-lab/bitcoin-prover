@@ -27,7 +27,7 @@ use sign::{
     },
     transaction::Transaction,
 };
-use sign::sig_types::{SIGHASH_ALL, SIGHASH_ANYONECANPAY, SIGHASH_NONE, SIGHASH_SINGLE};
+use sign::sig_types::{SIGHASH_DEFAULT, SIGHASH_ALL, SIGHASH_ANYONECANPAY, SIGHASH_NONE, SIGHASH_SINGLE};
 use std::collections::bounded_vec::BoundedVec;
 use utils::convert::{
     bytes_to_vec, hex_to_bytes, i32_to_le_bytes, i32_to_vec, u32_to_le_bytes, vec_to_array,
@@ -1047,7 +1047,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         }
 
         if !is_empty | !sigadd {
-            if hash_type == SIGHASH_ALL {
+            if (hash_type == SIGHASH_ALL) | (hash_type == SIGHASH_DEFAULT) {
                 message_hash = serialize_p2tr_sighash_all(
                     self.cur_transaction,
                     self.input_to_sign,
@@ -1105,10 +1105,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                     leaf_script_hash,
                 );
             } else {
-                assert(false, "Unsupportedmessage_hash = self
-                    .get_sighash_single_anyonecanpay_message_hash::<SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
-                        address,
-                    ); hash type");
+                assert(false, "Unsupported hash type");
             }
 
             res = schnorr_verify(
