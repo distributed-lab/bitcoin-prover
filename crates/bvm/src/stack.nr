@@ -1077,16 +1077,16 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                     annex_hash,
                     leaf_script_hash,
                 );
-            } else if hash_type == SIGHASH_SINGLE {
-                message_hash = serialize_p2tr_sighash_single::<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, UTXO_SIZE, N_OUTPUT_SIZE>(
-                    self.cur_transaction,
-                    self.input_to_sign,
-                    extension_flag,
-                    outputs,
-                    utxo_data,
-                    annex_hash,
-                    leaf_script_hash,
-                );
+                // } else if hash_type == SIGHASH_SINGLE {
+                //     message_hash = serialize_p2tr_sighash_single::<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, UTXO_SIZE, N_OUTPUT_SIZE>(
+                //         self.cur_transaction,
+                //         self.input_to_sign,
+                //         extension_flag,
+                //         outputs,
+                //         utxo_data,
+                //         annex_hash,
+                //         leaf_script_hash,
+                //     );
             } else if hash_type == (SIGHASH_ALL | SIGHASH_ANYONECANPAY) {
                 message_hash = serialize_p2tr_sighash_all_anyonecanpay(
                     self.cur_transaction,
@@ -1105,15 +1105,15 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                     annex_hash,
                     leaf_script_hash,
                 );
-            } else if hash_type == (SIGHASH_SINGLE | SIGHASH_ANYONECANPAY) {
-                message_hash = serialize_p2tr_sighash_single_anyonecanpay::<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, N_OUTPUT_SIZE>(
-                    self.cur_transaction,
-                    self.input_to_sign,
-                    extension_flag,
-                    n_utxo,
-                    annex_hash,
-                    leaf_script_hash,
-                );
+                // } else if hash_type == (SIGHASH_SINGLE | SIGHASH_ANYONECANPAY) {
+                //     message_hash = serialize_p2tr_sighash_single_anyonecanpay::<CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, N_OUTPUT_SIZE>(
+                //         self.cur_transaction,
+                //         self.input_to_sign,
+                //         extension_flag,
+                //         n_utxo,
+                //         annex_hash,
+                //         leaf_script_hash,
+                //     );
             } else {
                 assert(false, "Unsupported hash type");
             }
@@ -1129,7 +1129,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         (res, n)
     }
 
-    fn op_checksig_p2tr<let UTXO_SIZE: u32, let N_OUTPUT_SIZE: u32>(
+    pub fn op_checksig_p2tr<let UTXO_SIZE: u32, let N_OUTPUT_SIZE: u32>(
         &mut self,
         utxo_data: [u8; UTXO_SIZE],
         verify: bool,

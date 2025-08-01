@@ -117,9 +117,11 @@ fn main(
         .as_array::<WITNESS_SCRIPT_LEN / 2 + SCRIPT_LEN>();
 
     script_execution_engine
-        .execute::<WITNESS_SCRIPT_LEN / 2 + SCRIPT_LEN, N_OUTPUT_SIZE, 0, 0, 0, SCRIPT_OPCODES_AMOUNT, 0>(
+        .execute::<WITNESS_SCRIPT_LEN / 2 + SCRIPT_LEN, N_OUTPUT_SIZE, 0, 0, 0, SCRIPT_OPCODES_AMOUNT, 0, UTXOS_LEN>(
             script,
             Address::new_p2tr(),
+            utxos_data,
+            Option::some(merkle_path[0]),
         );
 
     script_execution_engine.stack.op_verify()

@@ -32,10 +32,12 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         Self { stack: stack }
     }
 
-    pub fn execute<let SCRIPT_SIZE: u32, let N_OUTPUT_SIZE: u32, let INPUT_TO_SIGN: u32, let INPUT_TO_SIGN_LEN: u32, let N_INPUT_SIZE: u32, let MAX_NUMBER_OF_OPCODES: u32, let SCRIPT_PUB_KEY_LEN: u32>(
+    pub fn execute<let SCRIPT_SIZE: u32, let N_OUTPUT_SIZE: u32, let INPUT_TO_SIGN: u32, let INPUT_TO_SIGN_LEN: u32, let N_INPUT_SIZE: u32, let MAX_NUMBER_OF_OPCODES: u32, let SCRIPT_PUB_KEY_LEN: u32, let UTXOS_LEN: u32>(
         &mut self,
         script: [u8; SCRIPT_SIZE],
         address: Address,
+        utxo_data: [u8; UTXOS_LEN],
+        leaf_script_hash: Option<[u8; 32]>,
     ) {
         let mut cur_pos: u32 = 0;
         let mut ifs_len: u32 = 1;
@@ -215,8 +217,10 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                     } else if (opcode == OP_CHECKSIG) | (opcode == OP_CHECKSIGVERIFY) {
                         let verify = opcode == OP_CHECKSIGVERIFY;
                         let sigadd = opcode == OP_CHECKSIGADD;
-                        self.stack = checksig::<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, PREV_TRANSACTION_SIZE, PREV_INPUT_COUNT, PREV_INPUT_COUNT_LEN, PREV_INPUT_SIZE, PREV_OUTPUT_COUNT, PREV_OUTPUT_COUNT_LEN, PREV_OUTPUT_SIZE, PREV_MAX_WITNESS_STACK_SIZE, PREV_WITNESS_SIZE, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, SCRIPT_PUB_KEY_LEN, REDEEM_SCRIPT_LEN>(
+                        self.stack = checksig::<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, PREV_TRANSACTION_SIZE, PREV_INPUT_COUNT, PREV_INPUT_COUNT_LEN, PREV_INPUT_SIZE, PREV_OUTPUT_COUNT, PREV_OUTPUT_COUNT_LEN, PREV_OUTPUT_SIZE, PREV_MAX_WITNESS_STACK_SIZE, PREV_WITNESS_SIZE, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, SCRIPT_PUB_KEY_LEN, REDEEM_SCRIPT_LEN, UTXOS_LEN>(
                             self.stack,
+                            utxo_data,
+                            leaf_script_hash,
                             verify,
                             sigadd,
                             address,
@@ -274,13 +278,28 @@ fn test_if_opcodes() {
     // OP_NOTIF OP_3 OP_ELSE OP_IF OP_2 OP_ELSE OP_4 OP_ENDIF OP_ENDIF OP_ADD OP_5 OP_EQUALVERIFY
     let script_else_else = hex_to_bytes("510051645367635267546868935588");
     let mut engine = ScriptExecutionEngine::new(stack);
-    engine.execute::<15, 0, 0, 0, 0, 15, 0>(script_else_else, Address::new_p2sh());
+    engine.execute::<15, 0, 0, 0, 0, 15, 0, 0>(
+        script_else_else,
+        Address::new_p2sh(),
+        [0; 0],
+        Option::none(),
+    );
 
     let script_if = hex_to_bytes("5200645367635267546868935588");
-    engine.execute::<14, 0, 0, 0, 0, 14, 0>(script_if, Address::new_p2sh());
+    engine.execute::<14, 0, 0, 0, 0, 14, 0, 0>(
+        script_if,
+        Address::new_p2sh(),
+        [0; 0],
+        Option::none(),
+    );
 
     let script_else_if = hex_to_bytes("535151645367635267546868935588");
-    engine.execute::<15, 0, 0, 0, 0, 15, 0>(script_else_if, Address::new_p2sh());
+    engine.execute::<15, 0, 0, 0, 0, 15, 0, 0>(
+        script_else_if,
+        Address::new_p2sh(),
+        [0; 0],
+        Option::none(),
+    );
 }
 
 #[test(should_fail_with = "Disabled or reserved opcode!")]
@@ -289,7 +308,12 @@ fn test_disabled_opcodes() {
     // OP_1 OP_2 OP_MUL
     let script_else_else = hex_to_bytes("515295");
     let mut engine = ScriptExecutionEngine::new(stack);
-    engine.execute::<3, 0, 0, 0, 0, 3, 0>(script_else_else, Address::new_p2sh());
+    engine.execute::<3, 0, 0, 0, 0, 3, 0, 0>(
+        script_else_else,
+        Address::new_p2sh(),
+        [0; 0],
+        Option::none(),
+    );
 }
 
 #[test(should_fail_with = "Reserved opcode!")]
@@ -298,7 +322,12 @@ fn test_reserved_opcodes() {
     // OP_1 OP_2 OP_RESERVED
     let script_else_else = hex_to_bytes("515250");
     let mut engine = ScriptExecutionEngine::new(stack);
-    engine.execute::<3, 0, 0, 0, 0, 3, 0>(script_else_else, Address::new_p2sh());
+    engine.execute::<3, 0, 0, 0, 0, 3, 0, 0>(
+        script_else_else,
+        Address::new_p2sh(),
+        [0; 0],
+        Option::none(),
+    );
 }
 
 /*

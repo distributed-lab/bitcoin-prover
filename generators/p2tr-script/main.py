@@ -3,6 +3,7 @@ from typing import Dict
 from bitcoin.core import CScript
 from generators.utils.tx import Transaction
 from generators.utils.script import Script
+from generators.utils.opcodes_gen import generate
 
 def get_config(path: str = "./generators/p2tr-script/config.json") -> Dict:
     with open(path, "r") as f:
@@ -25,6 +26,8 @@ def main():
     script = curTx.witness[INPUT_TO_SIGN].stack_items[-2].item
     script_parse = Script(script.hex(), curTx, config["input_to_sign"], [elem.item for elem in curTx.witness[INPUT_TO_SIGN].stack_items[:-2]])
     control_block = curTx.witness[INPUT_TO_SIGN].stack_items[-1].item
+    sizes = ws.sizes | script_parse.sizes
+    generate(sizes, True)
 
     with open(config["file_path"] + "/src/globals.nr.template", "r") as file:
         templateOpcodes = file.read()
