@@ -2,7 +2,7 @@ use crypto::ecdsa::{
     ecdsa_verify, get_rs_from_signature, get_xy_from_compressed_pubkey,
     get_xy_from_uncompressed_pubkey,
 };
-use crypto::schnorr::schnorr_verify;
+use crypto::schnorr::{schnorr_verify, tagged_hash};
 use ripemd160::ripemd160;
 use sha1::sha1;
 use sign::address::Address;
@@ -33,7 +33,7 @@ use sign::sig_types::{
 use std::collections::bounded_vec::BoundedVec;
 use utils::convert::{
     bytes_to_vec, hex_to_bytes, i32_to_le_bytes, i32_to_vec, u32_to_le_bytes, vec_to_array,
-    vec_to_i32, vec_to_u32,
+    vec_to_i32, vec_to_u32
 };
 
 pub fn empty_stack_array<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32>() -> [BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>; MAX_STACK_SIZE] {
@@ -2403,7 +2403,7 @@ fn test_p2sh_checksig_none_anyonecanpay() {
 }
 
 #[test]
-fn test_p2tr_checksigs() {
+fn test_p2tr_checksig() {
     let cur_tx_hex = "020000000001023cfe8b95d22502698fd98837f83d8d4be31ee3eddd9d1ab1a95654c64604c4d10100000000feffffff3cfe8b95d22502698fd98837f83d8d4be31ee3eddd9d1ab1a95654c64604c4d10000000000ffffffff023acf00000000000017a914453acd285e0b84ce01be507e1de19ebc2494c28d8734a8cc2e0000000017a9146fc16fc2550e819d837d5cc5b37237642ab131978701430141b693a0797b24bae12ed0516a2f5ba765618dca89b75e498ba5b745b71644362298a45ca39230d10a02ee6290a91cebf9839600f7e35158a447ea182ea0e022ae010188034101769105cbcbdcaaee5e58cd201ba3152477fda31410df8b91b4aee2c4864c7700615efb425e002f146a39ca0a4f2924566762d9213bd33f825fad83977fba7f0122206d4ddc0e47d2e8f82cbe2fc2d0d749e7bd3338112cecdc76d8f831ae6620dbe0ac21c0924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a33294fd80900";
     let cur_tx_bytes = hex_to_bytes(cur_tx_hex);
     let cur_tx = Transaction::<365, 2, 1, 83, 2, 1, 65, 1, 207>::new(cur_tx_bytes, true);
@@ -2439,6 +2439,96 @@ fn test_p2tr_checksigs() {
     );
 
     stack.op_checksig_p2tr::<86, 32>(utxo_data, true, false, Option::none(), Option::none());
+}
+
+#[test]
+fn test_p2tr_checksig_leaf() {
+    let cur_tx_hex = "020000000001023cfe8b95d22502698fd98837f83d8d4be31ee3eddd9d1ab1a95654c64604c4d10100000000feffffff3cfe8b95d22502698fd98837f83d8d4be31ee3eddd9d1ab1a95654c64604c4d10000000000ffffffff023acf00000000000017a914453acd285e0b84ce01be507e1de19ebc2494c28d8734a8cc2e0000000017a9146fc16fc2550e819d837d5cc5b37237642ab131978701430141b693a0797b24bae12ed0516a2f5ba765618dca89b75e498ba5b745b71644362298a45ca39230d10a02ee6290a91cebf9839600f7e35158a447ea182ea0e022ae010188034101769105cbcbdcaaee5e58cd201ba3152477fda31410df8b91b4aee2c4864c7700615efb425e002f146a39ca0a4f2924566762d9213bd33f825fad83977fba7f0122206d4ddc0e47d2e8f82cbe2fc2d0d749e7bd3338112cecdc76d8f831ae6620dbe0ac21c0924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a33294fd80900";
+    let cur_tx_bytes = hex_to_bytes(cur_tx_hex);
+    let cur_tx = Transaction::<365, 2, 1, 83, 2, 1, 65, 1, 207>::new(cur_tx_bytes, true);
+
+    let input_to_sign = 0;
+
+    let prev_tx_hex = "0200000000010192f29384a956361b9b9ebc667d01489cb360068c22c7b89396e5fdc3ece0305a0100000000ffffffff023d0500000000000016001464193f85b629823f114c9d997ee68627d7395d5fe7a1000000000000160014d0446764c4f16f78ca0ce0b7f487cc5fe205835e024730440220598ef97f63f7648e39d03ff58383056322fa13effaee8d11c9c9e8789a72522002204dda5bbc9cba008682d62820395a2c43b9abae52d6ad81835e72bda09468fa21012103d9a4d0bbe47d58b68e366a380107ba3470f6893764a2d020127d36c169df850100000000";
+    let prev_tx_bytes = hex_to_bytes(prev_tx_hex);
+    let prev_tx = Transaction::<222, 1, 1, 42, 2, 1, 63, 2, 107>::new(prev_tx_bytes, true);
+
+    let output_to_unlock = 0;
+
+    let mut stack = Stack::new(
+        cur_tx,
+        prev_tx,
+        input_to_sign,
+        output_to_unlock,
+        empty_stack_array::<80, 7>(),
+        [],
+    );
+
+    let signature_hex = "ddd8a9c0adc6aff7c9b370e44d700f8967638c6d348084066091ed514f956d612e876b69a048baf2d350fe22f56217c3c8bf948043b0809aa69ce5c173fc519581";
+    let signature_bytes = hex_to_bytes(signature_hex);
+
+    let pubkey_hex = "35a6a71fdcfef1ed8c29c0c896a23fd21333fbab12e2a85165f9ced3afb5ce12";
+    let pubkey_bytes = hex_to_bytes(pubkey_hex);
+
+    stack.push_bytes(signature_bytes);
+    stack.push_bytes(pubkey_bytes);
+
+    let leaf_script = hex_to_bytes(
+        "c022206d4ddc0e47d2e8f82cbe2fc2d0d749e7bd3338112cecdc76d8f831ae6620dbe0ac",
+    );
+    let leaf_script_hash = tagged_hash(leaf_script, "TapLeaf".as_bytes());
+
+
+    let utxo_data: [u8; 86] = hex_to_bytes(
+        "983a0000000000002251203daaca9b82a51aca960c1491588246029d7e0fc49e0abdbcc8fd17574be5c74b983a3400000000002251200f0c8db753acbd17343a39c2f3f4e35e4be6da749f9e35137ab220e7b238a667",
+    );
+
+    stack.op_checksig_p2tr::<86, 32>(utxo_data, true, false, Option::none(), Option::some(leaf_script_hash));
+}
+
+#[test]
+fn test_p2tr_checksig_annex() {
+    let cur_tx_hex = "020000000001023cfe8b95d22502698fd98837f83d8d4be31ee3eddd9d1ab1a95654c64604c4d10100000000feffffff3cfe8b95d22502698fd98837f83d8d4be31ee3eddd9d1ab1a95654c64604c4d10000000000ffffffff023acf00000000000017a914453acd285e0b84ce01be507e1de19ebc2494c28d8734a8cc2e0000000017a9146fc16fc2550e819d837d5cc5b37237642ab131978701430141b693a0797b24bae12ed0516a2f5ba765618dca89b75e498ba5b745b71644362298a45ca39230d10a02ee6290a91cebf9839600f7e35158a447ea182ea0e022ae010188034101769105cbcbdcaaee5e58cd201ba3152477fda31410df8b91b4aee2c4864c7700615efb425e002f146a39ca0a4f2924566762d9213bd33f825fad83977fba7f0122206d4ddc0e47d2e8f82cbe2fc2d0d749e7bd3338112cecdc76d8f831ae6620dbe0ac21c0924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a33294fd80900";
+    let cur_tx_bytes = hex_to_bytes(cur_tx_hex);
+    let cur_tx = Transaction::<365, 2, 1, 83, 2, 1, 65, 1, 207>::new(cur_tx_bytes, true);
+
+    let input_to_sign = 1;
+
+    let prev_tx_hex = "0200000000010192f29384a956361b9b9ebc667d01489cb360068c22c7b89396e5fdc3ece0305a0100000000ffffffff023d0500000000000016001464193f85b629823f114c9d997ee68627d7395d5fe7a1000000000000160014d0446764c4f16f78ca0ce0b7f487cc5fe205835e024730440220598ef97f63f7648e39d03ff58383056322fa13effaee8d11c9c9e8789a72522002204dda5bbc9cba008682d62820395a2c43b9abae52d6ad81835e72bda09468fa21012103d9a4d0bbe47d58b68e366a380107ba3470f6893764a2d020127d36c169df850100000000";
+    let prev_tx_bytes = hex_to_bytes(prev_tx_hex);
+    let prev_tx = Transaction::<222, 1, 1, 42, 2, 1, 63, 2, 107>::new(prev_tx_bytes, true);
+
+    let output_to_unlock = 0;
+
+    let mut stack = Stack::new(
+        cur_tx,
+        prev_tx,
+        input_to_sign,
+        output_to_unlock,
+        empty_stack_array::<80, 7>(),
+        [],
+    );
+
+    let signature_hex = "5b622bf04baa62e0ee8c2179ba85579b3af0fd8916576437266b483f5f8c3b1e67bce7dc84d6ce0611b539c45c66dcf90db142d343f54dc0ed8d1fc65dc55e4f82";
+    let signature_bytes = hex_to_bytes(signature_hex);
+
+    let pubkey_hex = "35a6a71fdcfef1ed8c29c0c896a23fd21333fbab12e2a85165f9ced3afb5ce12";
+    let pubkey_bytes = hex_to_bytes(pubkey_hex);
+
+    stack.push_bytes(signature_bytes);
+    stack.push_bytes(pubkey_bytes);
+
+    let annex = hex_to_bytes(
+        "215085c0ee8f7b6df70c6994bead41e15f9437fc5215bbbe2fd59cd730f8d9945b00",
+    );
+    let annex_hash = sha256::digest(annex);
+
+
+    let utxo_data: [u8; 86] = hex_to_bytes(
+        "983a0000000000002251203daaca9b82a51aca960c1491588246029d7e0fc49e0abdbcc8fd17574be5c74b983a3400000000002251200f0c8db753acbd17343a39c2f3f4e35e4be6da749f9e35137ab220e7b238a667",
+    );
+
+    stack.op_checksig_p2tr::<86, 32>(utxo_data, true, false, Option::some(annex_hash), Option::none());
 }
 
 // #[test]
