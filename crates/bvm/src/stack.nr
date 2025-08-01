@@ -33,7 +33,7 @@ use sign::sig_types::{
 use std::collections::bounded_vec::BoundedVec;
 use utils::convert::{
     bytes_to_vec, hex_to_bytes, i32_to_le_bytes, i32_to_vec, u32_to_le_bytes, vec_to_array,
-    vec_to_i32, vec_to_u32
+    vec_to_i32, vec_to_u32,
 };
 
 pub fn empty_stack_array<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32>() -> [BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>; MAX_STACK_SIZE] {
@@ -2478,12 +2478,17 @@ fn test_p2tr_checksig_leaf() {
     );
     let leaf_script_hash = tagged_hash(leaf_script, "TapLeaf".as_bytes());
 
-
     let utxo_data: [u8; 86] = hex_to_bytes(
         "983a0000000000002251203daaca9b82a51aca960c1491588246029d7e0fc49e0abdbcc8fd17574be5c74b983a3400000000002251200f0c8db753acbd17343a39c2f3f4e35e4be6da749f9e35137ab220e7b238a667",
     );
 
-    stack.op_checksig_p2tr::<86, 32>(utxo_data, true, false, Option::none(), Option::some(leaf_script_hash));
+    stack.op_checksig_p2tr::<86, 32>(
+        utxo_data,
+        true,
+        false,
+        Option::none(),
+        Option::some(leaf_script_hash),
+    );
 }
 
 #[test]
@@ -2523,12 +2528,17 @@ fn test_p2tr_checksig_annex() {
     );
     let annex_hash = sha256::digest(annex);
 
-
     let utxo_data: [u8; 86] = hex_to_bytes(
         "983a0000000000002251203daaca9b82a51aca960c1491588246029d7e0fc49e0abdbcc8fd17574be5c74b983a3400000000002251200f0c8db753acbd17343a39c2f3f4e35e4be6da749f9e35137ab220e7b238a667",
     );
 
-    stack.op_checksig_p2tr::<86, 32>(utxo_data, true, false, Option::some(annex_hash), Option::none());
+    stack.op_checksig_p2tr::<86, 32>(
+        utxo_data,
+        true,
+        false,
+        Option::some(annex_hash),
+        Option::none(),
+    );
 }
 
 // #[test]
