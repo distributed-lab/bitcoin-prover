@@ -29,3 +29,5 @@ pub global SCRIPT_LEN: u32 = 34;
 pub global SCRIPT_LEN_LEN: u32 = 1;
 pub global SCRIPT_OPCODES_AMOUNT: u32 = 2;
 pub global CONTROL_BLOCK_LEN: u32 = 33;
+pub global STACK_SIZE: u32 = 20;
+pub global MAX_STACK_ELEMENT_SIZE: u32 = 5;

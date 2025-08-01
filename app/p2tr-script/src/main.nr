@@ -1,15 +1,18 @@
 mod globals;
 
+use bvm::stack::{empty_stack_array, Stack};
 use crypto::{merkle::calc_merkle_root, point::check_tweaked_pub_key, schnorr::tagged_hash};
 use globals::{
     CONTROL_BLOCK_LEN, CUR_IS_GEGWIT, CUR_TX_INP_COUNT, CUR_TX_INP_COUNT_LEN, CUR_TX_INP_SIZE,
     CUR_TX_LEN, CUR_TX_MAX_WITNESS_STACK_SIZE, CUR_TX_OUT_COUNT, CUR_TX_OUT_COUNT_LEN,
-    CUR_TX_OUT_SIZE, CUR_TX_WITNESS_SIZE, N_OUTPUT_SIZE, PREV_IS_GEGWIT, PREV_TX_INP_COUNT,
-    PREV_TX_INP_COUNT_LEN, PREV_TX_INP_SIZE, PREV_TX_LEN, PREV_TX_MAX_WITNESS_STACK_SIZE,
-    PREV_TX_OUT_COUNT, PREV_TX_OUT_COUNT_LEN, PREV_TX_OUT_SIZE, PREV_TX_WITNESS_SIZE, SCRIPT_LEN,
-    SCRIPT_LEN_LEN, SCRIPT_OPCODES_AMOUNT, UTXOS_LEN, WITNESS_SCRIPT_LEN,
+    CUR_TX_OUT_SIZE, CUR_TX_WITNESS_SIZE, MAX_STACK_ELEMENT_SIZE, N_OUTPUT_SIZE, PREV_IS_GEGWIT,
+    PREV_TX_INP_COUNT, PREV_TX_INP_COUNT_LEN, PREV_TX_INP_SIZE, PREV_TX_LEN,
+    PREV_TX_MAX_WITNESS_STACK_SIZE, PREV_TX_OUT_COUNT, PREV_TX_OUT_COUNT_LEN, PREV_TX_OUT_SIZE,
+    PREV_TX_WITNESS_SIZE, SCRIPT_LEN, SCRIPT_LEN_LEN, SCRIPT_OPCODES_AMOUNT, STACK_SIZE, UTXOS_LEN,
+    WITNESS_SCRIPT_LEN,
 };
-use sign::{compact_size::u32_to_compact_size_array, transaction::Transaction};
+use script::execution::ScriptExecutionEngine;
+use sign::{address::Address, compact_size::u32_to_compact_size_array, transaction::Transaction};
 use utils::convert::{bytes_to_hex, hex_to_bytes, le_bytes_to_u32};
 
 // Script path spend
@@ -94,5 +97,30 @@ fn main(
 
     let merkle_root = calc_merkle_root(merkle_path);
 
-    check_tweaked_pub_key(pub_key_x, is_even, merkle_root, tweaked_pub_key)
+    assert(check_tweaked_pub_key(pub_key_x, is_even, merkle_root, tweaked_pub_key));
+
+    let mut stack = Stack::new(
+        cur_tx,
+        prev_tx,
+        input_to_sign,
+        vout,
+        empty_stack_array::<MAX_STACK_ELEMENT_SIZE, STACK_SIZE>(),
+        [],
+    );
+
+    let mut script_execution_engine = ScriptExecutionEngine::new(stack);
+
+    // Witness inputs were converted to script and now concatenate with spending script
+    let script = hex_to_bytes(witness_script)
+        .as_slice()
+        .append(script)
+        .as_array::<WITNESS_SCRIPT_LEN / 2 + SCRIPT_LEN>();
+
+    script_execution_engine
+        .execute::<WITNESS_SCRIPT_LEN / 2 + SCRIPT_LEN, N_OUTPUT_SIZE, 0, 0, 0, SCRIPT_OPCODES_AMOUNT, 0>(
+            script,
+            Address::new_p2tr(),
+        );
+
+    script_execution_engine.stack.op_verify()
 }

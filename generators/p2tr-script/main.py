@@ -21,6 +21,7 @@ def main():
     INPUT_TO_SIGN = config["input_to_sign"]
 
     witness = curTx.witness_to_hex_script(INPUT_TO_SIGN, 2)
+    ws = Script(witness, curTx, 0, [])
     script = curTx.witness[INPUT_TO_SIGN].stack_items[-2].item
     script_parse = Script(script.hex(), curTx, config["input_to_sign"], [elem.item for elem in curTx.witness[INPUT_TO_SIGN].stack_items[:-2]])
     control_block = curTx.witness[INPUT_TO_SIGN].stack_items[-1].item
@@ -43,6 +44,8 @@ def main():
     PREV_TX_WITNESS_SIZE = 0 if prevTx.witness == None else sum(prevTx._get_witness_size(wit) for wit in prevTx.witness)
 
     outpus = curTx.get_outputs_from_inputs()
+    requireStackSize = ws.require_stack_size + script_parse.require_stack_size
+    maxStackElementSize = max(script_parse.max_element_size, ws.max_element_size)
 
     opcodesFile = templateOpcodes.format(
         curTx=curTx, 
@@ -68,8 +71,10 @@ def main():
         nOutputSize=curTx._get_output_size(curTx.outputs[INPUT_TO_SIGN]),
         scriptLen=len(script),
         scriptLenLen=curTx._get_compact_size_size(len(script)),
-        scriptOpcodesAmount=script_parse.opcodes,
-        controlBlockLen=len(control_block)
+        scriptOpcodesAmount=script_parse.opcodes + ws.opcodes,
+        controlBlockLen=len(control_block),
+        stackSize=requireStackSize,
+        maxStackElementSize=maxStackElementSize,
     )
 
     with open(config["file_path"] + "/src/globals.nr", "w") as file:

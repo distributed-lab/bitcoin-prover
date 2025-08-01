@@ -14,7 +14,7 @@ use super::{
         OP_NUMEQUAL, OP_NUMEQUALVERIFY, OP_OVER, OP_PICK, OP_PUSHBYTES1, OP_PUSHBYTES75,
         OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4, OP_RESERVED, OP_RESERVED1, OP_RESERVED2,
         OP_RETURN, OP_RIPEMD160, OP_ROLL, OP_ROT, OP_SHA1, OP_SHA256, OP_SIZE, OP_SUB, OP_SWAP,
-        OP_TOALTSTACK, OP_TUCK, OP_VER, OP_WITHIN,
+        OP_TOALTSTACK, OP_TUCK, OP_VER, OP_WITHIN, SUCCESSX,
     },
 };
 use bvm::stack::{Stack, TestStack};
@@ -43,13 +43,15 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         let mut ifs_slice: [bool] = [true].as_slice();
         let mut codesep = false;
         let mut csp_pos = 0;
+        let mut op_successx = false;
 
         for _ in 0..MAX_NUMBER_OF_OPCODES {
-            if cur_pos < SCRIPT_SIZE {
+            if (cur_pos < SCRIPT_SIZE) & !op_successx {
                 let opcode = script[cur_pos];
                 cur_pos += 1;
 
-                if DISABLED.any(|e| e == opcode) {
+                if DISABLED.any(|e| e == opcode)
+                    & !(address.is_p2tr() & SUCCESSX.any(|e| e == opcode)) {
                     assert(false, "Disabled or reserved opcode!");
                 } else if (opcode == OP_IF) | (opcode == OP_NOTIF) {
                     let top = if ifs_slice[ifs_len - 1] {
@@ -76,25 +78,25 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                 } else if opcode >= OP_PUSHBYTES1 & opcode <= OP_PUSHBYTES75 {
                     let push_length = opcode as u32;
                     let res = pushbytes(self.stack, push_length, script, cur_pos);
-                    if ifs_slice[ifs_len - 1] {
+                    if ifs_active == ifs_len {
                         self.stack = res.0;
                     }
                     cur_pos = res.1;
                 } else if opcode == OP_PUSHDATA1 {
                     let res = pushdata1(self.stack, script, cur_pos);
-                    if ifs_slice[ifs_len - 1] {
+                    if ifs_active == ifs_len {
                         self.stack = res.0;
                     }
                     cur_pos = res.1;
                 } else if opcode == OP_PUSHDATA2 {
                     let res = pushdata2(self.stack, script, cur_pos);
-                    if ifs_slice[ifs_len - 1] {
+                    if ifs_active == ifs_len {
                         self.stack = res.0;
                     }
                     cur_pos = res.1;
                 } else if opcode == OP_PUSHDATA4 {
                     let res = pushdata4(self.stack, script, cur_pos);
-                    if ifs_slice[ifs_len - 1] {
+                    if ifs_active == ifs_len {
                         self.stack = res.0;
                     }
                     cur_pos = res.1;
@@ -220,6 +222,9 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                             address,
                         );
                     } else if (opcode == OP_CHECKMULSIG) | (opcode == OP_CHECKMULSIGVERIFY) {
+                        if address.is_p2tr() {
+                            assert(false, "OP_CHECKMULSIG is disabled in p2tr");
+                        }
                         let verify = opcode == OP_CHECKMULSIGVERIFY;
                         let n = vec_to_u32(self.stack.data[self.stack.stack_size - 1]);
                         let m = vec_to_u32(self.stack.data[self.stack.stack_size - 2 - n]);
@@ -234,6 +239,8 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                         self.stack.op_checklocktimeverify();
                     } else if opcode == OP_CHECKSEQUENCEVERIFY {
                         self.stack.op_checksequenceverify();
+                    } else if address.is_p2tr() & (SUCCESSX.any(|e| e == opcode) | (opcode >= 187)) {
+                        op_successx = true;
                     } else if (opcode == OP_RESERVED)
                         | (opcode == OP_RESERVED1)
                         | (opcode == OP_RESERVED2)
@@ -244,9 +251,14 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
             }
         }
 
-        assert(ifs_len == 1);
-        if codesep {
-            assert(REDEEM_SCRIPT_LEN == SCRIPT_SIZE - csp_pos);
+        // Script is always successful if we execute op_successx
+        if op_successx {
+            self.stack.op_num(1);
+        } else {
+            assert(ifs_len == 1);
+            if codesep & !address.is_p2tr() {
+                assert(REDEEM_SCRIPT_LEN == SCRIPT_SIZE - csp_pos);
+            }
         }
     }
 }
