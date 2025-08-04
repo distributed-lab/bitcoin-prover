@@ -11,7 +11,7 @@ use globals::{
 use sign::{
     sig_types::{SIGHASH_ALL, SIGHASH_ANYONECANPAY, SIGHASH_NONE, SIGHASH_SINGLE},
     taproot::{
-        serialize_p2tr_sighash_all, serialize_p2tr_sighash_all_anyonecanpay,
+        parse_outputs, serialize_p2tr_sighash_all, serialize_p2tr_sighash_all_anyonecanpay,
         serialize_p2tr_sighash_none, serialize_p2tr_sighash_none_anyonecanpay,
         serialize_p2tr_sighash_single, serialize_p2tr_sighash_single_anyonecanpay,
     },
@@ -23,12 +23,12 @@ use utils::convert::{hex_to_bytes, le_bytes_to_u32};
 fn main(
     cur_tx_data: str<CUR_TX_LEN>,
     prev_tx_data: str<PREV_TX_LEN>,
-    utxos_pos: [Output; CUR_TX_INP_COUNT],
     utxos_data: [u8; UTXOS_LEN],
     input_to_sign: pub u32,
 ) -> pub bool {
     let cur_tx_data = hex_to_bytes(cur_tx_data);
     let prev_tx_data = hex_to_bytes(prev_tx_data);
+    let utxos_pos = parse_outputs::<UTXOS_LEN, CUR_TX_INP_COUNT>(utxos_data);
 
     let cur_tx = Transaction::<CUR_TX_LEN / 2, CUR_TX_INP_COUNT, CUR_TX_INP_COUNT_LEN, CUR_TX_INP_SIZE, CUR_TX_OUT_COUNT, CUR_TX_OUT_COUNT_LEN, CUR_TX_OUT_SIZE, CUR_TX_MAX_WITNESS_STACK_SIZE, CUR_TX_WITNESS_SIZE>::new(
         cur_tx_data,

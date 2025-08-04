@@ -2,4 +2,3 @@ cur_tx_data = "{curTxData}"
 prev_tx_data = "{prevTxData}"
 utxos_data = {utxosData}
 input_to_sign = "{inputToSign}"
-{utxosPos}

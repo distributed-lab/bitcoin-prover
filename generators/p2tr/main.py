@@ -74,7 +74,6 @@ def main():
     proverFile = templateProver.format(
         curTxData=curTxData,
         prevTxData=prevTxData,
-        utxosPos=curTx.get_outputs_positions_as_toml(outpus[1]),
         utxosData=list_to_toml(outpus[0]),
         inputToSign=INPUT_TO_SIGN
     )
