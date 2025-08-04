@@ -46,7 +46,13 @@ pub(crate) fn checksig<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32,
     sigadd: bool,
     address: Address,
     ) -> Stack<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, PREV_TRANSACTION_SIZE, PREV_INPUT_COUNT, PREV_INPUT_COUNT_LEN, PREV_INPUT_SIZE, PREV_OUTPUT_COUNT, PREV_OUTPUT_COUNT_LEN, PREV_OUTPUT_SIZE, PREV_MAX_WITNESS_STACK_SIZE, PREV_WITNESS_SIZE, REDEEM_SCRIPT_LEN> {
-    stack.op_checksig_p2tr(utxo_data, verify, sigadd, Option::none(), leaf_script_hash);
+    stack.op_checksig_p2tr::<UTXOS_LEN, CURRENT_INPUT_COUNT>(
+        utxo_data,
+        verify,
+        sigadd,
+        Option::none(),
+        leaf_script_hash,
+    );
 
     stack
 }

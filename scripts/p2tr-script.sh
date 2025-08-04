@@ -23,7 +23,7 @@ nargo execute --package p2tr_script
 
 # Prove the proof
 mkdir -p target
-mkdir -p target/p2tr-script
+mkdir -p target/p2tr_script
 bb prove -b ./target/p2tr_script.json -w ./target/p2tr_script.gz -o ./target/p2tr_script
 
 # Write the VK

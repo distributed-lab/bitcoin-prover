@@ -52,7 +52,7 @@ def generate(sizes: set, taproot: bool = False):
             sigadd,
         );""") if checksig else ""
     else:
-        checksigif = ("""stack.op_checksig_p2tr(utxo_data, verify, sigadd, Option::none(), leaf_script_hash);""") if checksig else ""
+        checksigif = ("""stack.op_checksig_p2tr::<UTXOS_LEN, CURRENT_INPUT_COUNT>(utxo_data, verify, sigadd, Option::none(), leaf_script_hash);""") if checksig else ""
     
     mulsigifs = "\n".join(
     f"""    if (n == {e[2]}) & (m == {e[3]}) {{
