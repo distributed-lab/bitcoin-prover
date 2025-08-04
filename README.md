@@ -14,26 +14,18 @@ This structure separates concerns nicely:
 ## Components
 
 - `app/` – Contains Noir circuits and their dependencies
-  - `blocks/` – Contains the blocks-related Noir code
-  - `p2sh/` – Contains the P2SH (Pay-to-Script-Hash) related Noir code
-  - `p2tr/` – Contains the P2TR (Pay-to-Taproot) related Noir code
 
 - `crates/` – Contains Noir crates/libraries
   - `blocks/` – Noir implementation for blocks functionality
-  - `p2sh/` – Noir implementation for P2SH functionality
-  - `p2tr/` – Noir implementation for P2TR functionality
+  - `bvm/` – Noir implementation for bitcoin stack functionality
+  - `script/` – Noir implementation for bitcoin script execution
   - `utils` – Noir utils
   - `crypto` – Noir implementation for crypto algorithms
+  - `sign` – Noir implementation for bitcoin tx serialization
 
-- `generators/` – Contains Python scripts for generating configuration files
-  - `blocks/` – Python code to generate blocks-related configuration
-  - `p2sh/` – Python code to generate P2SH-related configuration
-  - `p2tr/` – Python code to generate P2TR-related configuration
+- `generators/` – Contains Python scripts for generating noir files
 
 - `scripts/` – Contains shell scripts for executing proofs
-  - `blocks.sh` – Script to run the blocks proof generation and verification
-  - `p2sh.sh` – Script to run the P2SH proof generation and verification
-  - `p2tr.sh` – Script to run the P2TR proof generation and verification
 
 - `target/` – Output directory for generated files
   - Contains subdirectories for each proof type (e.g., `blocks_bin/`, `p2sh_bin/`)
@@ -59,19 +51,15 @@ The typical workflow is:
 
 ## Usage
 
-To run the blocks proof:
+To run the blocks proof (generators/blocks/config.json - edit it before using):
 ```bash
 ./scripts/blocks.sh
 ```
 
-To run the P2SH proof:
+To run the any spending proof:
 ```bash
-./scripts/p2sh.sh
+python3 -m generators.general.main
 ```
 
-To run the P2TR proof:
-```bash
-./scripts/p2tr.sh
-```
+⚠️ **Warning:** General generator (generators/general) uses a `config.json` - make sure to edit it before running the spending script. All scripts should be run from the project root directory. For usage instructions, see the [general generator README](generators/general/README.md)
 
-⚠️ **Warning:** Each generator has a `config.json` - make sure to edit it before running any scripts. All scripts should be run from the `wrapless-noir-prover/` directory.
