@@ -58,7 +58,7 @@ def main():
             sys.exit()
     elif len(script_pub_key) == 34 and script_pub_key[0] == 0:
         spend_type = SpendType.P2SH
-    elif len(script_pub_key) == 34 and script_pub_key[0] == 1:
+    elif len(script_pub_key) == 34 and script_pub_key[0] == 81:
         if len(curTx.witness[input_to_sign].stack_items) == 1:
             spend_type = SpendType.P2TR_KEY
         else:
