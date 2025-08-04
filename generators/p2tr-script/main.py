@@ -1,9 +1,9 @@
 import json
 from typing import Dict
-from bitcoin.core import CScript
 from generators.utils.tx import Transaction
 from generators.utils.script import Script
 from generators.utils.opcodes_gen import generate
+from generators.utils.taproot_utils import get_outputs_from_inputs
 
 def get_config(path: str = "./generators/p2tr-script/config.json") -> Dict:
     with open(path, "r") as f:
@@ -46,7 +46,7 @@ def main():
     PREV_TX_MAX_WITNESS_STACK_SIZE = 0 if prevTx.witness is None else max(len(w.stack_items) for w in prevTx.witness)
     PREV_TX_WITNESS_SIZE = 0 if prevTx.witness == None else sum(prevTx._get_witness_size(wit) for wit in prevTx.witness)
 
-    outpus = curTx.get_outputs_from_inputs()
+    outpus = get_outputs_from_inputs(curTx)
     requireStackSize = ws.require_stack_size + script_parse.require_stack_size
     maxStackElementSize = max(script_parse.max_element_size, ws.max_element_size)
 

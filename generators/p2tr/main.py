@@ -1,7 +1,7 @@
 import json
 from typing import Dict
-from bitcoin.core import CScript
 from generators.utils.tx import Transaction
+from generators.utils.taproot_utils import get_outputs_from_inputs
 
 def get_config(path: str = "./generators/p2tr/config.json") -> Dict:
     with open(path, "r") as f:
@@ -36,7 +36,7 @@ def main():
 
     INPUT_TO_SIGN = config["input_to_sign"]
 
-    outpus = curTx.get_outputs_from_inputs()
+    outpus = get_outputs_from_inputs(curTx)
 
     opcodesFile = templateOpcodes.format(
         curTx=curTx, 
