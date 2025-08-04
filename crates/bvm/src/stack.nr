@@ -1129,7 +1129,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         (res, n)
     }
 
-    fn op_checksig_p2tr<let UTXO_SIZE: u32, let N_OUTPUT_SIZE: u32>(
+    pub fn op_checksig_p2tr<let UTXO_SIZE: u32, let N_OUTPUT_SIZE: u32>(
         &mut self,
         utxo_data: [u8; UTXO_SIZE],
         verify: bool,

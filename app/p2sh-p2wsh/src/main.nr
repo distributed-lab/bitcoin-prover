@@ -97,9 +97,11 @@ fn main(
         .as_array::<SCRIPT_SIG_LEN / 2 + SCRIPT_PUB_KEY_LEN>();
 
     script_execution_engine
-        .execute::<SCRIPT_SIG_LEN / 2 + SCRIPT_PUB_KEY_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, 4, 0>(
+        .execute::<SCRIPT_SIG_LEN / 2 + SCRIPT_PUB_KEY_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, 4, 0, 0>(
             script,
             Address::new_p2sh(),
+            [],
+            Option::none(),
         );
 
     assert(script_execution_engine.stack.op_verify());
@@ -110,17 +112,21 @@ fn main(
         .as_array::<WITNESS_SCRIPT_LEN / 2 + 35>();
 
     script_execution_engine
-        .execute::<WITNESS_SCRIPT_LEN / 2 + 35, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, OPCODES_AMOUNT, 0>(
+        .execute::<WITNESS_SCRIPT_LEN / 2 + 35, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, OPCODES_AMOUNT, 0, 0>(
             script,
             Address::new_p2wsh(),
+            [],
+            Option::none(),
         );
 
     assert(script_execution_engine.stack.op_verify());
 
     script_execution_engine
-        .execute::<REDEEM_SCRIPT_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, REDEEM_SCRIPT_OPCODES_AMOUNT, 0>(
+        .execute::<REDEEM_SCRIPT_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, REDEEM_SCRIPT_OPCODES_AMOUNT, 0, 0>(
             redeem_script,
             Address::new_p2wsh(),
+            [],
+            Option::none(),
         );
 
     script_execution_engine.stack.op_verify()

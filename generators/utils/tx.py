@@ -262,10 +262,11 @@ class Transaction:
             flag_size = 0
         return 4 + marker_size + flag_size + input_count_len + input_size + output_count_len + output_size + witness_size + 4
 
-    def witness_to_hex_script(self, input_to_sign) -> str:
+    def witness_to_hex_script(self, input_to_sign, end_ignore = 0) -> str:
         res = bytearray()
 
-        for item in self.witness[input_to_sign].stack_items:
+        for i in range(len(self.witness[input_to_sign].stack_items) - end_ignore):
+            item = self.witness[input_to_sign].stack_items[i]
             if item.item_size >= 1 and item.item_size <= 75:
                 res.append(item.item_size)
             elif item.item_size <= 255:

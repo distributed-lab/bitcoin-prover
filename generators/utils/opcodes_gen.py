@@ -1,6 +1,6 @@
 PATH = "./crates/script/src/generated.nr"
 
-def generate(sizes: set):
+def generate(sizes: set, taproot: bool = False):
 
     hash160 = {e for e in sizes if e[0] == 169}
     hash256 = {e for e in sizes if e[0] == 170}
@@ -44,12 +44,15 @@ def generate(sizes: set):
     }}""" for e in sha1
 )
     
-    checksigif = ("""stack
-    .op_checksig::<SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
-        address,
-        verify,
-        sigadd,
-    );""") if checksig else ""
+    if not taproot:
+        checksigif = ("""stack
+        .op_checksig::<SCRIPT_CODE_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE>(
+            address,
+            verify,
+            sigadd,
+        );""") if checksig else ""
+    else:
+        checksigif = ("""stack.op_checksig_p2tr::<UTXOS_LEN, CURRENT_INPUT_COUNT>(utxo_data, verify, sigadd, Option::none(), leaf_script_hash);""") if checksig else ""
     
     mulsigifs = "\n".join(
     f"""    if (n == {e[2]}) & (m == {e[3]}) {{

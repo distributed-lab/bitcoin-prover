@@ -14,7 +14,7 @@ use super::{
         OP_NUMEQUAL, OP_NUMEQUALVERIFY, OP_OVER, OP_PICK, OP_PUSHBYTES1, OP_PUSHBYTES75,
         OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4, OP_RESERVED, OP_RESERVED1, OP_RESERVED2,
         OP_RETURN, OP_RIPEMD160, OP_ROLL, OP_ROT, OP_SHA1, OP_SHA256, OP_SIZE, OP_SUB, OP_SWAP,
-        OP_TOALTSTACK, OP_TUCK, OP_VER, OP_WITHIN,
+        OP_TOALTSTACK, OP_TUCK, OP_VER, OP_WITHIN, SUCCESSX,
     },
 };
 use bvm::stack::{Stack, TestStack};
@@ -32,10 +32,12 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         Self { stack: stack }
     }
 
-    pub fn execute<let SCRIPT_SIZE: u32, let N_OUTPUT_SIZE: u32, let INPUT_TO_SIGN: u32, let INPUT_TO_SIGN_LEN: u32, let N_INPUT_SIZE: u32, let MAX_NUMBER_OF_OPCODES: u32, let SCRIPT_PUB_KEY_LEN: u32>(
+    pub fn execute<let SCRIPT_SIZE: u32, let N_OUTPUT_SIZE: u32, let INPUT_TO_SIGN: u32, let INPUT_TO_SIGN_LEN: u32, let N_INPUT_SIZE: u32, let MAX_NUMBER_OF_OPCODES: u32, let SCRIPT_PUB_KEY_LEN: u32, let UTXOS_LEN: u32>(
         &mut self,
         script: [u8; SCRIPT_SIZE],
         address: Address,
+        utxo_data: [u8; UTXOS_LEN],
+        leaf_script_hash: Option<[u8; 32]>,
     ) {
         let mut cur_pos: u32 = 0;
         let mut ifs_len: u32 = 1;
@@ -43,13 +45,15 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         let mut ifs_slice: [bool] = [true].as_slice();
         let mut codesep = false;
         let mut csp_pos = 0;
+        let mut op_successx = false;
 
         for _ in 0..MAX_NUMBER_OF_OPCODES {
-            if cur_pos < SCRIPT_SIZE {
+            if (cur_pos < SCRIPT_SIZE) & !op_successx {
                 let opcode = script[cur_pos];
                 cur_pos += 1;
 
-                if DISABLED.any(|e| e == opcode) {
+                if DISABLED.any(|e| e == opcode)
+                    & !(address.is_p2tr() & SUCCESSX.any(|e| e == opcode)) {
                     assert(false, "Disabled or reserved opcode!");
                 } else if (opcode == OP_IF) | (opcode == OP_NOTIF) {
                     let top = if ifs_slice[ifs_len - 1] {
@@ -76,25 +80,25 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                 } else if opcode >= OP_PUSHBYTES1 & opcode <= OP_PUSHBYTES75 {
                     let push_length = opcode as u32;
                     let res = pushbytes(self.stack, push_length, script, cur_pos);
-                    if ifs_slice[ifs_len - 1] {
+                    if ifs_active == ifs_len {
                         self.stack = res.0;
                     }
                     cur_pos = res.1;
                 } else if opcode == OP_PUSHDATA1 {
                     let res = pushdata1(self.stack, script, cur_pos);
-                    if ifs_slice[ifs_len - 1] {
+                    if ifs_active == ifs_len {
                         self.stack = res.0;
                     }
                     cur_pos = res.1;
                 } else if opcode == OP_PUSHDATA2 {
                     let res = pushdata2(self.stack, script, cur_pos);
-                    if ifs_slice[ifs_len - 1] {
+                    if ifs_active == ifs_len {
                         self.stack = res.0;
                     }
                     cur_pos = res.1;
                 } else if opcode == OP_PUSHDATA4 {
                     let res = pushdata4(self.stack, script, cur_pos);
-                    if ifs_slice[ifs_len - 1] {
+                    if ifs_active == ifs_len {
                         self.stack = res.0;
                     }
                     cur_pos = res.1;
@@ -213,13 +217,18 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                     } else if (opcode == OP_CHECKSIG) | (opcode == OP_CHECKSIGVERIFY) {
                         let verify = opcode == OP_CHECKSIGVERIFY;
                         let sigadd = opcode == OP_CHECKSIGADD;
-                        self.stack = checksig::<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, PREV_TRANSACTION_SIZE, PREV_INPUT_COUNT, PREV_INPUT_COUNT_LEN, PREV_INPUT_SIZE, PREV_OUTPUT_COUNT, PREV_OUTPUT_COUNT_LEN, PREV_OUTPUT_SIZE, PREV_MAX_WITNESS_STACK_SIZE, PREV_WITNESS_SIZE, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, SCRIPT_PUB_KEY_LEN, REDEEM_SCRIPT_LEN>(
+                        self.stack = checksig::<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, PREV_TRANSACTION_SIZE, PREV_INPUT_COUNT, PREV_INPUT_COUNT_LEN, PREV_INPUT_SIZE, PREV_OUTPUT_COUNT, PREV_OUTPUT_COUNT_LEN, PREV_OUTPUT_SIZE, PREV_MAX_WITNESS_STACK_SIZE, PREV_WITNESS_SIZE, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, SCRIPT_PUB_KEY_LEN, REDEEM_SCRIPT_LEN, UTXOS_LEN>(
                             self.stack,
+                            utxo_data,
+                            leaf_script_hash,
                             verify,
                             sigadd,
                             address,
                         );
                     } else if (opcode == OP_CHECKMULSIG) | (opcode == OP_CHECKMULSIGVERIFY) {
+                        if address.is_p2tr() {
+                            assert(false, "OP_CHECKMULSIG is disabled in p2tr");
+                        }
                         let verify = opcode == OP_CHECKMULSIGVERIFY;
                         let n = vec_to_u32(self.stack.data[self.stack.stack_size - 1]);
                         let m = vec_to_u32(self.stack.data[self.stack.stack_size - 2 - n]);
@@ -234,6 +243,8 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                         self.stack.op_checklocktimeverify();
                     } else if opcode == OP_CHECKSEQUENCEVERIFY {
                         self.stack.op_checksequenceverify();
+                    } else if address.is_p2tr() & (SUCCESSX.any(|e| e == opcode) | (opcode >= 187)) {
+                        op_successx = true;
                     } else if (opcode == OP_RESERVED)
                         | (opcode == OP_RESERVED1)
                         | (opcode == OP_RESERVED2)
@@ -244,9 +255,14 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
             }
         }
 
-        assert(ifs_len == 1);
-        if codesep {
-            assert(REDEEM_SCRIPT_LEN == SCRIPT_SIZE - csp_pos);
+        // Script is always successful if we execute op_successx
+        if op_successx {
+            self.stack.op_num(1);
+        } else {
+            assert(ifs_len == 1);
+            if codesep & !address.is_p2tr() {
+                assert(REDEEM_SCRIPT_LEN == SCRIPT_SIZE - csp_pos);
+            }
         }
     }
 }
@@ -262,13 +278,28 @@ fn test_if_opcodes() {
     // OP_NOTIF OP_3 OP_ELSE OP_IF OP_2 OP_ELSE OP_4 OP_ENDIF OP_ENDIF OP_ADD OP_5 OP_EQUALVERIFY
     let script_else_else = hex_to_bytes("510051645367635267546868935588");
     let mut engine = ScriptExecutionEngine::new(stack);
-    engine.execute::<15, 0, 0, 0, 0, 15, 0>(script_else_else, Address::new_p2sh());
+    engine.execute::<15, 0, 0, 0, 0, 15, 0, 0>(
+        script_else_else,
+        Address::new_p2sh(),
+        [0; 0],
+        Option::none(),
+    );
 
     let script_if = hex_to_bytes("5200645367635267546868935588");
-    engine.execute::<14, 0, 0, 0, 0, 14, 0>(script_if, Address::new_p2sh());
+    engine.execute::<14, 0, 0, 0, 0, 14, 0, 0>(
+        script_if,
+        Address::new_p2sh(),
+        [0; 0],
+        Option::none(),
+    );
 
     let script_else_if = hex_to_bytes("535151645367635267546868935588");
-    engine.execute::<15, 0, 0, 0, 0, 15, 0>(script_else_if, Address::new_p2sh());
+    engine.execute::<15, 0, 0, 0, 0, 15, 0, 0>(
+        script_else_if,
+        Address::new_p2sh(),
+        [0; 0],
+        Option::none(),
+    );
 }
 
 #[test(should_fail_with = "Disabled or reserved opcode!")]
@@ -277,7 +308,12 @@ fn test_disabled_opcodes() {
     // OP_1 OP_2 OP_MUL
     let script_else_else = hex_to_bytes("515295");
     let mut engine = ScriptExecutionEngine::new(stack);
-    engine.execute::<3, 0, 0, 0, 0, 3, 0>(script_else_else, Address::new_p2sh());
+    engine.execute::<3, 0, 0, 0, 0, 3, 0, 0>(
+        script_else_else,
+        Address::new_p2sh(),
+        [0; 0],
+        Option::none(),
+    );
 }
 
 #[test(should_fail_with = "Reserved opcode!")]
@@ -286,7 +322,12 @@ fn test_reserved_opcodes() {
     // OP_1 OP_2 OP_RESERVED
     let script_else_else = hex_to_bytes("515250");
     let mut engine = ScriptExecutionEngine::new(stack);
-    engine.execute::<3, 0, 0, 0, 0, 3, 0>(script_else_else, Address::new_p2sh());
+    engine.execute::<3, 0, 0, 0, 0, 3, 0, 0>(
+        script_else_else,
+        Address::new_p2sh(),
+        [0; 0],
+        Option::none(),
+    );
 }
 
 /*
