@@ -84,9 +84,11 @@ fn main(
         .as_array::<SCRIPT_SIG_LEN / 2 + SCRIPT_PUB_KEY_LEN>();
 
     script_execution_engine
-        .execute::<SCRIPT_SIG_LEN / 2 + SCRIPT_PUB_KEY_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, 4, 0>(
+        .execute::<SCRIPT_SIG_LEN / 2 + SCRIPT_PUB_KEY_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, 4, 0, 0>(
             script,
             Address::new_p2sh(),
+            [],
+            Option::none(),
         );
 
     assert(script_execution_engine.stack.op_verify());
@@ -102,9 +104,11 @@ fn main(
         .as_array::<SIG_LEN / 2 + PK_LEN / 2 + 25 + 2>();
 
     script_execution_engine
-        .execute::<SIG_LEN / 2 + PK_LEN / 2 + 25 + 2, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, 7, 0>(
+        .execute::<SIG_LEN / 2 + PK_LEN / 2 + 25 + 2, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, 7, 0, 0>(
             script,
             Address::new_p2wpkh(),
+            [],
+            Option::none(),
         );
 
     script_execution_engine.stack.op_verify()
