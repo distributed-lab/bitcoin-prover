@@ -2,7 +2,7 @@
     "file_path": "app/p2pkh",
     "pub_key": "{pk}",
     "signature": "{sign}",
-    "cur_tx": "{cutTx}",
+    "cur_tx": "{curTx}",
     "prev_tx": "{prevTx}",
     "input_to_sign": {inputToSign}
 }}

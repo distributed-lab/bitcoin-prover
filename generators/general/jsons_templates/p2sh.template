@@ -1,7 +1,7 @@
 {{
     "file_path": "app/{type}",
     "script_sig": "{scriptSig}",
-    "cur_tx": "{cutTx}",
+    "cur_tx": "{curTx}",
     "prev_tx": "{prevTx}",
     "input_to_sign": {inputToSign}
 }}

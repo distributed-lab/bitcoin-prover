@@ -99,7 +99,8 @@ def main():
         type=json_name[:-9],
         pk=config["pub_key"],
         sign=config["signature"],
-        cutTx=config["tx"],
+        scriptSig=config["script_sig"],
+        curTx=config["tx"],
         prevTx=response.text,
         inputToSign=input_to_sign,
     )
