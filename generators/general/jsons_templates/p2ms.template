@@ -1,0 +1,7 @@
+{{
+    "file_path": "app/p2ms",
+    "script_sig": "{scriptSig}",
+    "cur_tx": "{curTx}",
+    "prev_tx": "{prevTx}",
+    "input_to_sign": {inputToSign}
+}}
