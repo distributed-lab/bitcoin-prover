@@ -1,0 +1,6 @@
+[package]
+name = "rec"
+type = "bin"
+
+[dependencies]
+blocks_lib = { path = "../../../crates/blocks" }

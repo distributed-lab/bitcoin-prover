@@ -7,7 +7,6 @@ members = [
     "crates/crypto",
     "crates/bvm",
     "crates/sign",
-    "app/blocks",
     "app/p2sh",
     "app/p2tr",
     "app/p2tr-script",
@@ -15,4 +14,6 @@ members = [
     "app/p2pkh",
     "app/p2sh-p2wpkh",
     "app/p2sh-p2wsh",
+    "app/blocks-recursive/start",
+    "app/blocks-recursive/rec",
 ]

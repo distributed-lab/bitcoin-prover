@@ -5,15 +5,12 @@ use std::ops::Mul;
 global expected_time: Field = 1209600;
 global max_target: Field = 0x00000000FFFF0000000000000000000000000000000000000000000000000000;
 
-pub fn check_chain<let SIZE: u32>(blocks: [BlockHeader; SIZE]) -> bool {
+pub fn check_chain<let SIZE: u32>(
+    blocks: [BlockHeader; SIZE],
+    mut median_timestamp: i64,
+    mut prev_bits: u32,
+) -> (bool, i64) {
     let mut is_correct = true;
-    let mut median_timestamp = blocks[0].timestamp as i64;
-    let mut prev_bits = blocks[0].bits;
-
-    if !check_target(blocks[0]) {
-        is_correct = false;
-        println("target check fail");
-    }
 
     // without genesis block
     for i in 1..SIZE {
@@ -88,7 +85,7 @@ pub fn check_chain<let SIZE: u32>(blocks: [BlockHeader; SIZE]) -> bool {
         }
     }
 
-    is_correct
+    (is_correct, median_timestamp)
 }
 
 pub(crate) unconstrained fn cut(mut value: U256) -> (U256, u8) {
