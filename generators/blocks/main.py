@@ -79,7 +79,7 @@ def main():
     with open("./target/blocks_bin/public_inputs_fields.json", "r") as file:
         pi = file.read()
 
-    logging.debug("nargo execute (recursive)")
+    logging.debug("nargo compile (recursive)")
     subprocess.run(['nargo', 'compile', '--package', 'rec'], check=True)
 
     logging.debug("bb write_vk (recursive)")
@@ -96,25 +96,27 @@ def main():
         vk_rec = file.read()
     
     while index < (blocks_amount - 1):
-        logging.debug(f"Prooving blocks from {index} to {index + 2016}")
         pi_array = ast.literal_eval(pi)
-        if pi_array[-2] != 1:
+        if int(pi_array[-2], 16) != 1:
             print("Execution returs false, can't verify blocks chain")
             sys.exit()
 
+        logging.debug(f"Prooving blocks from {index} to {index + 2016}")
         nargo_toml = create_nargo_toml(blocks[index:(index + 2017)], "blocks")
         index += 2016
 
         with open("./app/blocks-recursive/rec/Prover.toml", "w") as f:
             f.write(f"last_block_hash = \"{blocks[index].get_block_hash()}\"\n\n")
-            f.write(f"timestamp = \"{pi_array[-1]}\"\n\n")
-            f.write(f"verification_key = \"{vk}\"\n\n")
-            f.write(f"proof = \"{proof}\"\n\n")
-            f.write(f"public_inputs = \"{pi}\"\n\n")
+            f.write(f"timestamp = \"{int(pi_array[-1], 16)}\"\n\n")
+            f.write(f"verification_key = {vk}\n\n")
+            f.write(f"proof = {proof}\n\n")
+            f.write(f"public_inputs = {pi}\n\n")
             f.write(nargo_toml)
 
+        logging.debug("nargo execute (recursive)")
         subprocess.run(['nargo', 'execute', '--package', 'rec'], check=True)
 
+        logging.debug("bb prove (recursive)")
         subprocess.run(['bb', 'prove', 
                         '-s', 'ultra_honk', 
                         '-b', './target/rec.json', 
@@ -142,7 +144,7 @@ def main():
             pi = file.read()
 
     pi_array = ast.literal_eval(pi)
-    if pi_array[-2] != 1:
+    if int(pi_array[-2], 16) != 1:
         print("Execution returs false, can't verify blocks chain")
         sys.exit()
 
