@@ -6,6 +6,7 @@ import logging
 import sys
 import subprocess
 import ast
+import logging
 
 def setup_logging():
     logging.basicConfig(level=logging.DEBUG)
@@ -32,13 +33,15 @@ def main():
     nargo_toml = create_nargo_toml(blocks[index:2017], "blocks")
     index = 2016
 
-    with open("./app/block-recursive/start/Prover.toml", "w") as f:
+    with open("./app/blocks-recursive/start/Prover.toml", "w") as f:
         f.write(f"last_block_hash = \"{blocks[index].get_block_hash()}\"\n\n")
         f.write(f"timestamp = \"{int.from_bytes(bytes.fromhex(blocks[0].time), byteorder='little')}\"\n\n")
         f.write(nargo_toml)
 
+    logging.debug("nargo execute (start)")
     subprocess.run(['nargo', 'execute', '--package', 'start'], check=True)
 
+    logging.debug("bb proof")
     subprocess.run(['bb', 'prove', 
                     '-s', 'ultra_honk', 
                     '-b', './target/start.json', 
@@ -50,6 +53,7 @@ def main():
                     '--init_kzg_accumulator'],
                     check=True)
     
+    logging.debug("bb write_vk (start)")
     subprocess.run(['bb', 'write_vk', 
                     '-s', 'ultra_honk', 
                     '-b', './target/start.json', 
@@ -66,17 +70,19 @@ def main():
                     '-i', './target/blocks_bin/public_inputs'],
                     check=True)
     
-    with open ("./target/blocks_bin/proof_fields.json") as file:
+    with open("./target/blocks_bin/proof_fields.json", "r") as file:
         proof = file.read()
 
-    with open ("./target/blocks_bin/vk_fields.json") as file:
+    with open("./target/blocks_bin/vk_fields.json", "r") as file:
         vk = file.read()
 
-    with open ("./target/blocks_bin/public_inputs_fields.json") as file:
+    with open("./target/blocks_bin/public_inputs_fields.json", "r") as file:
         pi = file.read()
 
+    logging.debug("nargo execute (recursive)")
     subprocess.run(['nargo', 'compile', '--package', 'rec'], check=True)
 
+    logging.debug("bb write_vk (recursive)")
     subprocess.run(['bb', 'write_vk', 
                     '-s', 'ultra_honk', 
                     '-b', './target/rec.json', 
@@ -86,10 +92,11 @@ def main():
                     '--init_kzg_accumulator'],
                     check=True)
     
-    with open ("./target/blocks_bin/rec/vk_fields.json") as file:
+    with open("./target/blocks_bin/rec/vk_fields.json", "r") as file:
         vk_rec = file.read()
     
-    while index < blocks_amount:
+    while index < (blocks_amount - 1):
+        logging.debug(f"Prooving blocks from {index} to {index + 2016}")
         pi_array = ast.literal_eval(pi)
         if pi_array[-2] != 1:
             print("Execution returs false, can't verify blocks chain")
@@ -98,7 +105,7 @@ def main():
         nargo_toml = create_nargo_toml(blocks[index:(index + 2017)], "blocks")
         index += 2016
 
-        with open("./app/block-recursive/rec/Prover.toml", "w") as f:
+        with open("./app/blocks-recursive/rec/Prover.toml", "w") as f:
             f.write(f"last_block_hash = \"{blocks[index].get_block_hash()}\"\n\n")
             f.write(f"timestamp = \"{pi_array[-1]}\"\n\n")
             f.write(f"verification_key = \"{vk}\"\n\n")
@@ -126,12 +133,12 @@ def main():
                         '-i', './target/blocks_bin/rec/public_inputs'],
                         check=True)
         
-        with open ("./target/blocks_bin/rec/proof_fields.json") as file:
+        with open("./target/blocks_bin/rec/proof_fields.json", "r") as file:
             proof = file.read()
 
         vk = vk_rec
 
-        with open ("./target/blocks_bin/rec/public_inputs_fields.json") as file:
+        with open("./target/blocks_bin/rec/public_inputs_fields.json", "r") as file:
             pi = file.read()
 
     pi_array = ast.literal_eval(pi)
