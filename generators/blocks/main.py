@@ -31,7 +31,7 @@ def main():
     blocks = [Block(header) for header in hex_headers]
 
     nargo_toml = create_nargo_toml(blocks[index:2022], "blocks")
-    index = 2016
+    index = 2021
 
     with open("./app/blocks-recursive/start/Prover.toml", "w") as f:
         f.write(f"last_block_hash = \"{blocks[index].get_block_hash()}\"\n\n")
@@ -103,14 +103,14 @@ def main():
             print("Execution returs false, can't verify blocks chain")
             sys.exit()
 
-        logging.debug(f"Prooving blocks from {index} to {index + 2021}")
-        nargo_toml = create_nargo_toml(blocks[index:(index + 2022)], "blocks")
+        logging.debug(f"Prooving blocks from {index - 5} to {index + 2016}")
+        nargo_toml = create_nargo_toml(blocks[(index - 5):(index + 2017)], "blocks")
         index += 2016
 
         with open("./app/blocks-recursive/rec/Prover.toml", "w") as f:
             f.write(f"last_block_hash = \"{blocks[index].get_block_hash()}\"\n\n")
             f.write(f"timestamp = \"{int(pi_array[-3], 16)}\"\n\n")
-            f.write(f"last_checked_block_height = \"{int(pi_array[-2], 16)}\"\n\n")
+            f.write(f"last_block_height = \"{int(pi_array[-2], 16)}\"\n\n")
             f.write(f"chainwork = \"{int(pi_array[-1], 16)}\"\n\n")
             f.write(f"verification_key = {vk}\n\n")
             f.write(f"proof = {proof}\n\n")
