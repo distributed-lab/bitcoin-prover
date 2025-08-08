@@ -22,15 +22,15 @@ def main():
 
     blocks_amount = config["blocks"]["count"]
 
-    if blocks_amount % 2016 != 1:
-        print("Amount of blocks must be (2016 * x + 1), where x > 0")
+    if blocks_amount % 2016 != 6:
+        print("Amount of blocks must be (2016 * x + 6), where x > 0")
         sys.exit()
 
     puller = BlockHeaderPuller(config["gateway"])
     hex_headers =puller.pull_block_headers(config["blocks"]["start"], config["blocks"]["count"])
     blocks = [Block(header) for header in hex_headers]
 
-    nargo_toml = create_nargo_toml(blocks[index:2017], "blocks")
+    nargo_toml = create_nargo_toml(blocks[index:2022], "blocks")
     index = 2016
 
     with open("./app/blocks-recursive/start/Prover.toml", "w") as f:
@@ -101,8 +101,8 @@ def main():
             print("Execution returs false, can't verify blocks chain")
             sys.exit()
 
-        logging.debug(f"Prooving blocks from {index} to {index + 2016}")
-        nargo_toml = create_nargo_toml(blocks[index:(index + 2017)], "blocks")
+        logging.debug(f"Prooving blocks from {index} to {index + 2021}")
+        nargo_toml = create_nargo_toml(blocks[index:(index + 2022)], "blocks")
         index += 2016
 
         with open("./app/blocks-recursive/rec/Prover.toml", "w") as f:

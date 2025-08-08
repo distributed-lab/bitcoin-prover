@@ -1,19 +1,21 @@
 use super::{block::{BlockHeader, get_block_hash}, target::{check_target, uncompres_target}};
-use dep::bignum::{BigNum, U256};
+use dep::bignum::{BigNum, U256, U512};
 use std::ops::Mul;
 
 global expected_time: Field = 1209600;
 global max_target: Field = 0x00000000FFFF0000000000000000000000000000000000000000000000000000;
 
-pub fn check_chain<let SIZE: u32>(
+// Returns (is_successful, timestamp, chainwork)
+pub fn check_chain<let SIZE: u32, let OFFSET: u32>(
     blocks: [BlockHeader; SIZE],
     mut median_timestamp: i64,
     mut prev_bits: u32,
-) -> (bool, i64) {
+    mut chainwork: Field,
+) -> (bool, i64, Field) {
     let mut is_correct = true;
 
-    // without genesis block
-    for i in 1..SIZE {
+    // skip blocks that were checked before
+    for i in OFFSET..SIZE {
         // prev
         if blocks[i].prev_block != get_block_hash(blocks[i - 1]) {
             is_correct = false;
@@ -85,7 +87,45 @@ pub fn check_chain<let SIZE: u32>(
         }
     }
 
-    (is_correct, median_timestamp)
+    let new_chainwork = calc_chainwork::<SIZE, OFFSET>(
+        chainwork,
+        uncompres_target(blocks[0].bits),
+        uncompres_target(blocks[SIZE - 1].bits),
+    );
+
+    (is_correct, median_timestamp, new_chainwork)
+}
+
+fn calc_chainwork<let SIZE: u32, let OFFSET: u32>(
+    old_chainwork: Field,
+    prev_bloks_target: U256,
+    cur_blocks_target: U256,
+) -> Field {
+    let two_pow = U512::from_be_bytes([
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00,
+    ]);
+
+    let old_work = Field::from_be_bytes(two_pow
+        .udiv(U512::from_be_bytes([0; 32]
+            .as_slice()
+            .append(prev_bloks_target.to_be_bytes())
+            .as_array::<65>()))
+        .to_be_bytes());
+
+    let new_work = Field::from_be_bytes(two_pow
+        .udiv(U512::from_be_bytes([0; 32]
+            .as_slice()
+            .append(cur_blocks_target.to_be_bytes())
+            .as_array::<65>()))
+        .to_be_bytes());
+
+    let offset = if OFFSET == 1 { 0 } else { OFFSET };
+
+    old_chainwork + (new_work * 6) + (old_work * (SIZE - 6 - offset) as Field)
 }
 
 pub(crate) unconstrained fn cut(mut value: U256) -> (U256, u8) {
@@ -105,4 +145,10 @@ pub(crate) unconstrained fn cut(mut value: U256) -> (U256, u8) {
     }
 
     (value.mul(U256::from(2.pow_32(count as Field))), count)
+}
+
+#[test]
+fn calc_chainwork_test() {
+    let target = uncompres_target(0x1d00ffff);
+    assert(calc_chainwork::<2022, 6>(0x7e607e607e6, target, target) == 0xfc60fc60fc6);
 }
