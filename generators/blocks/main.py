@@ -36,6 +36,8 @@ def main():
     with open("./app/blocks-recursive/start/Prover.toml", "w") as f:
         f.write(f"last_block_hash = \"{blocks[index].get_block_hash()}\"\n\n")
         f.write(f"timestamp = \"{int.from_bytes(bytes.fromhex(blocks[0].time), byteorder='little')}\"\n\n")
+        f.write(f"last_checked_block_height = \"0\"\n\n")
+        f.write(f"chainwork = \"0\"\n\n")
         f.write(nargo_toml)
 
     logging.debug("nargo execute (start)")
@@ -97,7 +99,7 @@ def main():
     
     while index < (blocks_amount - 1):
         pi_array = ast.literal_eval(pi)
-        if int(pi_array[-2], 16) != 1:
+        if int(pi_array[-4], 16) != 1:
             print("Execution returs false, can't verify blocks chain")
             sys.exit()
 
@@ -107,7 +109,9 @@ def main():
 
         with open("./app/blocks-recursive/rec/Prover.toml", "w") as f:
             f.write(f"last_block_hash = \"{blocks[index].get_block_hash()}\"\n\n")
-            f.write(f"timestamp = \"{int(pi_array[-1], 16)}\"\n\n")
+            f.write(f"timestamp = \"{int(pi_array[-3], 16)}\"\n\n")
+            f.write(f"last_checked_block_height = \"{int(pi_array[-2], 16)}\"\n\n")
+            f.write(f"chainwork = \"{int(pi_array[-1], 16)}\"\n\n")
             f.write(f"verification_key = {vk}\n\n")
             f.write(f"proof = {proof}\n\n")
             f.write(f"public_inputs = {pi}\n\n")
@@ -144,7 +148,7 @@ def main():
             pi = file.read()
 
     pi_array = ast.literal_eval(pi)
-    if int(pi_array[-2], 16) != 1:
+    if int(pi_array[-4], 16) != 1:
         print("Execution returs false, can't verify blocks chain")
         sys.exit()
 
