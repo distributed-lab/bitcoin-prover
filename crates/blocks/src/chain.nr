@@ -5,13 +5,14 @@ use std::ops::Mul;
 global expected_time: Field = 1209600;
 global max_target: Field = 0x00000000FFFF0000000000000000000000000000000000000000000000000000;
 
-// Returns (is_successful, timestamp, chainwork)
+// Returns (is_successful, timestamps, chainwork)
 pub fn check_chain<let SIZE: u32, let OFFSET: u32>(
     blocks: [BlockHeader; SIZE],
-    mut median_timestamp: i64,
+    mut timestamps: [u32; 11],
+    mut time_idx: u32,
     mut prev_bits: u32,
     mut chainwork: Field,
-) -> (bool, i64, Field) {
+) -> (bool, [u32; 11], u32, Field) {
     let mut is_correct = true;
 
     // skip blocks that were checked before
@@ -22,11 +23,20 @@ pub fn check_chain<let SIZE: u32, let OFFSET: u32>(
             println("prev hash fail");
         }
 
+        let idx = if (OFFSET == 1) & (i < 11) {
+            i / 2 + 11 - i
+        } else {
+            5
+        };
+
         // timestamp
-        if !(blocks[i].timestamp as i64 > median_timestamp) {
+        if !(blocks[i].timestamp > timestamps.sort()[idx]) {
             is_correct = false;
             println("timestamp fail");
         }
+
+        timestamps[time_idx] = blocks[i].timestamp;
+        time_idx = (time_idx + 1) % 11;
 
         // if new target
         if i % 2016 == 0 {
@@ -76,15 +86,6 @@ pub fn check_chain<let SIZE: u32, let OFFSET: u32>(
             is_correct = false;
             println("target check fail");
         }
-
-        // new timestamp
-        if (i > 10) | (OFFSET == 6) {
-            median_timestamp = median_timestamp
-                - (blocks[i - 11].timestamp as i64 - blocks[i].timestamp as i64) / 11;
-        } else {
-            median_timestamp =
-                (median_timestamp * i as i64 + blocks[i].timestamp as i64) / (i + 1) as i64;
-        }
     }
 
     let new_chainwork = calc_chainwork::<SIZE, OFFSET>(
@@ -93,7 +94,7 @@ pub fn check_chain<let SIZE: u32, let OFFSET: u32>(
         uncompres_target(blocks[SIZE - 1].bits),
     );
 
-    (is_correct, median_timestamp, new_chainwork)
+    (is_correct, timestamps, time_idx, new_chainwork)
 }
 
 fn calc_chainwork<let SIZE: u32, let OFFSET: u32>(

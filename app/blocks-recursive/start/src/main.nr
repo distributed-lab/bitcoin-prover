@@ -6,20 +6,21 @@ global BLOCKS_OFFSET: u32 = 1;
 
 fn main(
     blocks: [BlockHeader; BLOCKS_AMOUNT],
-    timestamp: i64,
-    last_checked_block_height: u32,
-    chainwork: Field,
     last_block_hash: pub str<64>,
-) -> pub (i64, u32, Field) {
+) -> pub ([u32; 11], u32, u32, Field) {
     assert(
         get_block_hash(blocks[0])
             == "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f",
     );
     assert(get_block_hash(blocks[BLOCKS_AMOUNT - 1]) == last_block_hash);
+
+    let mut timestamps = [0; 11];
+    timestamps[0] = blocks[0].timestamp;
+
     let checked =
-        check_chain::<BLOCKS_AMOUNT, BLOCKS_OFFSET>(blocks, timestamp, blocks[0].bits, chainwork);
+        check_chain::<BLOCKS_AMOUNT, BLOCKS_OFFSET>(blocks, timestamps, 1, blocks[0].bits, 0);
 
     assert(checked.0);
 
-    (checked.1, last_checked_block_height + BLOCKS_AMOUNT - BLOCKS_OFFSET, checked.2)
+    (checked.1, checked.2, BLOCKS_AMOUNT - BLOCKS_OFFSET, checked.3)
 }

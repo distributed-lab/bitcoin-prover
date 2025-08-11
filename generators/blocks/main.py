@@ -35,9 +35,6 @@ def main():
 
     with open("./app/blocks-recursive/start/Prover.toml", "w") as f:
         f.write(f"last_block_hash = \"{blocks[index].get_block_hash()}\"\n\n")
-        f.write(f"timestamp = \"{int.from_bytes(bytes.fromhex(blocks[0].time), byteorder='little')}\"\n\n")
-        f.write(f"last_checked_block_height = \"0\"\n\n")
-        f.write(f"chainwork = \"0\"\n\n")
         f.write(nargo_toml)
 
     logging.debug("nargo execute (start)")
@@ -106,7 +103,8 @@ def main():
 
         with open("./app/blocks-recursive/rec/Prover.toml", "w") as f:
             f.write(f"last_block_hash = \"{blocks[index].get_block_hash()}\"\n\n")
-            f.write(f"timestamp = \"{int(pi_array[-3], 16)}\"\n\n")
+            f.write(f"timestamps = [{', '.join(str(v) for v in pi_array[64:75])}]\n\n")
+            f.write(f"time_idx = \"{pi_array[-3]}\"\n\n")
             f.write(f"last_block_height = \"{int(pi_array[-2], 16)}\"\n\n")
             f.write(f"chainwork = \"{int(pi_array[-1], 16)}\"\n\n")
             f.write(f"verification_key = {vk}\n\n")
