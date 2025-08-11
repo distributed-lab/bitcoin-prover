@@ -78,7 +78,7 @@ pub fn check_chain<let SIZE: u32, let OFFSET: u32>(
         }
 
         // new timestamp
-        if i > 10 {
+        if (i > 10) | (OFFSET == 6) {
             median_timestamp = median_timestamp
                 - (blocks[i - 11].timestamp as i64 - blocks[i].timestamp as i64) / 11;
         } else {
