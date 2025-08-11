@@ -7,10 +7,10 @@ global BLOCKS_OFFSET: u32 = 1;
 fn main(
     blocks: [BlockHeader; BLOCKS_AMOUNT],
     timestamp: i64,
+    last_checked_block_height: u32,
+    chainwork: Field,
     last_block_hash: pub str<64>,
-    last_checked_block_height: pub u32,
-    chainwork: pub Field,
-) -> pub (bool, i64, u32, Field) {
+) -> pub (i64, u32, Field) {
     assert(
         get_block_hash(blocks[0])
             == "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f",
@@ -19,5 +19,7 @@ fn main(
     let checked =
         check_chain::<BLOCKS_AMOUNT, BLOCKS_OFFSET>(blocks, timestamp, blocks[0].bits, chainwork);
 
-    (checked.0, checked.1, last_checked_block_height + BLOCKS_AMOUNT - BLOCKS_OFFSET, checked.2)
+    assert(checked.0);
+
+    (checked.1, last_checked_block_height + BLOCKS_AMOUNT - BLOCKS_OFFSET, checked.2)
 }

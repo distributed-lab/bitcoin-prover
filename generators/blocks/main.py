@@ -99,9 +99,6 @@ def main():
     
     while index < (blocks_amount - 1):
         pi_array = ast.literal_eval(pi)
-        if int(pi_array[-4], 16) != 1:
-            print("Execution returs false, can't verify blocks chain")
-            sys.exit()
 
         logging.debug(f"Prooving blocks from {index - 5} to {index + 2016}")
         nargo_toml = create_nargo_toml(blocks[(index - 5):(index + 2017)], "blocks")
@@ -146,11 +143,6 @@ def main():
 
         with open("./target/blocks_bin/rec/public_inputs_fields.json", "r") as file:
             pi = file.read()
-
-    pi_array = ast.literal_eval(pi)
-    if int(pi_array[-4], 16) != 1:
-        print("Execution returs false, can't verify blocks chain")
-        sys.exit()
 
     print("Recursive proof was created successfully")
     
