@@ -1,0 +1,6 @@
+[package]
+name = "start"
+type = "bin"
+
+[dependencies]
+blocks_lib = { path = "../../../crates/blocks" }

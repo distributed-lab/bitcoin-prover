@@ -1,6 +1,0 @@
-[package]
-name = "blocks_bin"
-type = "bin"
-
-[dependencies]
-blocks_lib = { path = "../../crates/blocks" }
