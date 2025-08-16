@@ -122,8 +122,7 @@ def main():
                             '-b', './target/rec.json', 
                             '-w', './target/rec.gz',
                             '-o', './target/blocks_bin/rec', 
-                            '--output_format', 'bytes_and_fields', 
-                            '--oracle_hash', 'keccak'],
+                            '--output_format', 'bytes_and_fields'],
                             check=True)
         else:
             logging.debug("bb prove (recursive)")
