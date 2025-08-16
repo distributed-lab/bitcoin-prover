@@ -115,17 +115,28 @@ def main():
         logging.debug("nargo execute (recursive)")
         subprocess.run(['nargo', 'execute', '--package', 'rec'], check=True)
 
-        logging.debug("bb prove (recursive)")
-        subprocess.run(['bb', 'prove', 
-                        '-s', 'ultra_honk', 
-                        '-b', './target/rec.json', 
-                        '-w', './target/rec.gz', 
-                        '-o', './target/blocks_bin/rec', 
-                        '--output_format', 'bytes_and_fields', 
-                        '--honk_recursion', '1', 
-                        '--recursive', 
-                        '--init_kzg_accumulator'],
-                        check=True)
+        if index == blocks_amount - 1:
+            logging.debug("bb prove (recursive)")
+            subprocess.run(['bb', 'prove', 
+                            '-s', 'ultra_honk', 
+                            '-b', './target/rec.json', 
+                            '-w', './target/rec.gz',
+                            '-o', './target/blocks_bin/rec', 
+                            '--output_format', 'bytes_and_fields', 
+                            '--oracle_hash', 'keccak'],
+                            check=True)
+        else:
+            logging.debug("bb prove (recursive)")
+            subprocess.run(['bb', 'prove', 
+                            '-s', 'ultra_honk', 
+                            '-b', './target/rec.json', 
+                            '-w', './target/rec.gz', 
+                            '-o', './target/blocks_bin/rec', 
+                            '--output_format', 'bytes_and_fields', 
+                            '--honk_recursion', '1', 
+                            '--recursive', 
+                            '--init_kzg_accumulator'],
+                            check=True)
         
         subprocess.run(['bb', 'verify', 
                         '-s', 'ultra_honk', 
