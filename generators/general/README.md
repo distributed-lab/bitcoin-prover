@@ -11,7 +11,7 @@ All spending types must include the following:
 - `tx` - Contains current transaction hex
 - `input_to_sign` - Contains index of input that will spend prev tx output
 
-## P2MS, P2SH, P2SH-P2WPKH, P2SH-P2WSH, P2PKH
+## P2MS, P2SH, P2SH-P2WPKH, P2SH-P2WSH, P2PKH, P2PK
 
 - `script_sig` - Contains input data and/or corresponding script to spend output
 
