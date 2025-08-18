@@ -41,7 +41,7 @@ def main():
     script_pub_key = prevTx.outputs[vout].script_pub_key
     
     # Define spending type
-    if (len(script_pub_key) == 35 and script_pub_key[-1] == 172) or (len(script_pub_key) == 22 and script_pub_key[0] == 0):
+    if (len(script_pub_key) == 25 and script_pub_key[-1] == 172) or (len(script_pub_key) == 22 and script_pub_key[0] == 0):
         spend_type = SpendType.P2PKH
     elif script_pub_key[-1] == 174:
         spend_type = SpendType.P2MS
@@ -70,13 +70,13 @@ def main():
     # Determine if json has all the necessary data
     match spend_type:
         case SpendType.P2PKH:
-            json_name = "p2pkh.template"
+            json_name = "np2tr.template"
             path = "p2pkh"
         case SpendType.P2MS:
-            json_name = "p2ms.template"
+            json_name = "np2tr.template"
             path = "p2ms"
         case SpendType.P2SH | SpendType.P2SH_P2WPKH | SpendType.P2SH_P2WSH:
-            json_name = "p2sh.template"
+            json_name = "np2tr.template"
             match spend_type:
                 case SpendType.P2SH:
                     path = "p2sh"
@@ -97,8 +97,6 @@ def main():
 
     jsonFile = templateJson.format(
         type=path,
-        pk=config["pub_key"],
-        sign=config["signature"],
         scriptSig=config["script_sig"],
         curTx=config["tx"],
         prevTx=response.text,

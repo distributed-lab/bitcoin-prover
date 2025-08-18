@@ -83,7 +83,7 @@ def main():
         prevTxLen=prevTx._get_transaction_size() * 2, 
         signLen=1 if CUR_TX_WITNESS_SIZE != 0 else len(script_sig),
         scriptPubKeyLen=len(script_pub_key),
-        inputWitnessLen=curTx._get_witness_size(curTx.witness[INPUT_TO_SIGN]),
+        inputWitnessLen=curTx._get_witness_size(curTx.witness[INPUT_TO_SIGN]) - 1,
         redeemScriptLen=len(script.script_elements[-1]) // 2,
         codeseparatorRedeemScriptLen=redeem_script.script_len_codeseparator,
         codeseparatorRedeemScriptLenLen=curTx._get_compact_size_size(redeem_script.script_len_codeseparator),

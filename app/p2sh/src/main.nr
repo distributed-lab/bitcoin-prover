@@ -129,8 +129,6 @@ fn main(
         script_execution_engine.add_witness_to_stack(witness);
     }
 
-    println(bytes_to_hex(script_pub_key));
-
     script_execution_engine
         .execute::<SCRIPT_PUB_KEY_LEN, N_OUTPUT_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, 3, 0, 0>(
             script_pub_key,

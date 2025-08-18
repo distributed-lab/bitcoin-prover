@@ -54,7 +54,7 @@ def main():
         curTx=curTx, 
         prevTx=prevTx,
         utxosLen=len(outpus[0]),
-        inputWitnessLen=curTx._get_witness_size(curTx.witness[INPUT_TO_SIGN]),
+        inputWitnessLen=curTx._get_witness_size(curTx.witness[INPUT_TO_SIGN]) - curTx._get_compact_size_size(curTx.witness[INPUT_TO_SIGN].stack_items[-1].item_size) - curTx.witness[INPUT_TO_SIGN].stack_items[-1].item_size - curTx._get_compact_size_size(curTx.witness[INPUT_TO_SIGN].stack_items[-2].item_size) - curTx.witness[INPUT_TO_SIGN].stack_items[-2].item_size - 1,
         CUR_TX_INP_COUNT_LEN=CUR_TX_INP_COUNT_LEN,
         CUR_TX_INP_SIZE=CUR_TX_INP_SIZE,
         CUR_TX_OUT_COUNT_LEN=CUR_TX_OUT_COUNT_LEN,

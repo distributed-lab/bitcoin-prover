@@ -7,7 +7,7 @@ use globals::{
     CUR_TX_WITNESS_SIZE, INPUT_TO_SIGN, INPUT_TO_SIGN_LEN, N_INPUT_SIZE, N_OUTPUT_SIZE,
     OPCODES_AMOUNT, PK_LEN, PREV_IS_GEGWIT, PREV_TX_INP_COUNT, PREV_TX_INP_COUNT_LEN,
     PREV_TX_INP_SIZE, PREV_TX_LEN, PREV_TX_MAX_WITNESS_STACK_SIZE, PREV_TX_OUT_COUNT,
-    PREV_TX_OUT_COUNT_LEN, PREV_TX_OUT_SIZE, PREV_TX_WITNESS_SIZE, SIG_LEN,
+    PREV_TX_OUT_COUNT_LEN, PREV_TX_OUT_SIZE, PREV_TX_WITNESS_SIZE, SCRIPT_SIG_LEN, SIG_LEN,
 };
 use script::execution::ScriptExecutionEngine;
 use sign::{address::Address, transaction::Transaction};
@@ -16,8 +16,7 @@ use utils::convert::{byte_to_hex_symbol, bytes_to_hex, hex_to_bytes, le_bytes_to
 fn main(
     cur_tx_data: str<CUR_TX_LEN>,
     prev_tx_data: str<PREV_TX_LEN>,
-    signature: str<SIG_LEN>,
-    pub_key: str<PK_LEN>,
+    script_sig: str<SCRIPT_SIG_LEN>,
     input_to_sign: pub u32,
 ) -> pub bool {
     let cur_tx_data = hex_to_bytes(cur_tx_data);
@@ -46,6 +45,7 @@ fn main(
 
     let mut signature_bytes = [0; SIG_LEN / 2];
     let mut pub_key_bytes = [0; PK_LEN / 2];
+    let script_sig_bytes = hex_to_bytes(script_sig);
 
     if CUR_IS_GEGWIT {
         let witness = cur_tx.witness.unwrap()[input_to_sign];
@@ -75,8 +75,12 @@ fn main(
         script_pub_key[23] = 136;
         script_pub_key[24] = 172;
     } else {
-        signature_bytes = hex_to_bytes(signature);
-        pub_key_bytes = hex_to_bytes(pub_key);
+        for i in 0..(SIG_LEN / 2) {
+            signature_bytes[i] = script_sig_bytes[i + 1];
+        }
+        for i in 0..(PK_LEN / 2) {
+            pub_key_bytes[i] = script_sig_bytes[(SIG_LEN / 2) + i + 2];
+        }
         for i in 0..25 {
             script_pub_key[i] = prev_tx.data[script_pub_key_pos + i];
         }
