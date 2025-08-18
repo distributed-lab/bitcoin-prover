@@ -90,7 +90,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         }
     }
 
-    fn push(&mut self, value: BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>) {
+    pub fn push(&mut self, value: BoundedVec<u8, MAX_STACK_ELEMENT_SIZE>) {
         self.data[self.stack_size] = value;
         self.stack_size += 1;
     }

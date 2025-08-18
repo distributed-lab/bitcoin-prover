@@ -26,7 +26,7 @@ def main():
     script = curTx.witness[INPUT_TO_SIGN].stack_items[-2].item
     script_parse = Script(script.hex(), curTx, config["input_to_sign"], [elem.item for elem in curTx.witness[INPUT_TO_SIGN].stack_items[:-2]])
     control_block = curTx.witness[INPUT_TO_SIGN].stack_items[-1].item
-    sizes = ws.sizes | script_parse.sizes
+    sizes = script_parse.sizes
     generate(sizes, True)
 
     with open(config["file_path"] + "/src/globals.nr.template", "r") as file:
@@ -54,7 +54,7 @@ def main():
         curTx=curTx, 
         prevTx=prevTx,
         utxosLen=len(outpus[0]),
-        witnessScriptLen=len(witness),
+        inputWitnessLen=curTx._get_witness_size(curTx.witness[INPUT_TO_SIGN]),
         CUR_TX_INP_COUNT_LEN=CUR_TX_INP_COUNT_LEN,
         CUR_TX_INP_SIZE=CUR_TX_INP_SIZE,
         CUR_TX_OUT_COUNT_LEN=CUR_TX_OUT_COUNT_LEN,
@@ -74,7 +74,7 @@ def main():
         nOutputSize=curTx._get_output_size(curTx.outputs[INPUT_TO_SIGN]),
         scriptLen=len(script),
         scriptLenLen=curTx._get_compact_size_size(len(script)),
-        scriptOpcodesAmount=script_parse.opcodes + ws.opcodes,
+        scriptOpcodesAmount=script_parse.opcodes,
         controlBlockLen=len(control_block),
         stackSize=requireStackSize,
         maxStackElementSize=maxStackElementSize,
@@ -94,7 +94,6 @@ def main():
         prevTxData=prevTxData,
         utxosData=list_to_toml(outpus[0]),
         inputToSign=INPUT_TO_SIGN,
-        witnessScript=witness
     )
 
     with open(config["file_path"] + "/Prover.toml", "w") as file:

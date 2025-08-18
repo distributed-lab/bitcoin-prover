@@ -49,10 +49,10 @@ def main():
     else:
         print("Spending type: p2sh")
 
-    script = Script(script_sig + bytearray(script_pub_key).hex(), curTx, config["input_to_sign"])
+    script = Script(script_sig, curTx, config["input_to_sign"])
     sizes = script.sizes
-    redeem_script = Script(script.script_elements[-4], curTx, config["input_to_sign"], script.script_elements[0:-4])
-    sizes = sizes | redeem_script.sizes
+    redeem_script = Script(script.script_elements[-1], curTx, config["input_to_sign"], script.script_elements[0:-1])
+    sizes = sizes | redeem_script.sizes | Script(bytearray(script_pub_key).hex(), curTx, config["input_to_sign"], [script.script_elements[-1]]).sizes
     generate(sizes)
 
     require_stack_size = max(script.require_stack_size, redeem_script.require_stack_size)
@@ -78,13 +78,13 @@ def main():
         PREV_TX_MAX_WITNESS_STACK_SIZE=PREV_TX_MAX_WITNESS_STACK_SIZE,
         PREV_TX_WITNESS_SIZE=PREV_TX_WITNESS_SIZE,
         PREV_IS_GEGWIT=str(PREV_TX_WITNESS_SIZE != 0).lower(),
-        opcodesAmount=script.opcodes,
+        opcodesAmount=0 if CUR_TX_WITNESS_SIZE != 0 else script.opcodes,
         curTxLen=curTx._get_transaction_size() * 2, 
         prevTxLen=prevTx._get_transaction_size() * 2, 
-        signLen=len(script_sig),
+        signLen=1 if CUR_TX_WITNESS_SIZE != 0 else len(script_sig),
         scriptPubKeyLen=len(script_pub_key),
-        scriptPubKeyLenLen=curTx._get_compact_size_size(script_pub_key_size),
-        redeemScriptLen=len(script.script_elements[-4]) // 2,
+        inputWitnessLen=curTx._get_witness_size(curTx.witness[INPUT_TO_SIGN]),
+        redeemScriptLen=len(script.script_elements[-1]) // 2,
         codeseparatorRedeemScriptLen=redeem_script.script_len_codeseparator,
         codeseparatorRedeemScriptLenLen=curTx._get_compact_size_size(redeem_script.script_len_codeseparator),
         redeemOpcodesAmount=redeem_script.opcodes,
@@ -108,7 +108,7 @@ def main():
     proverFile = templateProver.format(
         curTxData=curTxData,
         prevTxData=prevTxData,
-        script_sig=script_sig,
+        script_sig="-" if CUR_TX_WITNESS_SIZE != 0 else script_sig,
         input_to_sign=INPUT_TO_SIGN
     )
 

@@ -96,7 +96,7 @@ def main():
         templateJson = file.read()
 
     jsonFile = templateJson.format(
-        type=json_name[:-9],
+        type=path,
         pk=config["pub_key"],
         sign=config["signature"],
         scriptSig=config["script_sig"],
