@@ -48,12 +48,8 @@ def main():
     else:
         print("Spending type: p2pkh")
 
-    sig_bytes = bytes.fromhex(config["signature"])
-    pubkey_bytes = bytes.fromhex(config["pub_key"])
-
-    scriptSig = CScript([sig_bytes, pubkey_bytes])
-
-    full_script = bytes(scriptSig) + script_pub_key
+    script_sig = config["script_sig"] if CUR_TX_WITNESS_SIZE == 0 else curTx.witness_to_hex_script(config["input_to_sign"])
+    full_script = bytes.fromhex(script_sig) + script_pub_key
 
     script = Script(full_script.hex(), curTx, config["input_to_sign"])
     generate(script.sizes)
@@ -80,8 +76,9 @@ def main():
         opcodesAmount=7,
         curTxLen=curTx._get_transaction_size() * 2, 
         prevTxLen=prevTx._get_transaction_size() * 2, 
-        signLen=len(config['signature']), 
-        pkLen=len(config['pub_key']),
+        signLen=len(script.script_elements[0]), 
+        pkLen=len(script.script_elements[1]),
+        scriptSigLen=len(config["script_sig"]) if CUR_TX_WITNESS_SIZE == 0 else 1,
         nOutputSize=curTx._get_output_size(curTx.outputs[INPUT_TO_SIGN]),
         inputToSign=INPUT_TO_SIGN,
         inputToSignLen=curTx._get_compact_size_size(INPUT_TO_SIGN),
@@ -100,8 +97,7 @@ def main():
     proverFile = templateProver.format(
         curTxData=curTxData,
         prevTxData=prevTxData,
-        signature=config["signature"],
-        pub_key=config["pub_key"],
+        scriptSig=config["script_sig"] if CUR_TX_WITNESS_SIZE == 0 else "-",
         input_to_sign=INPUT_TO_SIGN
     )
 

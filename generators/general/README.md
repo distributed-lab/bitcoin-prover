@@ -11,16 +11,11 @@ All spending types must include the following:
 - `tx` - Contains current transaction hex
 - `input_to_sign` - Contains index of input that will spend prev tx output
 
-## P2PKH/P2WPKH
-
-- `pub_key` - Contains the public key whose hash was inserted into `script_pub_key`
-- `signature` - Contains the signature that proves ownership of the corresponding private key
-
-## P2MS, P2SH, P2SH-P2WPKH, P2SH-P2WSH
+## P2MS, P2SH, P2SH-P2WPKH, P2SH-P2WSH, P2PKH
 
 - `script_sig` - Contains input data and/or corresponding script to spend output
 
-## P2TR, P2WSH
+## P2TR, P2WSH, P2WPKH
 
 These types do not require any additional configuration fields.
 

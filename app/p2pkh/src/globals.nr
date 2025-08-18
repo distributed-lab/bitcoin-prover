@@ -2,6 +2,7 @@ pub global CUR_TX_LEN: u32 = 444;
 pub global PREV_TX_LEN: u32 = 4146;
 pub global SIG_LEN: u32 = 142;
 pub global PK_LEN: u32 = 66;
+pub global SCRIPT_SIG_LEN: u32 = 1;
 
 pub global CUR_TX_INP_COUNT: u32 = 1;
 pub global CUR_TX_INP_COUNT_LEN: u32 = 1;

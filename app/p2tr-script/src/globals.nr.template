@@ -1,7 +1,7 @@
 pub global CUR_TX_LEN: u32 = {curTxLen};
 pub global PREV_TX_LEN: u32 = {prevTxLen};
 pub global UTXOS_LEN: u32 = {utxosLen};
-pub global WITNESS_SCRIPT_LEN: u32 = {witnessScriptLen};
+pub global INPUT_WITNESS_LEN: u32 = {inputWitnessLen};
 
 pub global CUR_TX_INP_COUNT: u32 = {curTx.input_count};
 pub global CUR_TX_INP_COUNT_LEN: u32 = {CUR_TX_INP_COUNT_LEN};

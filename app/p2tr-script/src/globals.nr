@@ -1,7 +1,7 @@
 pub global CUR_TX_LEN: u32 = 440;
 pub global PREV_TX_LEN: u32 = 468;
 pub global UTXOS_LEN: u32 = 43;
-pub global WITNESS_SCRIPT_LEN: u32 = 132;
+pub global INPUT_WITNESS_LEN: u32 = 66;
 
 pub global CUR_TX_INP_COUNT: u32 = 1;
 pub global CUR_TX_INP_COUNT_LEN: u32 = 1;
@@ -27,7 +27,7 @@ pub global N_OUTPUT_SIZE: u32 = 31;
 
 pub global SCRIPT_LEN: u32 = 34;
 pub global SCRIPT_LEN_LEN: u32 = 1;
-pub global SCRIPT_OPCODES_AMOUNT: u32 = 3;
+pub global SCRIPT_OPCODES_AMOUNT: u32 = 2;
 pub global CONTROL_BLOCK_LEN: u32 = 33;
 pub global STACK_SIZE: u32 = 8;
 pub global MAX_STACK_ELEMENT_SIZE: u32 = 65;

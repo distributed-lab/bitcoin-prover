@@ -5,11 +5,10 @@ use crypto::{merkle::calc_merkle_root, point::check_tweaked_pub_key, schnorr::ta
 use globals::{
     CONTROL_BLOCK_LEN, CUR_IS_GEGWIT, CUR_TX_INP_COUNT, CUR_TX_INP_COUNT_LEN, CUR_TX_INP_SIZE,
     CUR_TX_LEN, CUR_TX_MAX_WITNESS_STACK_SIZE, CUR_TX_OUT_COUNT, CUR_TX_OUT_COUNT_LEN,
-    CUR_TX_OUT_SIZE, CUR_TX_WITNESS_SIZE, MAX_STACK_ELEMENT_SIZE, N_OUTPUT_SIZE, PREV_IS_GEGWIT,
-    PREV_TX_INP_COUNT, PREV_TX_INP_COUNT_LEN, PREV_TX_INP_SIZE, PREV_TX_LEN,
+    CUR_TX_OUT_SIZE, CUR_TX_WITNESS_SIZE, INPUT_WITNESS_LEN, MAX_STACK_ELEMENT_SIZE, N_OUTPUT_SIZE,
+    PREV_IS_GEGWIT, PREV_TX_INP_COUNT, PREV_TX_INP_COUNT_LEN, PREV_TX_INP_SIZE, PREV_TX_LEN,
     PREV_TX_MAX_WITNESS_STACK_SIZE, PREV_TX_OUT_COUNT, PREV_TX_OUT_COUNT_LEN, PREV_TX_OUT_SIZE,
     PREV_TX_WITNESS_SIZE, SCRIPT_LEN, SCRIPT_LEN_LEN, SCRIPT_OPCODES_AMOUNT, STACK_SIZE, UTXOS_LEN,
-    WITNESS_SCRIPT_LEN,
 };
 use script::execution::ScriptExecutionEngine;
 use sign::{address::Address, compact_size::u32_to_compact_size_array, transaction::Transaction};
@@ -20,7 +19,6 @@ fn main(
     cur_tx_data: str<CUR_TX_LEN>,
     prev_tx_data: str<PREV_TX_LEN>,
     utxos_data: [u8; UTXOS_LEN],
-    witness_script: str<WITNESS_SCRIPT_LEN>,
     input_to_sign: pub u32,
 ) -> pub bool {
     assert(CONTROL_BLOCK_LEN % 32 == 1);
@@ -110,14 +108,16 @@ fn main(
 
     let mut script_execution_engine = ScriptExecutionEngine::new(stack);
 
-    // Witness inputs were converted to script and now concatenate with spending script
-    let script = hex_to_bytes(witness_script)
-        .as_slice()
-        .append(script)
-        .as_array::<WITNESS_SCRIPT_LEN / 2 + SCRIPT_LEN>();
+    let mut witness = [0; INPUT_WITNESS_LEN];
+    let witness_input_offset =
+        cur_tx.witness.unwrap()[input_to_sign].items.get(0).unwrap().size.offset;
+    for i in 0..INPUT_WITNESS_LEN {
+        witness[i] = cur_tx.data[witness_input_offset + i];
+    }
+    script_execution_engine.add_witness_to_stack(witness);
 
     script_execution_engine
-        .execute::<WITNESS_SCRIPT_LEN / 2 + SCRIPT_LEN, N_OUTPUT_SIZE, 0, 0, 0, SCRIPT_OPCODES_AMOUNT, 0, UTXOS_LEN>(
+        .execute::<SCRIPT_LEN, N_OUTPUT_SIZE, 0, 0, 0, SCRIPT_OPCODES_AMOUNT, 0, UTXOS_LEN>(
             script,
             Address::new_p2tr(),
             utxos_data,

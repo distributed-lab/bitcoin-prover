@@ -1,8 +1,8 @@
 pub global CUR_TX_LEN: u32 = 254;
 pub global PREV_TX_LEN: u32 = 256;
-pub global SCRIPT_SIG_LEN: u32 = 78;
+pub global SCRIPT_SIG_LEN: u32 = 1;
 pub global SCRIPT_PUB_KEY_LEN: u32 = 35;
-pub global SCRIPT_PUB_KEY_LEN_LEN: u32 = 1;
+pub global INPUT_WITNESS_LEN: u32 = 39;
 pub global REDEEM_SCRIPT_LEN: u32 = 35;
 pub global CODESEPARATOR_REDEEM_SCRIPT_LEN: u32 = 35;
 pub global CODESEPARATOR_REDEEM_SCRIPT_LEN_LEN: u32 = 1;
@@ -28,8 +28,8 @@ pub global PREV_TX_MAX_WITNESS_STACK_SIZE: u32 = 0;
 pub global PREV_TX_WITNESS_SIZE: u32 = 0;
 pub global PREV_IS_GEGWIT: bool = false;
 
-pub global OPCODES_AMOUNT: u32 = 5;
-pub global STACK_SIZE: u32 = 6;
+pub global OPCODES_AMOUNT: u32 = 0;
+pub global STACK_SIZE: u32 = 5;
 pub global MAX_STACK_ELEMENT_SIZE: u32 = 35;
 pub global N_OUTPUT_SIZE: u32 = 34;
 pub global INPUT_TO_SIGN: u32 = 0;

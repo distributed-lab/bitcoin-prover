@@ -18,7 +18,7 @@ use super::{
     },
 };
 use bvm::stack::{Stack, TestStack};
-use sign::address::Address;
+use sign::{address::Address, compact_size};
 use utils::convert::{hex_to_bytes, vec_to_u32};
 
 pub struct ScriptExecutionEngine<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANSACTION_SIZE: u32, let CURRENT_INPUT_COUNT: u32, let CURRENT_INPUT_COUNT_LEN: u32, let CURRENT_INPUT_SIZE: u32, let CURRENT_OUTPUT_COUNT: u32, let CURRENT_OUTPUT_COUNT_LEN: u32, let CURRENT_OUTPUT_SIZE: u32, let CURRENT_MAX_WITNESS_STACK_SIZE: u32, let CURRENT_WITNESS_SIZE: u32, let PREV_TRANSACTION_SIZE: u32, let PREV_INPUT_COUNT: u32, let PREV_INPUT_COUNT_LEN: u32, let PREV_INPUT_SIZE: u32, let PREV_OUTPUT_COUNT: u32, let PREV_OUTPUT_COUNT_LEN: u32, let PREV_OUTPUT_SIZE: u32, let PREV_MAX_WITNESS_STACK_SIZE: u32, let PREV_WITNESS_SIZE: u32, let REDEEM_SCRIPT_LEN: u32> {
@@ -30,6 +30,28 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
         stack: Stack<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, PREV_TRANSACTION_SIZE, PREV_INPUT_COUNT, PREV_INPUT_COUNT_LEN, PREV_INPUT_SIZE, PREV_OUTPUT_COUNT, PREV_OUTPUT_COUNT_LEN, PREV_OUTPUT_SIZE, PREV_MAX_WITNESS_STACK_SIZE, PREV_WITNESS_SIZE, REDEEM_SCRIPT_LEN>,
     ) -> Self {
         Self { stack: stack }
+    }
+
+    pub fn add_witness_to_stack<let LEN: u32>(&mut self, witness: [u8; LEN]) {
+        let mut vec: BoundedVec<u8, MAX_STACK_ELEMENT_SIZE> = BoundedVec::new();
+
+        let mut cur_pos = 0;
+        for _ in 0..CURRENT_MAX_WITNESS_STACK_SIZE {
+            if cur_pos < LEN {
+                let size = compact_size::get_compact_size(witness, cur_pos);
+                cur_pos += size.size;
+                let size_u32 = compact_size::compact_size_to_u32(witness, size);
+                for i in 0..MAX_STACK_ELEMENT_SIZE {
+                    if i < size_u32 {
+                        vec.push(witness[cur_pos + i]);
+                    }
+                }
+
+                cur_pos += size_u32;
+                self.stack.push(vec);
+                vec = BoundedVec::new();
+            }
+        }
     }
 
     pub fn execute<let SCRIPT_SIZE: u32, let N_OUTPUT_SIZE: u32, let INPUT_TO_SIGN: u32, let INPUT_TO_SIGN_LEN: u32, let N_INPUT_SIZE: u32, let MAX_NUMBER_OF_OPCODES: u32, let SCRIPT_PUB_KEY_LEN: u32, let UTXOS_LEN: u32>(
