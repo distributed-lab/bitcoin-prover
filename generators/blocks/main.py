@@ -116,13 +116,24 @@ def main():
         subprocess.run(['nargo', 'execute', '--package', 'rec'], check=True)
 
         if index == blocks_amount - 1:
-            logging.debug("bb prove (recursive)")
+            logging.debug("bb prove (last recursive)")
             subprocess.run(['bb', 'prove', 
                             '-s', 'ultra_honk', 
                             '-b', './target/rec.json', 
                             '-w', './target/rec.gz',
                             '-o', './target/blocks_bin/rec', 
-                            '--output_format', 'bytes_and_fields'],
+                            '--output_format', 'bytes_and_fields',
+                            '--oracle_hash', 'keccak'],
+                            check=True)
+            logging.debug("bb write_vk (last recursive)")
+            subprocess.run(['bb', 'write_vk', 
+                            '-s', 'ultra_honk', 
+                            '-b', './target/rec.json', 
+                            '-o', './target/blocks_bin/rec', 
+                            '--output_format', 'bytes_and_fields', 
+                            '--honk_recursion', '1', 
+                            '--init_kzg_accumulator',
+                            '--oracle_hash', 'keccak'],
                             check=True)
         else:
             logging.debug("bb prove (recursive)")
@@ -152,6 +163,11 @@ def main():
         with open("./target/blocks_bin/rec/public_inputs_fields.json", "r") as file:
             pi = file.read()
 
+    subprocess.run(['bb', 'write_solidity_verifier',  
+                        '-k', './target/blocks_bin/rec/vk', 
+                        '-o', './target/blocks_bin/rec/Verifier.sol'],
+                        check=True)
+    
     print("Recursive proof was created successfully")
     
 if __name__ == "__main__":
