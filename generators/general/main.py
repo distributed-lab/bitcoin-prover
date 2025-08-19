@@ -49,8 +49,7 @@ def main():
         spend_type = SpendType.P2MS
     elif len(script_pub_key) == 23 and script_pub_key[-1] == 135:
         script_sig = curTx.inputs[input_to_sign].script_sig
-        print(len(script_sig))
-        if len(curTx.witness[input_to_sign].stack_items) == 0:
+        if curTx.witness == None:
             spend_type = SpendType.P2SH
         elif len(script_sig) == 23 and script_sig[1] == 0:
             spend_type = SpendType.P2SH_P2WPKH

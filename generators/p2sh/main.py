@@ -52,10 +52,11 @@ def main():
     script = Script(script_sig, curTx, config["input_to_sign"])
     sizes = script.sizes
     redeem_script = Script(script.script_elements[-1], curTx, config["input_to_sign"], script.script_elements[0:-1])
-    sizes = sizes | redeem_script.sizes | Script(bytearray(script_pub_key).hex(), curTx, config["input_to_sign"], [script.script_elements[-1]]).sizes
+    spk_script = Script(bytearray(script_pub_key).hex(), curTx, config["input_to_sign"], [script.script_elements[-1]])
+    sizes = sizes | redeem_script.sizes | spk_script.sizes
     generate(sizes)
 
-    require_stack_size = max(script.require_stack_size, redeem_script.require_stack_size)
+    require_stack_size = max(script.require_stack_size + spk_script.require_stack_size, redeem_script.require_stack_size)
     max_element_size = max(script.max_element_size, redeem_script.max_element_size)
 
     with open(config["file_path"] + "/src/globals.nr.template", "r") as file:
@@ -83,7 +84,7 @@ def main():
         prevTxLen=prevTx._get_transaction_size() * 2, 
         signLen=1 if CUR_TX_WITNESS_SIZE != 0 else len(script_sig),
         scriptPubKeyLen=len(script_pub_key),
-        inputWitnessLen=curTx._get_witness_size(curTx.witness[INPUT_TO_SIGN]) - 1,
+        inputWitnessLen=curTx._get_witness_size(curTx.witness[INPUT_TO_SIGN]) - 1 if curTx.witness != None else 0,
         redeemScriptLen=len(script.script_elements[-1]) // 2,
         codeseparatorRedeemScriptLen=redeem_script.script_len_codeseparator,
         codeseparatorRedeemScriptLenLen=curTx._get_compact_size_size(redeem_script.script_len_codeseparator),
