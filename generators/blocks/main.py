@@ -135,6 +135,13 @@ def main():
                             '--init_kzg_accumulator',
                             '--oracle_hash', 'keccak'],
                             check=True)
+            subprocess.run(['bb', 'verify', 
+                        '-s', 'ultra_honk', 
+                        '-k', './target/blocks_bin/rec/vk', 
+                        '-p', './target/blocks_bin/rec/proof', 
+                        '-i', './target/blocks_bin/rec/public_inputs',
+                        '--oracle_hash', 'keccak'],
+                        check=True)
         else:
             logging.debug("bb prove (recursive)")
             subprocess.run(['bb', 'prove', 
@@ -147,8 +154,8 @@ def main():
                             '--recursive', 
                             '--init_kzg_accumulator'],
                             check=True)
-        
-        subprocess.run(['bb', 'verify', 
+            
+            subprocess.run(['bb', 'verify', 
                         '-s', 'ultra_honk', 
                         '-k', './target/blocks_bin/rec/vk', 
                         '-p', './target/blocks_bin/rec/proof', 
