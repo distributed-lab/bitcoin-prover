@@ -34,7 +34,7 @@ def main():
     index = 2021
 
     with open("./app/blocks-recursive/start/Prover.toml", "w") as f:
-        f.write(f"last_block_hash = \"{blocks[index].get_block_hash()}\"\n\n")
+        f.write(f"last_block_hash = [{', '.join(f'"{elem}"' for elem in bytes.fromhex(blocks[index].get_block_hash()))}]\n\n")
         f.write(nargo_toml)
 
     logging.debug("nargo execute (start)")
@@ -102,7 +102,7 @@ def main():
         index += 2016
 
         with open("./app/blocks-recursive/rec/Prover.toml", "w") as f:
-            f.write(f"last_block_hash = \"{blocks[index].get_block_hash()}\"\n\n")
+            f.write(f"last_block_hash = [{', '.join(f'"{elem}"' for elem in bytes.fromhex(blocks[index].get_block_hash()))}]\n\n")
             f.write(f"timestamps = [{', '.join(str(v) for v in pi_array[64:75])}]\n\n")
             f.write(f"time_idx = \"{pi_array[-3]}\"\n\n")
             f.write(f"last_block_height = \"{int(pi_array[-2], 16)}\"\n\n")
