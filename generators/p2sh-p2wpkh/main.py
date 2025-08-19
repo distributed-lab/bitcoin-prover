@@ -110,8 +110,6 @@ def main():
         curTxData=curTxData,
         prevTxData=prevTxData,
         script_sig=script_sig,
-        signature=signature,
-        pub_key=pub_key,
         input_to_sign=INPUT_TO_SIGN
     )
 

@@ -7,6 +7,13 @@ pub(crate) fn hash160<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, 
     mut stack: Stack<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, PREV_TRANSACTION_SIZE, PREV_INPUT_COUNT, PREV_INPUT_COUNT_LEN, PREV_INPUT_SIZE, PREV_OUTPUT_COUNT, PREV_OUTPUT_COUNT_LEN, PREV_OUTPUT_SIZE, PREV_MAX_WITNESS_STACK_SIZE, PREV_WITNESS_SIZE, REDEEM_SCRIPT_LEN>,
     len: u32,
     ) -> Stack<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, PREV_TRANSACTION_SIZE, PREV_INPUT_COUNT, PREV_INPUT_COUNT_LEN, PREV_INPUT_SIZE, PREV_OUTPUT_COUNT, PREV_OUTPUT_COUNT_LEN, PREV_OUTPUT_SIZE, PREV_MAX_WITNESS_STACK_SIZE, PREV_WITNESS_SIZE, REDEEM_SCRIPT_LEN> {
+    if len == 33 {
+        stack.op_hash160::<33>();
+    }
+    if len == 22 {
+        stack.op_hash160::<22>();
+    }
+
     stack
 }
 
@@ -72,17 +79,33 @@ pub(crate) fn pushbytes<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32
     script: [u8; SCRIPT_SIZE],
     mut cur_pos: u32,
     ) -> (Stack<MAX_STACK_ELEMENT_SIZE, MAX_STACK_SIZE, CURRENT_TRANSACTION_SIZE, CURRENT_INPUT_COUNT, CURRENT_INPUT_COUNT_LEN, CURRENT_INPUT_SIZE, CURRENT_OUTPUT_COUNT, CURRENT_OUTPUT_COUNT_LEN, CURRENT_OUTPUT_SIZE, CURRENT_MAX_WITNESS_STACK_SIZE, CURRENT_WITNESS_SIZE, PREV_TRANSACTION_SIZE, PREV_INPUT_COUNT, PREV_INPUT_COUNT_LEN, PREV_INPUT_SIZE, PREV_OUTPUT_COUNT, PREV_OUTPUT_COUNT_LEN, PREV_OUTPUT_SIZE, PREV_MAX_WITNESS_STACK_SIZE, PREV_WITNESS_SIZE, REDEEM_SCRIPT_LEN>, u32) {
-    if len == 65 {
-        let mut value = [0; 65];
-        for i in 0..65 {
+    if len == 22 {
+        let mut value = [0; 22];
+        for i in 0..22 {
             value[i] = script[cur_pos];
             cur_pos += 1;
         }
         stack.push_bytes(value);
     }
-    if len == 72 {
-        let mut value = [0; 72];
-        for i in 0..72 {
+    if len == 20 {
+        let mut value = [0; 20];
+        for i in 0..20 {
+            value[i] = script[cur_pos];
+            cur_pos += 1;
+        }
+        stack.push_bytes(value);
+    }
+    if len == 71 {
+        let mut value = [0; 71];
+        for i in 0..71 {
+            value[i] = script[cur_pos];
+            cur_pos += 1;
+        }
+        stack.push_bytes(value);
+    }
+    if len == 33 {
+        let mut value = [0; 33];
+        for i in 0..33 {
             value[i] = script[cur_pos];
             cur_pos += 1;
         }
