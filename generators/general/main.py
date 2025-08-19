@@ -41,17 +41,19 @@ def main():
     script_pub_key = prevTx.outputs[vout].script_pub_key
     
     # Define spending type
-    if (len(script_pub_key) == 25 and script_pub_key[-1] == 172) or (len(script_pub_key) == 22 and script_pub_key[0] == 0):
+    if len(script_pub_key) in (35, 67) and script_pub_key[-1] == 172:
+        spend_type = SpendType.P2PK
+    elif (len(script_pub_key) == 25 and script_pub_key[-1] == 172) or (len(script_pub_key) == 22 and script_pub_key[0] == 0):
         spend_type = SpendType.P2PKH
     elif script_pub_key[-1] == 174:
         spend_type = SpendType.P2MS
     elif len(script_pub_key) == 23 and script_pub_key[-1] == 135:
         script_sig = curTx.inputs[input_to_sign].script_sig
-        if len(curTx.witness[input_to_sign].stack_items) == 0:
+        if curTx.witness == None:
             spend_type = SpendType.P2SH
-        elif len(script_sig) == 22 and script_sig[0] == 0:
+        elif len(script_sig) == 23 and script_sig[1] == 0:
             spend_type = SpendType.P2SH_P2WPKH
-        elif len(script_sig) == 34 and script_sig[0] == 0:
+        elif len(script_sig) == 35 and script_sig[1] == 0:
             spend_type = SpendType.P2SH_P2WSH
         else:
             print(f"Error: spending type looks like p2sh but something is wrong!")
@@ -69,6 +71,9 @@ def main():
 
     # Determine if json has all the necessary data
     match spend_type:
+        case SpendType.P2PK:
+            json_name = "np2tr.template"
+            path = "p2pk"
         case SpendType.P2PKH:
             json_name = "np2tr.template"
             path = "p2pkh"

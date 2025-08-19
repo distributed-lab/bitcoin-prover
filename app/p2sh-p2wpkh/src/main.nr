@@ -18,8 +18,6 @@ fn main(
     cur_tx_data: str<CUR_TX_LEN>,
     prev_tx_data: str<PREV_TX_LEN>,
     script_sig: str<SCRIPT_SIG_LEN>,
-    signature: str<SIG_LEN>,
-    pub_key: str<PK_LEN>,
     input_to_sign: pub u32,
 ) -> pub bool {
     let cur_tx_data = hex_to_bytes(cur_tx_data);
@@ -93,8 +91,24 @@ fn main(
 
     assert(script_execution_engine.stack.op_verify());
 
-    let signature_bytes = hex_to_bytes(signature);
-    let pub_key_bytes = hex_to_bytes(pub_key);
+    let mut signature_bytes = [0; SIG_LEN / 2];
+    let mut pub_key_bytes = [0; PK_LEN / 2];
+    let witness = cur_tx.witness.unwrap()[input_to_sign];
+
+    let sig_item = witness.items.get(0).unwrap().item;
+    assert(sig_item.size == (SIG_LEN / 2));
+    let signature_bytes_offset = sig_item.offset;
+    for i in 0..(SIG_LEN / 2) {
+        signature_bytes[i] = cur_tx.data[signature_bytes_offset + i];
+    }
+
+    let pk_item = witness.items.get(1).unwrap().item;
+    assert(pk_item.size == (PK_LEN / 2));
+    let pk_bytes_offset = pk_item.offset;
+    for i in 0..(PK_LEN / 2) {
+        pub_key_bytes[i] = cur_tx.data[pk_bytes_offset + i];
+    }
+
     let script = [signature_bytes.len() as u8]
         .as_slice()
         .append(signature_bytes.as_slice())

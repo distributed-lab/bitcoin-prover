@@ -12,6 +12,7 @@ members = [
     "app/p2tr-script",
     "app/p2ms",
     "app/p2pkh",
+    "app/p2pk",
     "app/p2sh-p2wpkh",
     "app/p2sh-p2wsh",
     "app/blocks-recursive/start",
