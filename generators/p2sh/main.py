@@ -57,7 +57,7 @@ def main():
     generate(sizes)
 
     require_stack_size = max(script.require_stack_size + spk_script.require_stack_size, redeem_script.require_stack_size)
-    max_element_size = max(script.max_element_size, redeem_script.max_element_size)
+    max_element_size = max(script.max_element_size, redeem_script.max_element_size, spk_script.max_element_size)
 
     with open(config["file_path"] + "/src/globals.nr.template", "r") as file:
         templateOpcodes = file.read()
