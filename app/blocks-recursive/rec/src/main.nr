@@ -1,10 +1,11 @@
 use dep::std;
 use blocks_lib::{block::{BlockHeader, get_block_hash}, chain::check_chain};
+use utils::convert::bytes_to_hex;
 
 global HONK_VK_SIZE: u32 = 128;
 global HONK_PROOF_SIZE: u32 = 456;
 global HONK_IDENTIFIER: u32 = 1;
-global PUBLIC_INPUTS: u32 = 78;
+global PUBLIC_INPUTS: u32 = 46;
 
 global BLOCKS_AMOUNT: u32 = 2022;
 global BLOCKS_OFFSET: u32 = 6;
@@ -18,11 +19,11 @@ fn main(
     time_idx: u32,
     last_block_height: u32,
     chainwork: Field,
-    last_block_hash: pub str<64>,
+    last_block_hash: pub [u8; 32],
 ) -> pub ([u32; 11], u32, u32, Field) {
     std::verify_proof_with_type(verification_key, proof, public_inputs, 0x0, HONK_IDENTIFIER);
 
-    assert(get_block_hash(blocks[blocks.len() - 1]) == last_block_hash);
+    assert(get_block_hash(blocks[blocks.len() - 1]) == bytes_to_hex(last_block_hash));
     let checked = check_chain::<BLOCKS_AMOUNT, BLOCKS_OFFSET>(
         blocks,
         timestamps,

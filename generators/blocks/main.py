@@ -34,7 +34,7 @@ def main():
     index = 2021
 
     with open("./app/blocks-recursive/start/Prover.toml", "w") as f:
-        f.write(f"last_block_hash = \"{blocks[index].get_block_hash()}\"\n\n")
+        f.write(f"last_block_hash = [{', '.join(f'"{elem}"' for elem in bytes.fromhex(blocks[index].get_block_hash()))}]\n\n")
         f.write(nargo_toml)
 
     logging.debug("nargo execute (start)")
@@ -102,8 +102,8 @@ def main():
         index += 2016
 
         with open("./app/blocks-recursive/rec/Prover.toml", "w") as f:
-            f.write(f"last_block_hash = \"{blocks[index].get_block_hash()}\"\n\n")
-            f.write(f"timestamps = [{', '.join(str(v) for v in pi_array[64:75])}]\n\n")
+            f.write(f"last_block_hash = [{', '.join(f'"{elem}"' for elem in bytes.fromhex(blocks[index].get_block_hash()))}]\n\n")
+            f.write(f"timestamps = [{', '.join(str(v) for v in pi_array[32:43])}]\n\n")
             f.write(f"time_idx = \"{pi_array[-3]}\"\n\n")
             f.write(f"last_block_height = \"{int(pi_array[-2], 16)}\"\n\n")
             f.write(f"chainwork = \"{int(pi_array[-1], 16)}\"\n\n")
@@ -115,19 +115,47 @@ def main():
         logging.debug("nargo execute (recursive)")
         subprocess.run(['nargo', 'execute', '--package', 'rec'], check=True)
 
-        logging.debug("bb prove (recursive)")
-        subprocess.run(['bb', 'prove', 
+        if index == blocks_amount - 1:
+            logging.debug("bb prove (last recursive)")
+            subprocess.run(['bb', 'prove', 
+                            '-s', 'ultra_honk', 
+                            '-b', './target/rec.json', 
+                            '-w', './target/rec.gz',
+                            '-o', './target/blocks_bin/rec', 
+                            '--output_format', 'bytes_and_fields',
+                            '--oracle_hash', 'keccak'],
+                            check=True)
+            logging.debug("bb write_vk (last recursive)")
+            subprocess.run(['bb', 'write_vk', 
+                            '-s', 'ultra_honk', 
+                            '-b', './target/rec.json', 
+                            '-o', './target/blocks_bin/rec', 
+                            '--output_format', 'bytes_and_fields', 
+                            '--honk_recursion', '1', 
+                            '--init_kzg_accumulator',
+                            '--oracle_hash', 'keccak'],
+                            check=True)
+            subprocess.run(['bb', 'verify', 
                         '-s', 'ultra_honk', 
-                        '-b', './target/rec.json', 
-                        '-w', './target/rec.gz', 
-                        '-o', './target/blocks_bin/rec', 
-                        '--output_format', 'bytes_and_fields', 
-                        '--honk_recursion', '1', 
-                        '--recursive', 
-                        '--init_kzg_accumulator'],
+                        '-k', './target/blocks_bin/rec/vk', 
+                        '-p', './target/blocks_bin/rec/proof', 
+                        '-i', './target/blocks_bin/rec/public_inputs',
+                        '--oracle_hash', 'keccak'],
                         check=True)
-        
-        subprocess.run(['bb', 'verify', 
+        else:
+            logging.debug("bb prove (recursive)")
+            subprocess.run(['bb', 'prove', 
+                            '-s', 'ultra_honk', 
+                            '-b', './target/rec.json', 
+                            '-w', './target/rec.gz', 
+                            '-o', './target/blocks_bin/rec', 
+                            '--output_format', 'bytes_and_fields', 
+                            '--honk_recursion', '1', 
+                            '--recursive', 
+                            '--init_kzg_accumulator'],
+                            check=True)
+            
+            subprocess.run(['bb', 'verify', 
                         '-s', 'ultra_honk', 
                         '-k', './target/blocks_bin/rec/vk', 
                         '-p', './target/blocks_bin/rec/proof', 
@@ -142,6 +170,11 @@ def main():
         with open("./target/blocks_bin/rec/public_inputs_fields.json", "r") as file:
             pi = file.read()
 
+    subprocess.run(['bb', 'write_solidity_verifier',  
+                        '-k', './target/blocks_bin/rec/vk', 
+                        '-o', './target/blocks_bin/rec/Verifier.sol'],
+                        check=True)
+    
     print("Recursive proof was created successfully")
     
 if __name__ == "__main__":
