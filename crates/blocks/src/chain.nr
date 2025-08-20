@@ -15,7 +15,7 @@ pub fn check_chain<let SIZE: u32>(
     mut chainwork: Field,
 ) -> (bool, [u32; 11], u32, u32, Field) {
     let mut is_correct = true;
-    let first_batch = chainwork == 0;
+    let first_batch = block_height == 0;
     let old_targ = prev_bits;
 
     // skip blocks that were checked before

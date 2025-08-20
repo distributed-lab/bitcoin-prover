@@ -35,7 +35,6 @@ pub fn get_block_hash(value: BlockHeader) -> str<64> {
     )
 }
 
-// Ignore last block, it wiil be used in the next batch
 pub fn get_merkle_branch_from_1024_blocks(blocks: [BlockHeader; 1024]) -> [u8; 32] {
     let mut arr_512 = [[0; 32]; 512];
     for i in 0..512 {
