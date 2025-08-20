@@ -1,27 +1,34 @@
-use blocks_lib::{block::{BlockHeader, get_block_hash}, chain::check_chain};
+mod globals;
+
+use blocks_lib::{
+    block::{BlockHeader, get_block_hash, get_merkle_branch_from_1024_blocks},
+    chain::check_chain,
+};
+use globals::MERKLE_ROOT_ARRAY_LEN;
 use utils::convert::bytes_to_hex;
 
-// 2016 + 6 blocks after new target
-global BLOCKS_AMOUNT: u32 = 2022;
-global BLOCKS_OFFSET: u32 = 1;
-
 fn main(
-    blocks: [BlockHeader; BLOCKS_AMOUNT],
+    blocks: [BlockHeader; 1025],
     last_block_hash: pub [u8; 32],
-) -> pub ([u32; 11], u32, u32, Field) {
+) -> pub ([u32; 11], u32, u32, Field, [[u8; 32]; MERKLE_ROOT_ARRAY_LEN]) {
     assert(
         get_block_hash(blocks[0])
             == "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f",
     );
-    assert(get_block_hash(blocks[BLOCKS_AMOUNT - 1]) == bytes_to_hex(last_block_hash));
+    assert(get_block_hash(blocks[1024]) == bytes_to_hex(last_block_hash));
 
     let mut timestamps = [0; 11];
     timestamps[0] = blocks[0].timestamp;
 
-    let checked =
-        check_chain::<BLOCKS_AMOUNT, BLOCKS_OFFSET>(blocks, timestamps, 1, blocks[0].bits, 0);
+    let checked = check_chain(blocks, timestamps, 1, blocks[0].bits, 0, 0x100010001);
 
     assert(checked.0);
 
-    (checked.1, checked.2, BLOCKS_AMOUNT - BLOCKS_OFFSET, checked.3)
+    let merkle_branch =
+        get_merkle_branch_from_1024_blocks(blocks.as_slice().pop_back().0.as_array::<1024>());
+
+    let mut merkle_state = [[0; 32]; MERKLE_ROOT_ARRAY_LEN];
+    merkle_state[0] = merkle_branch;
+
+    (checked.1, checked.2, checked.3, checked.4, merkle_state)
 }

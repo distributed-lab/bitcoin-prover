@@ -12,14 +12,14 @@ fn main(
     verification_key: [Field; HONK_VK_SIZE],
     proof: [Field; HONK_PROOF_SIZE],
     public_inputs: [Field; PUBLIC_INPUTS],
-    blocks: [BlockHeader; 1025],
+    blocks: [BlockHeader; 1024],
     timestamps: [u32; 11],
     time_idx: u32,
     last_block_height: u32,
     chainwork: Field,
     mut merkle_state: [[u8; 32]; MERKLE_ROOT_ARRAY_LEN],
     last_block_hash: pub [u8; 32],
-) -> pub ([u32; 11], u32, u32, Field, [[u8; 32]; MERKLE_ROOT_ARRAY_LEN]) {
+) -> pub ([u32; 11], u32, u32, Field, [u8; 32]) {
     std::verify_proof_with_type(verification_key, proof, public_inputs, 0x0, HONK_IDENTIFIER);
 
     assert(get_block_hash(blocks[blocks.len() - 1]) == bytes_to_hex(last_block_hash));
@@ -34,10 +34,9 @@ fn main(
 
     assert(checked.0);
 
-    let merkle_branch =
-        get_merkle_branch_from_1024_blocks(blocks.as_slice().pop_back().0.as_array::<1024>());
+    let merkle_branch = get_merkle_branch_from_1024_blocks(blocks);
 
     merkle_state = calc_merkle_state(merkle_state, merkle_branch);
 
-    (checked.1, checked.2, checked.3, checked.4, merkle_state)
+    (checked.1, checked.2, checked.3, checked.4, merkle_state[MERKLE_ROOT_ARRAY_LEN - 1])
 }
