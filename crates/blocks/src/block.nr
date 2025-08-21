@@ -43,7 +43,7 @@ fn tagged_sha256<let TAG_SIZE: u32, let MESSAGE_SIZE: u32>(
         .as_bytes()
         .as_slice()
         .append(message)
-        .as_array::<TAG_SIZE / 2 + MESSAGE_SIZE>())
+        .as_array::<TAG_SIZE + MESSAGE_SIZE>())
 }
 
 pub fn get_merkle_node_from_1024_blocks(blocks: [BlockHeader; 1025]) -> [u8; 32] {
@@ -168,5 +168,9 @@ pub fn finalize_merkle_state<let SIZE: u32>(mut merkle_state: [[u8; 32]; SIZE]) 
         }
     }
 
-    tmp_node
+    if tmp_node.all(|e| e == 0) {
+        merkle_state[SIZE - 1]
+    } else {
+        tmp_node
+    }
 }
