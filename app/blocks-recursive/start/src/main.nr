@@ -1,7 +1,7 @@
 mod globals;
 
 use blocks_lib::{
-    block::{BlockHeader, get_block_hash, get_merkle_branch_from_1024_blocks},
+    block::{BlockHeader, get_block_hash, get_merkle_node_from_1024_blocks},
     chain::check_chain,
 };
 use globals::MERKLE_ROOT_ARRAY_LEN;
@@ -24,8 +24,7 @@ fn main(
 
     assert(checked.0);
 
-    let merkle_branch =
-        get_merkle_branch_from_1024_blocks(blocks.as_slice().pop_back().0.as_array::<1024>());
+    let merkle_branch = get_merkle_node_from_1024_blocks(blocks);
 
     let mut merkle_state = [[0; 32]; MERKLE_ROOT_ARRAY_LEN];
     merkle_state[0] = merkle_branch;

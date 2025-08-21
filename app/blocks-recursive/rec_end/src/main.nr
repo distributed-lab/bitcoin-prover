@@ -2,11 +2,14 @@ mod globals;
 
 use dep::std;
 use blocks_lib::{
-    block::{BlockHeader, calc_merkle_state, get_block_hash, get_merkle_branch_from_1024_blocks},
+    block::{
+        BlockHeader, calc_merkle_state, finalize_merkle_state, get_block_hash,
+        get_merkle_node_from_1024_blocks,
+    },
     chain::check_chain,
 };
 use globals::{HONK_IDENTIFIER, HONK_PROOF_SIZE, HONK_VK_SIZE, MERKLE_ROOT_ARRAY_LEN, PUBLIC_INPUTS};
-use utils::convert::bytes_to_hex;
+use utils::convert::{bytes_to_hex, hex_to_bytes};
 
 fn main(
     verification_key: [Field; HONK_VK_SIZE],
@@ -34,9 +37,21 @@ fn main(
 
     assert(checked.0);
 
-    let merkle_branch = get_merkle_branch_from_1024_blocks(blocks);
+    let last_block_empty = BlockHeader {
+        version: 0,
+        prev_block: get_block_hash(blocks[1023]),
+        merkle_root: str::from([0; 64]),
+        timestamp: 0,
+        bits: 0,
+        nonce: 0,
+    };
+
+    let merkle_branch = get_merkle_node_from_1024_blocks(blocks
+        .as_slice()
+        .push_back(last_block_empty)
+        .as_array::<1025>());
 
     merkle_state = calc_merkle_state(merkle_state, merkle_branch);
 
-    (checked.1, checked.2, checked.3, checked.4, merkle_state[MERKLE_ROOT_ARRAY_LEN - 1])
+    (checked.1, checked.2, checked.3, checked.4, finalize_merkle_state(merkle_state))
 }

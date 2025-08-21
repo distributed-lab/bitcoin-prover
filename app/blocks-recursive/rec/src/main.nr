@@ -2,7 +2,7 @@ mod globals;
 
 use dep::std;
 use blocks_lib::{
-    block::{BlockHeader, calc_merkle_state, get_block_hash, get_merkle_branch_from_1024_blocks},
+    block::{BlockHeader, calc_merkle_state, get_block_hash, get_merkle_node_from_1024_blocks},
     chain::check_chain,
 };
 use globals::{HONK_IDENTIFIER, HONK_PROOF_SIZE, HONK_VK_SIZE, MERKLE_ROOT_ARRAY_LEN, PUBLIC_INPUTS};
@@ -34,8 +34,7 @@ fn main(
 
     assert(checked.0);
 
-    let merkle_branch =
-        get_merkle_branch_from_1024_blocks(blocks.as_slice().pop_back().0.as_array::<1024>());
+    let merkle_branch = get_merkle_node_from_1024_blocks(blocks);
 
     merkle_state = calc_merkle_state(merkle_state, merkle_branch);
 
