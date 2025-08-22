@@ -1,7 +1,7 @@
 import json
 from typing import Dict
-from pullers import BlockHeaderPuller
-from block import Block, create_nargo_toml
+from generators.blocks.pullers import BlockHeaderPuller
+from generators.blocks.block import Block, create_nargo_toml
 import logging
 import sys
 import subprocess
@@ -27,7 +27,7 @@ def main():
         sys.exit()
 
     puller = BlockHeaderPuller(config["gateway"])
-    hex_headers =puller.pull_block_headers(config["blocks"]["start"], config["blocks"]["count"])
+    hex_headers = puller.pull_block_headers(config["blocks"]["start"], config["blocks"]["count"])
     blocks = [Block(header) for header in hex_headers]
 
     nargo_toml = create_nargo_toml(blocks[index:2022], "blocks")
