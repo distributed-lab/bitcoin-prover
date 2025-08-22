@@ -39,11 +39,9 @@ fn tagged_sha256<let TAG_SIZE: u32, let MESSAGE_SIZE: u32>(
     tag: str<TAG_SIZE>,
     message: [u8; MESSAGE_SIZE],
 ) -> [u8; 32] {
-    sha256::digest(tag
-        .as_bytes()
-        .as_slice()
-        .append(message)
-        .as_array::<TAG_SIZE + MESSAGE_SIZE>())
+    sha256::digest(
+        tag.as_bytes().as_slice().append(message).as_array::<TAG_SIZE + MESSAGE_SIZE>(),
+    )
 }
 
 pub fn get_merkle_node_from_1024_blocks(blocks: [BlockHeader; 1025]) -> [u8; 32] {

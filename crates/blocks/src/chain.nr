@@ -13,7 +13,8 @@ pub fn check_chain<let SIZE: u32>(
     mut prev_bits: u32,
     mut block_height: u32,
     mut chainwork: Field,
-) -> (bool, [u32; 11], u32, u32, Field) {
+    mut prev_timestamp: u32,
+) -> (bool, [u32; 11], u32, u32, Field, u32) {
     let mut is_correct = true;
     let first_batch = block_height == 0;
     let old_targ = prev_bits;
@@ -44,7 +45,7 @@ pub fn check_chain<let SIZE: u32>(
 
         // if new target
         if block_height % 2016 == 0 {
-            let actual_time = (blocks[i - 1].timestamp - blocks[i - 2016].timestamp);
+            let actual_time = (blocks[i - 1].timestamp - prev_timestamp);
 
             let targ = uncompres_target(blocks[i - 1].bits);
             let mut target =
@@ -76,7 +77,7 @@ pub fn check_chain<let SIZE: u32>(
                 is_correct = false;
                 println("target eq fail");
             }
-
+            prev_timestamp = blocks[i].timestamp;
             prev_bits = blocks[i].bits;
         } else {
             if prev_bits != blocks[i].bits {
@@ -99,7 +100,7 @@ pub fn check_chain<let SIZE: u32>(
         block_height,
     );
 
-    (is_correct, timestamps, time_idx, block_height, new_chainwork)
+    (is_correct, timestamps, time_idx, block_height, new_chainwork, prev_timestamp)
 }
 
 fn calc_chainwork<let SIZE: u32>(
