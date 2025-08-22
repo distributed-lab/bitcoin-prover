@@ -160,7 +160,7 @@ pub global MERKLE_ROOT_ARRAY_LEN: u32 = {merkle_root_state_len};
             f.write(f"proof = {proof}\n\n")
             f.write(f"public_inputs = {pi}\n\n")
             f.write(f"prev_timestamp = {pi_array[-1]}\n\n")
-            f.write(f"merkle_state = {to_toml_array_hashes(pi_array[-(1 + 32 * merkle_root_state_len):])}\n\n")
+            f.write(f"merkle_state = {to_toml_array_hashes(pi_array[-(1 + 32 * merkle_root_state_len):-1])}\n\n")
             f.write(nargo_toml)
 
         logging.debug("nargo execute (recursive)")
@@ -209,7 +209,7 @@ pub global MERKLE_ROOT_ARRAY_LEN: u32 = {merkle_root_state_len};
             f.write(f"proof = {proof}\n\n")
             f.write(f"public_inputs = {pi}\n\n")
             f.write(f"prev_timestamp = {pi_array[-1]}\n\n")
-            f.write(f"merkle_state = {to_toml_array_hashes(pi_array[-(1 + 32 * merkle_root_state_len):])}\n\n")
+            f.write(f"merkle_state = {to_toml_array_hashes(pi_array[-(1 + 32 * merkle_root_state_len):-1])}\n\n")
             f.write(nargo_toml)
 
     logging.debug("nargo execute (last recursive)")
