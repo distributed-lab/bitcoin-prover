@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from service.merkle_tree import MerkleTree
 
 app = FastAPI()
-tree = BTCBlocksMerkleTree(2048)
+tree = BTCBlocksMerkleTree(900000)
 
 @app.on_event("startup")
 async def startup_event():
@@ -12,6 +12,5 @@ async def startup_event():
 @app.get("/proof/{height}")
 def get_proof(height: int):
     proof = tree.get_merkle_path(height)
-    print(proof)
     return {"proof": [p for p in proof]}
 
