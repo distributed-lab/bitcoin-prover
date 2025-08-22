@@ -1,7 +1,7 @@
 from electrum_client.requests import BlockHeadersRequest
 from electrum_client.rpc import Client as ElectrumClient
 from typing import Dict, List
-from block import BLOCK_HEADER_SIZE
+from generators.blocks.block import BLOCK_HEADER_SIZE
 import logging
 
 class BlockHeaderPuller:
