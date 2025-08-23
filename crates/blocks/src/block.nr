@@ -35,7 +35,7 @@ pub fn get_block_hash(value: BlockHeader) -> str<64> {
     )
 }
 
-fn tagged_sha256<let TAG_SIZE: u32, let MESSAGE_SIZE: u32>(
+pub fn tagged_sha256<let TAG_SIZE: u32, let MESSAGE_SIZE: u32>(
     tag: str<TAG_SIZE>,
     message: [u8; MESSAGE_SIZE],
 ) -> [u8; 32] {
