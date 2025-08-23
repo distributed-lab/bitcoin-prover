@@ -138,8 +138,6 @@ pub fn calc_merkle_state<let SIZE: u32>(
         }
     }
 
-    assert(!prev_merkle_state[SIZE - 1].all(|e| e == 0), "Incorrect merkle state len");
-
     prev_merkle_state
 }
 
