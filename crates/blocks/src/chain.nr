@@ -6,24 +6,29 @@ global expected_time: Field = 1209600;
 global max_target: Field = 0x00000000FFFF0000000000000000000000000000000000000000000000000000;
 
 // Returns (is_successful, timestamps, chainwork)
-pub fn check_chain<let SIZE: u32, let OFFSET: u32>(
+pub fn check_chain<let SIZE: u32>(
     blocks: [BlockHeader; SIZE],
     mut timestamps: [u32; 11],
     mut time_idx: u32,
     mut prev_bits: u32,
+    mut block_height: u32,
     mut chainwork: Field,
-) -> (bool, [u32; 11], u32, Field) {
+    mut prev_timestamp: u32,
+) -> (bool, [u32; 11], u32, u32, Field, u32) {
     let mut is_correct = true;
+    let first_batch = block_height == 0;
+    let old_targ = prev_bits;
 
     // skip blocks that were checked before
-    for i in OFFSET..SIZE {
+    for i in 1..SIZE {
+        block_height += 1;
         // prev
         if blocks[i].prev_block != get_block_hash(blocks[i - 1]) {
             is_correct = false;
             println("prev hash fail");
         }
 
-        let idx = if (OFFSET == 1) & (i < 11) {
+        let idx = if first_batch & (i < 11) {
             i / 2 + 11 - i
         } else {
             5
@@ -39,8 +44,8 @@ pub fn check_chain<let SIZE: u32, let OFFSET: u32>(
         time_idx = (time_idx + 1) % 11;
 
         // if new target
-        if i % 2016 == 0 {
-            let actual_time = (blocks[i - 1].timestamp - blocks[i - 2016].timestamp);
+        if block_height % 2016 == 0 {
+            let actual_time = (blocks[i - 1].timestamp - prev_timestamp);
 
             let targ = uncompres_target(blocks[i - 1].bits);
             let mut target =
@@ -72,7 +77,7 @@ pub fn check_chain<let SIZE: u32, let OFFSET: u32>(
                 is_correct = false;
                 println("target eq fail");
             }
-
+            prev_timestamp = blocks[i].timestamp;
             prev_bits = blocks[i].bits;
         } else {
             if prev_bits != blocks[i].bits {
@@ -88,19 +93,21 @@ pub fn check_chain<let SIZE: u32, let OFFSET: u32>(
         }
     }
 
-    let new_chainwork = calc_chainwork::<SIZE, OFFSET>(
+    let new_chainwork = calc_chainwork::<SIZE>(
         chainwork,
-        uncompres_target(blocks[0].bits),
+        uncompres_target(old_targ),
         uncompres_target(blocks[SIZE - 1].bits),
+        block_height,
     );
 
-    (is_correct, timestamps, time_idx, new_chainwork)
+    (is_correct, timestamps, time_idx, block_height, new_chainwork, prev_timestamp)
 }
 
-fn calc_chainwork<let SIZE: u32, let OFFSET: u32>(
+fn calc_chainwork<let SIZE: u32>(
     old_chainwork: Field,
     prev_bloks_target: U256,
     cur_blocks_target: U256,
+    block_height: u32,
 ) -> Field {
     let two_pow = U512::from_be_bytes([
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -124,9 +131,14 @@ fn calc_chainwork<let SIZE: u32, let OFFSET: u32>(
             .as_array::<65>()))
         .to_be_bytes());
 
-    let offset = if OFFSET == 1 { 0 } else { OFFSET };
+    let new_amount = block_height % 2016 + 1;
 
-    old_chainwork + (new_work * 6) + (old_work * (SIZE - 6 - offset) as Field)
+    old_chainwork
+        + if old_work == new_work {
+            old_work * (SIZE - 1) as Field
+        } else {
+            (new_work * new_amount as Field) + (old_work * (SIZE - new_amount - 1) as Field)
+        }
 }
 
 pub(crate) unconstrained fn cut(mut value: U256) -> (U256, u8) {
@@ -151,5 +163,5 @@ pub(crate) unconstrained fn cut(mut value: U256) -> (U256, u8) {
 #[test]
 fn calc_chainwork_test() {
     let target = uncompres_target(0x1d00ffff);
-    assert(calc_chainwork::<2022, 6>(0x7e607e607e6, target, target) == 0xfc60fc60fc6);
+    assert(calc_chainwork::<1025>(0x40104010401, target, target, 2048) == 0x80108010801);
 }

@@ -7,6 +7,7 @@ import sys
 import subprocess
 import ast
 import logging
+import math
 
 def setup_logging():
     logging.basicConfig(level=logging.DEBUG)
@@ -14,6 +15,17 @@ def setup_logging():
 def get_config(path: str = "./generators/blocks/config.json") -> Dict:
     with open(path, "r") as f:
         return json.load(f)
+    
+def to_toml_array_hashes(elements) -> str:
+    chunks = [elements[i:i+32] for i in range(0, len(elements), 32)]
+
+    toml_str = "[\n"
+    for chunk in chunks:
+        toml_str += "  [" + ", ".join(f'"{v}"' for v in chunk) + "],\n"
+    toml_str += "]"
+
+    return toml_str
+
 
 def main():
     setup_logging()
@@ -22,16 +34,39 @@ def main():
 
     blocks_amount = config["blocks"]["count"]
 
-    if blocks_amount % 2016 != 6:
-        print("Amount of blocks must be (2016 * x + 6), where x > 0")
+    if blocks_amount % 1024 != 0:
+        print("Amount of blocks must be (1024 * x)")
         sys.exit()
+
+    merkle_root_state_len = math.ceil(math.log(blocks_amount / 1024, 2)) + 1
+
+    with open("./app/blocks-recursive/start/src/globals.nr", "w") as f:
+        f.write(f"pub global MERKLE_ROOT_ARRAY_LEN: u32 = {merkle_root_state_len};")
+
+    with open("./app/blocks-recursive/rec/src/globals.nr", "w") as f:
+        f.write(f"""pub global HONK_VK_SIZE: u32 = 128;
+pub global HONK_PROOF_SIZE: u32 = 456;
+pub global HONK_IDENTIFIER: u32 = 1;
+pub global PUBLIC_INPUTS: u32 = {47 + 32 * merkle_root_state_len};
+
+pub global MERKLE_ROOT_ARRAY_LEN: u32 = {merkle_root_state_len};
+""")
+        
+    with open("./app/blocks-recursive/rec_end/src/globals.nr", "w") as f:
+        f.write(f"""pub global HONK_VK_SIZE: u32 = 128;
+pub global HONK_PROOF_SIZE: u32 = 456;
+pub global HONK_IDENTIFIER: u32 = 1;
+pub global PUBLIC_INPUTS: u32 = {47 + 32 * merkle_root_state_len};
+
+pub global MERKLE_ROOT_ARRAY_LEN: u32 = {merkle_root_state_len};
+""")
 
     puller = BlockHeaderPuller(config["gateway"])
     hex_headers = puller.pull_block_headers(config["blocks"]["start"], config["blocks"]["count"])
     blocks = [Block(header) for header in hex_headers]
 
-    nargo_toml = create_nargo_toml(blocks[index:2022], "blocks")
-    index = 2021
+    nargo_toml = create_nargo_toml(blocks[index:1025], "blocks")
+    index = 1024
 
     with open("./app/blocks-recursive/start/Prover.toml", "w") as f:
         f.write(f"last_block_hash = [{', '.join(f'"{elem}"' for elem in bytes.fromhex(blocks[index].get_block_hash()))}]\n\n")
@@ -91,76 +126,64 @@ def main():
                     '--init_kzg_accumulator'],
                     check=True)
     
+    logging.debug("nargo compile (last recursive)")
+    subprocess.run(['nargo', 'compile', '--package', 'rec_end'], check=True)
+    
+    logging.debug("bb write_vk (last recursive)")
+    subprocess.run(['bb', 'write_vk',
+                    '-s', 'ultra_honk', 
+                    '-b', './target/rec_end.json', 
+                    '-o', './target/blocks_bin/rec_end', 
+                    '--output_format', 'bytes_and_fields', 
+                    '--honk_recursion', '1', 
+                    '--init_kzg_accumulator',
+                    '--oracle_hash', 'keccak'],
+                    check=True)
+    
     with open("./target/blocks_bin/rec/vk_fields.json", "r") as file:
         vk_rec = file.read()
     
-    while index < (blocks_amount - 1):
+    while index < (blocks_amount - 1025):
         pi_array = ast.literal_eval(pi)
 
-        logging.debug(f"Prooving blocks from {index - 5} to {index + 2016}")
-        nargo_toml = create_nargo_toml(blocks[(index - 5):(index + 2017)], "blocks")
-        index += 2016
+        logging.debug(f"Prooving blocks from {index} to {index + 1024}")
+        nargo_toml = create_nargo_toml(blocks[index:(index + 1025)], "blocks")
+        index += 1024
 
         with open("./app/blocks-recursive/rec/Prover.toml", "w") as f:
             f.write(f"last_block_hash = [{', '.join(f'"{elem}"' for elem in bytes.fromhex(blocks[index].get_block_hash()))}]\n\n")
             f.write(f"timestamps = [{', '.join(str(v) for v in pi_array[32:43])}]\n\n")
-            f.write(f"time_idx = \"{pi_array[-3]}\"\n\n")
-            f.write(f"last_block_height = \"{int(pi_array[-2], 16)}\"\n\n")
-            f.write(f"chainwork = \"{int(pi_array[-1], 16)}\"\n\n")
+            f.write(f"time_idx = \"{pi_array[-(4 + 32 * merkle_root_state_len)]}\"\n\n")
+            f.write(f"last_block_height = \"{int(pi_array[-(3 + 32 * merkle_root_state_len)], 16)}\"\n\n")
+            f.write(f"chainwork = \"{int(pi_array[-(2 + 32 * merkle_root_state_len)], 16)}\"\n\n")
             f.write(f"verification_key = {vk}\n\n")
             f.write(f"proof = {proof}\n\n")
             f.write(f"public_inputs = {pi}\n\n")
+            f.write(f"prev_timestamp = {pi_array[-1]}\n\n")
+            f.write(f"merkle_state = {to_toml_array_hashes(pi_array[-(1 + 32 * merkle_root_state_len):-1])}\n\n")
             f.write(nargo_toml)
 
         logging.debug("nargo execute (recursive)")
         subprocess.run(['nargo', 'execute', '--package', 'rec'], check=True)
 
-        if index == blocks_amount - 1:
-            logging.debug("bb prove (last recursive)")
-            subprocess.run(['bb', 'prove', 
-                            '-s', 'ultra_honk', 
-                            '-b', './target/rec.json', 
-                            '-w', './target/rec.gz',
-                            '-o', './target/blocks_bin/rec', 
-                            '--output_format', 'bytes_and_fields',
-                            '--oracle_hash', 'keccak'],
-                            check=True)
-            logging.debug("bb write_vk (last recursive)")
-            subprocess.run(['bb', 'write_vk', 
-                            '-s', 'ultra_honk', 
-                            '-b', './target/rec.json', 
-                            '-o', './target/blocks_bin/rec', 
-                            '--output_format', 'bytes_and_fields', 
-                            '--honk_recursion', '1', 
-                            '--init_kzg_accumulator',
-                            '--oracle_hash', 'keccak'],
-                            check=True)
-            subprocess.run(['bb', 'verify', 
+        logging.debug("bb prove (recursive)")
+        subprocess.run(['bb', 'prove', 
                         '-s', 'ultra_honk', 
-                        '-k', './target/blocks_bin/rec/vk', 
-                        '-p', './target/blocks_bin/rec/proof', 
-                        '-i', './target/blocks_bin/rec/public_inputs',
-                        '--oracle_hash', 'keccak'],
+                        '-b', './target/rec.json', 
+                        '-w', './target/rec.gz', 
+                        '-o', './target/blocks_bin/rec', 
+                        '--output_format', 'bytes_and_fields', 
+                        '--honk_recursion', '1', 
+                        '--recursive', 
+                        '--init_kzg_accumulator'],
                         check=True)
-        else:
-            logging.debug("bb prove (recursive)")
-            subprocess.run(['bb', 'prove', 
-                            '-s', 'ultra_honk', 
-                            '-b', './target/rec.json', 
-                            '-w', './target/rec.gz', 
-                            '-o', './target/blocks_bin/rec', 
-                            '--output_format', 'bytes_and_fields', 
-                            '--honk_recursion', '1', 
-                            '--recursive', 
-                            '--init_kzg_accumulator'],
-                            check=True)
-            
-            subprocess.run(['bb', 'verify', 
-                        '-s', 'ultra_honk', 
-                        '-k', './target/blocks_bin/rec/vk', 
-                        '-p', './target/blocks_bin/rec/proof', 
-                        '-i', './target/blocks_bin/rec/public_inputs'],
-                        check=True)
+        
+        subprocess.run(['bb', 'verify', 
+                    '-s', 'ultra_honk', 
+                    '-k', './target/blocks_bin/rec/vk', 
+                    '-p', './target/blocks_bin/rec/proof', 
+                    '-i', './target/blocks_bin/rec/public_inputs'],
+                    check=True)
         
         with open("./target/blocks_bin/rec/proof_fields.json", "r") as file:
             proof = file.read()
@@ -170,9 +193,49 @@ def main():
         with open("./target/blocks_bin/rec/public_inputs_fields.json", "r") as file:
             pi = file.read()
 
+    pi_array = ast.literal_eval(pi)
+
+    logging.debug(f"Prooving blocks from {index} to {index + 1023}")
+    nargo_toml = create_nargo_toml(blocks[index:(index + 1024)], "blocks")
+    index += 1023
+    
+    with open("./app/blocks-recursive/rec_end/Prover.toml", "w") as f:
+            f.write(f"last_block_hash = [{', '.join(f'"{elem}"' for elem in bytes.fromhex(blocks[index].get_block_hash()))}]\n\n")
+            f.write(f"timestamps = [{', '.join(str(v) for v in pi_array[32:43])}]\n\n")
+            f.write(f"time_idx = \"{pi_array[-(4 + 32 * merkle_root_state_len)]}\"\n\n")
+            f.write(f"last_block_height = \"{int(pi_array[-(3 + 32 * merkle_root_state_len)], 16)}\"\n\n")
+            f.write(f"chainwork = \"{int(pi_array[-(2 + 32 * merkle_root_state_len)], 16)}\"\n\n")
+            f.write(f"verification_key = {vk}\n\n")
+            f.write(f"proof = {proof}\n\n")
+            f.write(f"public_inputs = {pi}\n\n")
+            f.write(f"prev_timestamp = {pi_array[-1]}\n\n")
+            f.write(f"merkle_state = {to_toml_array_hashes(pi_array[-(1 + 32 * merkle_root_state_len):-1])}\n\n")
+            f.write(nargo_toml)
+
+    logging.debug("nargo execute (last recursive)")
+    subprocess.run(['nargo', 'execute', '--package', 'rec_end'], check=True)
+    
+    logging.debug("bb prove (last recursive)")
+    subprocess.run(['bb', 'prove', 
+                    '-s', 'ultra_honk', 
+                    '-b', './target/rec_end.json', 
+                    '-w', './target/rec_end.gz',
+                    '-o', './target/blocks_bin/rec_end', 
+                    '--output_format', 'bytes_and_fields',
+                    '--oracle_hash', 'keccak'],
+                    check=True)
+    
+    subprocess.run(['bb', 'verify',
+                '-s', 'ultra_honk', 
+                '-k', './target/blocks_bin/rec_end/vk', 
+                '-p', './target/blocks_bin/rec_end/proof', 
+                '-i', './target/blocks_bin/rec_end/public_inputs',
+                '--oracle_hash', 'keccak'],
+                check=True)
+
     subprocess.run(['bb', 'write_solidity_verifier',  
-                        '-k', './target/blocks_bin/rec/vk', 
-                        '-o', './target/blocks_bin/rec/Verifier.sol'],
+                        '-k', './target/blocks_bin/rec_end/vk', 
+                        '-o', './target/blocks_bin/rec_end/Verifier.sol'],
                         check=True)
     
     print("Recursive proof was created successfully")
