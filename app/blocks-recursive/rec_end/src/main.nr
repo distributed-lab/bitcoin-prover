@@ -23,7 +23,7 @@ fn main(
     mut merkle_state: [[u8; 32]; MERKLE_ROOT_ARRAY_LEN],
     last_block_hash: pub [u8; 32],
     prev_timestamp: u32,
-) -> pub ([u32; 11], u32, u32, Field, [u8; 32], u32) {
+) -> pub ([u32; 11], u32, u32, Field, [[u8; 32]; MERKLE_ROOT_ARRAY_LEN], u32) {
     std::verify_proof_with_type(verification_key, proof, public_inputs, 0x0, HONK_IDENTIFIER);
 
     assert(get_block_hash(blocks[blocks.len() - 1]) == bytes_to_hex(last_block_hash));
@@ -55,5 +55,5 @@ fn main(
 
     merkle_state = calc_merkle_state(merkle_state, merkle_branch);
 
-    (checked.1, checked.2, checked.3, checked.4, finalize_merkle_state(merkle_state), checked.5)
+    (checked.1, checked.2, checked.3, checked.4, merkle_state, checked.5)
 }
