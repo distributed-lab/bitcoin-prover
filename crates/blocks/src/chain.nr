@@ -15,6 +15,7 @@ pub fn check_chain<let SIZE: u32>(
     mut block_height: u32,
     mut chainwork: Field,
     mut prev_timestamp: u32,
+    ignore_last: bool,
 ) -> (bool, [u32; 11], u32, u32, Field, u32) {
     let mut is_correct = true;
     let first_batch = block_height == 0;
@@ -28,79 +29,81 @@ pub fn check_chain<let SIZE: u32>(
     }
 
     for i in 1..SIZE {
-        block_height += 1;
-        // prev block hash
-        if blocks[i].prev_block != get_block_hash(blocks[i - 1]) {
-            is_correct = false;
-            println("prev hash fail");
-        }
-
-        let idx = if first_batch & (i < 11) {
-            i / 2 + 11 - i
-        } else {
-            5
-        };
-
-        // timestamp
-        if !(blocks[i].timestamp > timestamps.sort()[idx]) {
-            is_correct = false;
-            println("timestamp fail");
-        }
-
-        timestamps[time_idx] = blocks[i].timestamp;
-        time_idx = (time_idx + 1) % 11;
-
-        // if new target
-        if block_height % 2016 == 0 {
-            targets_idx += 1;
-            targets[targets_idx].1 = blocks[i].bits;
-            let actual_time = (blocks[i - 1].timestamp - prev_timestamp);
-
-            let targ = uncompres_target(blocks[i - 1].bits);
-            let mut target =
-                targ.mul(U256::from((actual_time) as Field)).udiv(U256::from(expected_time));
-
-            if target < targ.udiv(U256::from(4)) {
-                target = targ.udiv(U256::from(4));
-            } else if targ.mul(U256::from(4)) < target {
-                target = targ.mul(U256::from(4));
+        if (i < (SIZE - 1)) | !ignore_last {
+            block_height += 1;
+            // prev block hash
+            if blocks[i].prev_block != get_block_hash(blocks[i - 1]) {
+                is_correct = false;
+                println("prev hash fail");
             }
 
-            target = if U256::from(max_target) < target {
-                U256::from(max_target)
+            let idx = if first_batch & (i < 11) {
+                i / 2 + 11 - i
             } else {
-                // Safety: the target will be cut using shift and compared to the res
-                let (res, shift) = unsafe { cut(target) };
-
-                assert(
-                    target.udiv(U256::from(2.pow_32(shift as Field))).mul(U256::from(2.pow_32(
-                        shift as Field,
-                    )))
-                        == res,
-                );
-
-                res
+                5
             };
 
-            if target != uncompres_target(blocks[i].bits) {
+            // timestamp
+            if !(blocks[i].timestamp > timestamps.sort()[idx]) {
                 is_correct = false;
-                println("target eq fail");
+                println("timestamp fail");
             }
-            prev_timestamp = blocks[i].timestamp;
-            prev_bits = blocks[i].bits;
-        } else {
-            if prev_bits != blocks[i].bits {
+
+            timestamps[time_idx] = blocks[i].timestamp;
+            time_idx = (time_idx + 1) % 11;
+
+            // if new target
+            if block_height % 2016 == 0 {
+                targets_idx += 1;
+                targets[targets_idx].1 = blocks[i].bits;
+                let actual_time = (blocks[i - 1].timestamp - prev_timestamp);
+
+                let targ = uncompres_target(blocks[i - 1].bits);
+                let mut target =
+                    targ.mul(U256::from((actual_time) as Field)).udiv(U256::from(expected_time));
+
+                if target < targ.udiv(U256::from(4)) {
+                    target = targ.udiv(U256::from(4));
+                } else if targ.mul(U256::from(4)) < target {
+                    target = targ.mul(U256::from(4));
+                }
+
+                target = if U256::from(max_target) < target {
+                    U256::from(max_target)
+                } else {
+                    // Safety: the target will be cut using shift and compared to the res
+                    let (res, shift) = unsafe { cut(target) };
+
+                    assert(
+                        target.udiv(U256::from(2.pow_32(shift as Field))).mul(U256::from(2.pow_32(
+                            shift as Field,
+                        )))
+                            == res,
+                    );
+
+                    res
+                };
+
+                if target != uncompres_target(blocks[i].bits) {
+                    is_correct = false;
+                    println("target eq fail");
+                }
+                prev_timestamp = blocks[i].timestamp;
+                prev_bits = blocks[i].bits;
+            } else {
+                if prev_bits != blocks[i].bits {
+                    is_correct = false;
+                    println("prev bits fail");
+                }
+            }
+
+            targets[targets_idx].0 += 1;
+
+            // hash <= target
+            if !check_target(blocks[i]) {
                 is_correct = false;
-                println("prev bits fail");
+                println("target check fail");
             }
-        }
-
-        targets[targets_idx].0 += 1;
-
-        // hash <= target
-        if !check_target(blocks[i]) {
-            is_correct = false;
-            println("target check fail");
         }
     }
 

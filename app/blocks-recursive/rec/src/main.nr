@@ -12,7 +12,7 @@ fn main(
     verification_key: [Field; HONK_VK_SIZE],
     proof: [Field; HONK_PROOF_SIZE],
     public_inputs: [Field; PUBLIC_INPUTS],
-    blocks: [BlockHeader; 1025],
+    mut blocks: [BlockHeader; 1025],
     timestamps: [u32; 11],
     time_idx: u32,
     last_block_height: u32,
@@ -20,10 +20,17 @@ fn main(
     mut merkle_state: [[u8; 32]; MERKLE_ROOT_ARRAY_LEN],
     last_block_hash: pub [u8; 32],
     prev_timestamp: u32,
+    ignore_last: bool,
 ) -> pub ([u32; 11], u32, u32, Field, [[u8; 32]; MERKLE_ROOT_ARRAY_LEN], u32) {
     std::verify_proof_with_type(verification_key, proof, public_inputs, 0x0, HONK_IDENTIFIER);
 
-    assert(get_block_hash(blocks[blocks.len() - 1]) == bytes_to_hex(last_block_hash));
+    if ignore_last {
+        assert(get_block_hash(blocks[blocks.len() - 2]) == bytes_to_hex(last_block_hash));
+        blocks[blocks.len() - 1].prev_block = bytes_to_hex(last_block_hash);
+    } else {
+        assert(get_block_hash(blocks[blocks.len() - 1]) == bytes_to_hex(last_block_hash));
+    }
+
     let checked = check_chain(
         blocks,
         timestamps,
@@ -32,6 +39,7 @@ fn main(
         last_block_height,
         chainwork,
         prev_timestamp,
+        ignore_last,
     );
 
     assert(checked.0);
