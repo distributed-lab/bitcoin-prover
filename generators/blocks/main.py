@@ -55,13 +55,7 @@ pub global MERKLE_ROOT_ARRAY_LEN: u32 = {merkle_root_state_len};
     puller = BlockHeaderPuller(config["gateway"])
     hex_headers = puller.pull_block_headers(config["blocks"]["start"], config["blocks"]["count"])
     blocks = [Block(header) for header in hex_headers]
-    b = Block()
-    b.version = "0" * 8
-    b.prev_hash = "0" * 64
-    b.merkle_hash = "0" * 64
-    b.time = "0" * 8
-    b.nBits = "0" * 8
-    b.nonce = "0" * 8
+    b = Block("0" * 160)
     blocks.append(b)
 
     nargo_toml = create_nargo_toml(blocks[index:1025], "blocks")
@@ -145,7 +139,7 @@ pub global MERKLE_ROOT_ARRAY_LEN: u32 = {merkle_root_state_len};
             f.write(f"proof = {proof}\n\n")
             f.write(f"public_inputs = {pi}\n\n")
             f.write(f"prev_timestamp = {pi_array[-1]}\n\n")
-            f.write(f"ignore_last = \"{str(index == blocks_amount).lower()}\"\n\n")
+            f.write(f"ignore_last = \"{int(index == blocks_amount)}\"\n\n")
             f.write(f"merkle_state = {to_toml_array_hashes(pi_array[-(1 + 32 * merkle_root_state_len):-1])}\n\n")
             f.write(nargo_toml)
 

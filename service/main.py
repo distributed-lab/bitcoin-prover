@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from service.merkle_tree import MerkleTree
 
 app = FastAPI()
-tree = BTCBlocksMerkleTree(900000)
+tree = BTCBlocksMerkleTree(2048)
 
 @app.on_event("startup")
 async def startup_event():
