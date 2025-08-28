@@ -28,6 +28,7 @@ fn main(
         0,
         0x100010001,
         blocks[0].timestamp,
+        false,
     );
 
     assert(checked.0);

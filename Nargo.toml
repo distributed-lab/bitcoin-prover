@@ -17,5 +17,4 @@ members = [
     "app/p2sh-p2wsh",
     "app/blocks-recursive/start",
     "app/blocks-recursive/rec",
-    "app/blocks-recursive/rec_end",
 ]
