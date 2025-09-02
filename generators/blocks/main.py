@@ -129,7 +129,9 @@ pub global MERKLE_ROOT_ARRAY_LEN: u32 = {merkle_root_state_len};
         with open("./target/blocks_bin/rec/public_inputs_fields.json", "r") as file:
             pi = file.read()
 
+        pi_array = ast.literal_eval(pi)
         index = int(pi_array[-(3 + 32 * merkle_root_state_len)], 16)
+        logging.debug(f"Continue proving from {index} block...")
     
     with open("./target/blocks_bin/rec/vk_fields.json", "r") as file:
         vk_rec = file.read()
