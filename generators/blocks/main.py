@@ -31,9 +31,9 @@ def main():
     setup_logging()
     config = get_config()
     index = 0
+    checkpoint = config["from_checkpoint"]
 
     blocks_amount = config["blocks"]["count"]
-
     if blocks_amount % 1024 != 0:
         print("Amount of blocks must be (1024 * x)")
         sys.exit()
@@ -58,66 +58,78 @@ pub global MERKLE_ROOT_ARRAY_LEN: u32 = {merkle_root_state_len};
     b = Block("0" * 160)
     blocks.append(b)
 
-    nargo_toml = create_nargo_toml(blocks[index:1025], "blocks")
-    index = 1024
+    if not checkpoint:
+        nargo_toml = create_nargo_toml(blocks[index:1025], "blocks")
+        index += 1024
 
-    with open("./app/blocks-recursive/start/Prover.toml", "w") as f:
-        f.write(f"last_block_hash = [{', '.join(f'"{elem}"' for elem in bytes.fromhex(blocks[index].get_block_hash()))}]\n\n")
-        f.write(nargo_toml)
+        with open("./app/blocks-recursive/start/Prover.toml", "w") as f:
+            f.write(f"last_block_hash = [{', '.join(f'"{elem}"' for elem in bytes.fromhex(blocks[index].get_block_hash()))}]\n\n")
+            f.write(nargo_toml)
 
-    logging.debug("nargo execute (start)")
-    subprocess.run(['nargo', 'execute', '--package', 'start'], check=True)
+        logging.debug("nargo execute (start)")
+        subprocess.run(['nargo', 'execute', '--package', 'start'], check=True)
 
-    logging.debug("bb proof")
-    subprocess.run(['bb', 'prove', 
-                    '-s', 'ultra_honk', 
-                    '-b', './target/start.json', 
-                    '-w', './target/start.gz', 
-                    '-o', './target/blocks_bin', 
-                    '--output_format', 'bytes_and_fields', 
-                    '--honk_recursion', '1', 
-                    '--recursive', 
-                    '--init_kzg_accumulator'],
-                    check=True)
-    
-    logging.debug("bb write_vk (start)")
-    subprocess.run(['bb', 'write_vk', 
-                    '-s', 'ultra_honk', 
-                    '-b', './target/start.json', 
-                    '-o', './target/blocks_bin', 
-                    '--output_format', 'bytes_and_fields', 
-                    '--honk_recursion', '1', 
-                    '--init_kzg_accumulator'],
-                    check=True)
-    
-    subprocess.run(['bb', 'verify', 
-                    '-s', 'ultra_honk', 
-                    '-k', './target/blocks_bin/vk', 
-                    '-p', './target/blocks_bin/proof', 
-                    '-i', './target/blocks_bin/public_inputs'],
-                    check=True)
-    
-    with open("./target/blocks_bin/proof_fields.json", "r") as file:
-        proof = file.read()
+        logging.debug("bb proof")
+        subprocess.run(['bb', 'prove', 
+                        '-s', 'ultra_honk', 
+                        '-b', './target/start.json', 
+                        '-w', './target/start.gz', 
+                        '-o', './target/blocks_bin', 
+                        '--output_format', 'bytes_and_fields', 
+                        '--honk_recursion', '1', 
+                        '--recursive', 
+                        '--init_kzg_accumulator'],
+                        check=True)
+        
+        logging.debug("bb write_vk (start)")
+        subprocess.run(['bb', 'write_vk', 
+                        '-s', 'ultra_honk', 
+                        '-b', './target/start.json', 
+                        '-o', './target/blocks_bin', 
+                        '--output_format', 'bytes_and_fields', 
+                        '--honk_recursion', '1', 
+                        '--init_kzg_accumulator'],
+                        check=True)
+        
+        subprocess.run(['bb', 'verify', 
+                        '-s', 'ultra_honk', 
+                        '-k', './target/blocks_bin/vk', 
+                        '-p', './target/blocks_bin/proof', 
+                        '-i', './target/blocks_bin/public_inputs'],
+                        check=True)
+        
+        with open("./target/blocks_bin/proof_fields.json", "r") as file:
+            proof = file.read()
 
-    with open("./target/blocks_bin/vk_fields.json", "r") as file:
-        vk = file.read()
+        with open("./target/blocks_bin/vk_fields.json", "r") as file:
+            vk = file.read()
 
-    with open("./target/blocks_bin/public_inputs_fields.json", "r") as file:
-        pi = file.read()
+        with open("./target/blocks_bin/public_inputs_fields.json", "r") as file:
+            pi = file.read()
 
-    logging.debug("nargo compile (recursive)")
-    subprocess.run(['nargo', 'compile', '--package', 'rec'], check=True)
+        logging.debug("nargo compile (recursive)")
+        subprocess.run(['nargo', 'compile', '--package', 'rec'], check=True)
 
-    logging.debug("bb write_vk (recursive)")
-    subprocess.run(['bb', 'write_vk', 
-                    '-s', 'ultra_honk', 
-                    '-b', './target/rec.json', 
-                    '-o', './target/blocks_bin/rec', 
-                    '--output_format', 'bytes_and_fields', 
-                    '--honk_recursion', '1', 
-                    '--init_kzg_accumulator'],
-                    check=True)
+        logging.debug("bb write_vk (recursive)")
+        subprocess.run(['bb', 'write_vk', 
+                        '-s', 'ultra_honk', 
+                        '-b', './target/rec.json', 
+                        '-o', './target/blocks_bin/rec', 
+                        '--output_format', 'bytes_and_fields', 
+                        '--honk_recursion', '1', 
+                        '--init_kzg_accumulator'],
+                        check=True)
+    else:
+        with open("./target/blocks_bin/rec/proof_fields.json", "r") as file:
+            proof = file.read()
+
+        with open("./target/blocks_bin/rec/vk_fields.json", "r") as file:
+            vk = file.read()
+
+        with open("./target/blocks_bin/rec/public_inputs_fields.json", "r") as file:
+            pi = file.read()
+
+        index = int(pi_array[-(3 + 32 * merkle_root_state_len)], 16)
     
     with open("./target/blocks_bin/rec/vk_fields.json", "r") as file:
         vk_rec = file.read()

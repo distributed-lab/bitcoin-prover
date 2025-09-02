@@ -6,5 +6,6 @@
     "blocks": {
         "start": 0,
         "count": 3072
-    }
+    },
+    "from_checkpoint": false
 }
