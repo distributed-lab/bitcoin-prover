@@ -139,6 +139,9 @@ pub global MERKLE_ROOT_ARRAY_LEN: u32 = {merkle_root_state_len};
     while index < blocks_amount:
         pi_array = ast.literal_eval(pi)
 
+        if index == 2048 and not checkpoint:
+            logging.debug("You can use checkpoint from this moment...")
+
         logging.debug(f"Prooving blocks from {index} to {index + 1024}")
         nargo_toml = create_nargo_toml(blocks[index:(index + 1025)], "blocks")
         index += 1024
