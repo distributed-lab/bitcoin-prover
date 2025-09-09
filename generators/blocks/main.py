@@ -52,7 +52,7 @@ def main():
     index = 0
     checkpoint = config["from_checkpoint"]
     batch_idx = 0
-    os.makedirs("target/blocks/schemas")
+    os.makedirs("target/blocks/schemas", exist_ok=True)
 
     blocks_amount = config["blocks"]["count"]
     if blocks_amount % 1024 != 0:
@@ -114,6 +114,9 @@ pub global MERKLE_ROOT_ARRAY_LEN: u32 = {merkle_root_state_len};
                         '--init_kzg_accumulator'],
                         check=True)
         
+        shutil.copy("target/blocks_bin/vk", "target/blocks/schemas/vk_start")
+        shutil.copy("target/blocks_bin/vk_fields.json", "target/blocks/schemas/vk_fields_start.json")
+        
         subprocess.run(['bb', 'verify', 
                         '-s', 'ultra_honk', 
                         '-k', './target/blocks_bin/vk', 
@@ -147,6 +150,10 @@ pub global MERKLE_ROOT_ARRAY_LEN: u32 = {merkle_root_state_len};
                         '--honk_recursion', '1', 
                         '--init_kzg_accumulator'],
                         check=True)
+        
+        shutil.copy("target/blocks_bin/rec/vk", "target/blocks/schemas/vk_rec")
+        shutil.copy("target/blocks_bin/rec/vk_fields.json", "target/blocks/schemas/vk_fields_rec.json")
+
     else:
         with open("./target/blocks_bin/rec/proof_fields.json", "r") as file:
             proof = file.read()
