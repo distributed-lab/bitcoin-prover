@@ -8,6 +8,8 @@ import subprocess
 import ast
 import logging
 import math
+import os
+import shutil
 
 def setup_logging():
     logging.basicConfig(level=logging.DEBUG)
@@ -26,12 +28,31 @@ def to_toml_array_hashes(elements) -> str:
 
     return toml_str
 
+def save_batch_info(batch_idx: int, is_start: bool):
+    os.makedirs(f"target/blocks/batch{batch_idx}", exist_ok=True)
+
+    filename = "start.gz" if is_start else "rec.gz"
+    src = f"target/{filename}"
+    dst = f"target/blocks/batch{batch_idx}/"
+    shutil.copy(src, dst)
+
+    if is_start:
+        src = "target/blocks_bin/"
+    else:
+        src = "target/blocks_bin/rec/"
+
+    shutil.copy(src + "proof", dst)
+    shutil.copy(src + "proof_fields.json", dst)
+    shutil.copy(src + "public_inputs", dst)
+    shutil.copy(src + "public_inputs_fields.json", dst)
 
 def main():
     setup_logging()
     config = get_config()
     index = 0
     checkpoint = config["from_checkpoint"]
+    batch_idx = 0
+    os.makedirs("target/blocks/schemas", exist_ok=True)
 
     blocks_amount = config["blocks"]["count"]
     if blocks_amount % 1024 != 0:
@@ -69,6 +90,8 @@ pub global MERKLE_ROOT_ARRAY_LEN: u32 = {merkle_root_state_len};
         logging.debug("nargo execute (start)")
         subprocess.run(['nargo', 'execute', '--package', 'start'], check=True)
 
+        shutil.copy("target/start.json", "target/blocks/schemas/")
+
         logging.debug("bb proof")
         subprocess.run(['bb', 'prove', 
                         '-s', 'ultra_honk', 
@@ -91,12 +114,18 @@ pub global MERKLE_ROOT_ARRAY_LEN: u32 = {merkle_root_state_len};
                         '--init_kzg_accumulator'],
                         check=True)
         
+        shutil.copy("target/blocks_bin/vk", "target/blocks/schemas/vk_start")
+        shutil.copy("target/blocks_bin/vk_fields.json", "target/blocks/schemas/vk_fields_start.json")
+        
         subprocess.run(['bb', 'verify', 
                         '-s', 'ultra_honk', 
                         '-k', './target/blocks_bin/vk', 
                         '-p', './target/blocks_bin/proof', 
                         '-i', './target/blocks_bin/public_inputs'],
                         check=True)
+        
+        save_batch_info(batch_idx, True)
+        batch_idx += 1
         
         with open("./target/blocks_bin/proof_fields.json", "r") as file:
             proof = file.read()
@@ -110,6 +139,8 @@ pub global MERKLE_ROOT_ARRAY_LEN: u32 = {merkle_root_state_len};
         logging.debug("nargo compile (recursive)")
         subprocess.run(['nargo', 'compile', '--package', 'rec'], check=True)
 
+        shutil.copy("target/rec.json", "target/blocks/schemas/")
+
         logging.debug("bb write_vk (recursive)")
         subprocess.run(['bb', 'write_vk', 
                         '-s', 'ultra_honk', 
@@ -119,6 +150,10 @@ pub global MERKLE_ROOT_ARRAY_LEN: u32 = {merkle_root_state_len};
                         '--honk_recursion', '1', 
                         '--init_kzg_accumulator'],
                         check=True)
+        
+        shutil.copy("target/blocks_bin/rec/vk", "target/blocks/schemas/vk_rec")
+        shutil.copy("target/blocks_bin/rec/vk_fields.json", "target/blocks/schemas/vk_fields_rec.json")
+
     else:
         with open("./target/blocks_bin/rec/proof_fields.json", "r") as file:
             proof = file.read()
@@ -131,6 +166,7 @@ pub global MERKLE_ROOT_ARRAY_LEN: u32 = {merkle_root_state_len};
 
         pi_array = ast.literal_eval(pi)
         index = int(pi_array[-(3 + 32 * merkle_root_state_len)], 16)
+        batch_idx = index // 1024
         logging.debug(f"Continue proving from {index} block...")
     
     with open("./target/blocks_bin/rec/vk_fields.json", "r") as file:
@@ -192,6 +228,9 @@ pub global MERKLE_ROOT_ARRAY_LEN: u32 = {merkle_root_state_len};
                             '-p', './target/blocks_bin/rec/proof', 
                             '-i', './target/blocks_bin/rec/public_inputs'],
                             check=True)
+            
+        save_batch_info(batch_idx, False)
+        batch_idx += 1
         
         with open("./target/blocks_bin/rec/proof_fields.json", "r") as file:
             proof = file.read()
