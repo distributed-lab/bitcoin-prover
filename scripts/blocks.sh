@@ -6,7 +6,6 @@ set -e
 # Create required folders
 mkdir -p ./target/blocks_bin
 mkdir -p ./target/blocks_bin/rec
-mkdir -p ./target/blocks_bin/rec_end
 
 # Create virtual environment and install required packages
 python3 -m venv ./generators/blocks/venv

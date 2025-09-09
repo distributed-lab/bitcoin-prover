@@ -26,7 +26,7 @@ class MerkleTree:
             next_level = []
             for i in range(0, len(nodes), 2):
                 left = nodes[i]
-                right = nodes[i+1] if i+1 < len(nodes) else nodes[i]
+                right = nodes[i+1] if i+1 < len(nodes) else self.hash_leaf(b"\x00")
                 next_level.append(self.hash_node(left, right))
             nodes = next_level
             self.levels.append(nodes)
