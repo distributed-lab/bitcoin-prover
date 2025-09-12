@@ -74,9 +74,9 @@ def main():
     spk_script = Script(
         bytearray(script_pub_key).hex(),
         currentTx,
-        config["input_tsign"],
+        config["input_to_sign"],
         [script.script_elements[-1]])
-    sizes = sizes | redeem_script.sio_zes | spk_script.sizes
+    sizes = sizes | redeem_script.sizes | spk_script.sizes
     generate(sizes)
 
     require_stack_size = max(
