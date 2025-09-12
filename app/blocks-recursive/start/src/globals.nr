@@ -1,1 +1,0 @@
-pub global MERKLE_ROOT_ARRAY_LEN: u32 = 1;

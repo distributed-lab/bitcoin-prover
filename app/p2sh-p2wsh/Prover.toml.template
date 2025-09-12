@@ -1,5 +1,0 @@
-cur_tx_data = "{curTxData}"
-prev_tx_data = "{prevTxData}"
-script_sig = "{script_sig}"
-witness_script = "{witness_script}"
-input_to_sign = "{input_to_sign}"
