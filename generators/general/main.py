@@ -7,28 +7,31 @@ from typing import Dict
 from generators.utils.tx import Transaction
 from enum import Enum
 
+
 class SpendType(Enum):
     P2PK = 0
-    P2PKH = 1 # And p2wpkh
+    P2PKH = 1  # And p2wpkh
     P2MS = 2
-    P2SH = 3 # And p2wsh
+    P2SH = 3  # And p2wsh
     P2SH_P2WPKH = 4
     P2SH_P2WSH = 5
     P2TR_KEY = 6
     P2TR_SCRIPT = 7
 
+
 def get_config(path: str = "./generators/general/config.json") -> Dict:
     with open(path, "r") as f:
         return json.load(f)
 
+
 def main():
     config = get_config()
 
-    curTx = Transaction(config["tx"])
+    currentTx = Transaction(config["tx"])
     input_to_sign = config["input_to_sign"]
 
-    prevTxid = curTx.inputs[input_to_sign].txid[::-1].hex()
-    vout = curTx.inputs[input_to_sign].vout
+    prevTxid = currentTx.inputs[input_to_sign].txid[::-1].hex()
+    vout = currentTx.inputs[input_to_sign].vout
 
     response = requests.get(f"https://blockstream.info/api/tx/{prevTxid}/hex")
 
@@ -39,7 +42,7 @@ def main():
         sys.exit()
 
     script_pub_key = prevTx.outputs[vout].script_pub_key
-    
+
     # Define spending type
     if len(script_pub_key) in (35, 67) and script_pub_key[-1] == 172:
         spend_type = SpendType.P2PK
@@ -48,8 +51,8 @@ def main():
     elif script_pub_key[-1] == 174:
         spend_type = SpendType.P2MS
     elif len(script_pub_key) == 23 and script_pub_key[-1] == 135:
-        script_sig = curTx.inputs[input_to_sign].script_sig
-        if curTx.witness == None:
+        script_sig = currentTx.inputs[input_to_sign].script_sig
+        if currentTx.witness is None:
             spend_type = SpendType.P2SH
         elif len(script_sig) == 23 and script_sig[1] == 0:
             spend_type = SpendType.P2SH_P2WPKH
@@ -61,7 +64,7 @@ def main():
     elif len(script_pub_key) == 34 and script_pub_key[0] == 0:
         spend_type = SpendType.P2SH
     elif len(script_pub_key) == 34 and script_pub_key[0] == 81:
-        if len(curTx.witness[input_to_sign].stack_items) == 1:
+        if len(currentTx.witness[input_to_sign].stack_items) == 1:
             spend_type = SpendType.P2TR_KEY
         else:
             spend_type = SpendType.P2TR_SCRIPT
@@ -86,16 +89,16 @@ def main():
                 case SpendType.P2SH:
                     path = "p2sh"
                 case SpendType.P2SH_P2WPKH:
-                    path = "p2sh-p2wpkh"
+                    path = "p2sh_p2wpkh"
                 case SpendType.P2SH_P2WSH:
-                    path = "p2sh-p2wsh"
+                    path = "p2sh_p2wsh"
         case SpendType.P2TR_KEY | SpendType.P2TR_SCRIPT:
             json_name = "p2tr.template"
             match spend_type:
                 case SpendType.P2TR_KEY:
                     path = "p2tr"
                 case SpendType.P2TR_SCRIPT:
-                    path = "p2tr-script"
+                    path = "p2tr_script"
 
     with open("generators/general/jsons_templates/" + json_name, "r") as file:
         templateJson = file.read()
@@ -103,7 +106,7 @@ def main():
     jsonFile = templateJson.format(
         type=path,
         scriptSig=config["script_sig"],
-        curTx=config["tx"],
+        currentTx=config["tx"],
         prevTx=response.text,
         inputToSign=input_to_sign,
     )
@@ -112,6 +115,7 @@ def main():
         file.write(jsonFile)
 
     subprocess.run(["bash", "scripts/" + path + ".sh"])
+
 
 if __name__ == "__main__":
     main()

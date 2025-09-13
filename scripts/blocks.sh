@@ -5,15 +5,12 @@ set -e
 
 # Create required folders
 mkdir -p ./target/blocks_bin
-mkdir -p ./target/blocks_bin/rec
+mkdir -p ./target/blocks_bin/recursive
 
-# Create virtual environment and install required packages
-python3 -m venv ./generators/blocks/venv
-source ./generators/blocks/venv/bin/activate
-pip3 install electrum_client
+if ! pip show electrum_client >/dev/null 2>&1; then
+    echo -e "Pakage 'electrum_client' is not installed yet.\nRun:\n\tpip3 install electrum_client==0.0.1"
+    exit 1
+fi
 
 # Generate Prover.toml
-python3 -m generators.blocks.main
-
-# Deactivate venv
-deactivate
+python3 -m generators.blocks.main "$@"

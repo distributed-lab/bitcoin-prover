@@ -3,16 +3,13 @@
 # Exit on error
 set -e
 
-# Create virtual environment and install required packages
-python3 -m venv ./generators/utils/venv
-source ./generators/utils/venv/bin/activate
-pip3 install python-bitcoinlib
+if ! pip show python-bitcoinlib >/dev/null 2>&1; then
+    echo -e "Pakage 'python-bitcoinlib' is not installed yet.\nRun:\n\tpip3 install python-bitcoinlib==0.12.2"
+    exit 1
+fi
 
 # Generate Prover.toml
 python3 -m generators.p2ms.main
-
-# Deactivate venv
-deactivate
 
 # Format noir code
 nargo fmt
