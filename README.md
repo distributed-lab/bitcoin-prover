@@ -39,3 +39,7 @@ To create any spending proof, edit [config](generators/general/config.json) and 
 ```bash
 python3 -m generators.general.main
 ```
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
