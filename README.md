@@ -4,11 +4,11 @@ This project contains implementations in Noir and corresponding Python generator
 
 ## Overview
 
-The typical workflow is a as follows:
-1. Python generators create configuration files
-2. Noir code in the `app/` directory is compiled and executed
-3. Proofs are generated and verified using the `bb` tool
-4. All outputs are stored in the `target/` directory
+The typical workflow is as follows:
+1. Python generators create configuration files.
+2. Noir code in the `app/` directory is compiled and executed.
+3. Proofs are generated and verified using the `bb` tool.
+4. All outputs are stored in the `target/` directory.
 
 ## Requirements
 
@@ -18,7 +18,8 @@ The typical workflow is a as follows:
 
 ## Usage
 
-> **Important:** All commands must be run from the root directory of the repository.
+> [!IMPORTANT]
+> All commands must be run from the root directory of the repository.
 
 After running any script, you need to install the Python dependencies.
 To do that, create a virtual environment and install the dependencies from `requirements.txt` using the following commands:

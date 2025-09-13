@@ -13,4 +13,4 @@ if ! pip show electrum_client >/dev/null 2>&1; then
 fi
 
 # Generate Prover.toml
-python3 -m generators.blocks.main
+python3 -m generators.blocks.main "$@"

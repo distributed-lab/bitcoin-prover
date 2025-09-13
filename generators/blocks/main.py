@@ -66,8 +66,8 @@ def save_batch_info(batch_idx: int, is_start: bool):
 def main():
     setup_logging()
 
-    parser = argparse.ArgumentParser(description="")
-    parser.add_argument("--config", type=str, required=False, help="Config file path")
+    parser = argparse.ArgumentParser(description="Prove the validity of the Bitcoin block header chain")
+    parser.add_argument("--config", type=str, required=False, help="config file path", default="generators/blocks/config.json")
     args = parser.parse_args()
 
     config = get_config(args.config if args.config is not None else DEFAULT_CONFIG_PATH)
