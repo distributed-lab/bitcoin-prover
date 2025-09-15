@@ -13,6 +13,7 @@ def get_config(path: str = "./generators/p2pkh/config.json") -> Dict:
 
 
 def main():
+    print("Spending type: p2pkh")
     config = get_config()
 
     currentTx = Transaction(config["current_tx"])
@@ -49,18 +50,7 @@ def main():
     vout = currentTx.inputs[config["input_to_sign"]].vout
     script_pub_key = bytearray(prevTx.outputs[vout].script_pub_key)
 
-    if CURRENT_TX_WITNESS_SIZE != 0:
-        print("Spending type: p2wpkh")
-        script_pub_key.pop(0)
-        full_script_pub_key = [118, 169]
-        full_script_pub_key.extend(list(script_pub_key))
-        full_script_pub_key.extend([136, 172])
-        script_pub_key = bytes(full_script_pub_key)
-    else:
-        print("Spending type: p2pkh")
-
-    script_sig = config["script_sig"] if CURRENT_TX_WITNESS_SIZE == 0 else currentTx.witness_to_hex_script(
-        config["input_to_sign"])
+    script_sig = config["script_sig"]
     full_script = bytes.fromhex(script_sig) + script_pub_key
 
     script = Script(full_script.hex(), currentTx, config["input_to_sign"])
@@ -90,8 +80,7 @@ def main():
         prevTxSize=prevTx._get_transaction_size() * 2,
         signSize=len(script.script_elements[0]),
         pkSize=len(script.script_elements[1]),
-        scriptSigSize=len(
-            config["script_sig"]) if CURRENT_TX_WITNESS_SIZE == 0 else 1,
+        scriptSigSize=len(config["script_sig"]),
         nOutputSize=currentTx._get_output_size(currentTx.outputs[INPUT_TO_SIGN]),
         inputToSign=INPUT_TO_SIGN,
         inputToSignSize=currentTx._get_compact_size_size(INPUT_TO_SIGN),
@@ -110,7 +99,7 @@ def main():
     proverFile = templateProver.format(
         currentTxData=currentTxData,
         prevTxData=prevTxData,
-        scriptSig=config["script_sig"] if CURRENT_TX_WITNESS_SIZE == 0 else "-",
+        scriptSig=config["script_sig"],
         inputToSign=INPUT_TO_SIGN
     )
 

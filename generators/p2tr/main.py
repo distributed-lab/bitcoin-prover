@@ -61,7 +61,6 @@ def main():
         currentTxOutSize=CURRENT_TX_OUT_SIZE,
         currentTxMaxWitnessStackSize=CURRENT_TX_MAX_WITNESS_STACK_SIZE,
         currentTxWitnessSize=CURRENT_TX_WITNESS_SIZE,
-        isCurrentSegwit=str(CURRENT_TX_WITNESS_SIZE != 0).lower(),
         prevTxInCountSize=PREV_TX_INP_COUNT_SIZE,
         prevTxInSize=PREV_TX_INP_SIZE,
         prevTxOutCountSize=PREV_TX_OUT_COUNT_SIZE,

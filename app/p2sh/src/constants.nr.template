@@ -2,7 +2,6 @@ pub global CURRENT_TX_SIZE: u32 = {currentTxSize};
 pub global PREV_TX_SIZE: u32 = {prevTxSize};
 pub global SCRIPT_SIG_SIZE: u32 = {signSize};
 pub global SCRIPT_PUB_KEY_SIZE: u32 = {scriptPubKeySize};
-pub global INPUT_WITNESS_SIZE: u32 = {inputWitnessSize};
 pub global REDEEM_SCRIPT_SIZE: u32 = {redeemScriptSize};
 pub global CODESEPARATOR_REDEEM_SCRIPT_SIZE: u32 = {codeseparatorRedeemScriptSize};
 pub global CODESEPARATOR_REDEEM_SCRIPT_SIZE_SIZE: u32 = {codeseparatorRedeemScriptSizeSize};

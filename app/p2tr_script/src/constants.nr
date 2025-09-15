@@ -11,7 +11,6 @@ pub global CURRENT_TX_OUT_COUNT_SIZE: u32 = 1;
 pub global CURRENT_TX_OUT_SIZE: u32 = 32;
 pub global CURRENT_TX_MAX_WITNESS_STACK_SIZE: u32 = 3;
 pub global CURRENT_TX_WITNESS_SIZE: u32 = 136;
-pub global IS_CURRENT_SEGWIT: bool = true;
 
 pub global PREV_TX_IN_COUNT: u32 = 1;
 pub global PREV_TX_IN_COUNT_SIZE: u32 = 1;

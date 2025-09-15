@@ -1,8 +1,7 @@
 pub global CURRENT_TX_SIZE: u32 = {currentTxSize};
 pub global PREV_TX_SIZE: u32 = {prevTxSize};
-pub global SCRIPT_SIG_SIZE: u32 = {signSize};
-pub global SCRIPT_PUB_KEY_SIZE: u32 = {scriptPubKeySize};
-pub global SCRIPT_PUB_KEY_SIZE_SIZE: u32 = {scriptPubKeySizeSize};
+pub global SIG_SIZE: u32 = {signSize};
+pub global PK_SIZE: u32 = {pkSize};
 
 pub global CURRENT_TX_IN_COUNT: u32 = {currentTx.input_count};
 pub global CURRENT_TX_IN_COUNT_SIZE: u32 = {currentTxInCountSize};
@@ -12,7 +11,6 @@ pub global CURRENT_TX_OUT_COUNT_SIZE: u32 = {currentTxOutCountSize};
 pub global CURRENT_TX_OUT_SIZE: u32 = {currentTxOutSize};
 pub global CURRENT_TX_MAX_WITNESS_STACK_SIZE: u32 = {currentTxMaxWitnessStackSize};
 pub global CURRENT_TX_WITNESS_SIZE: u32 = {currentTxWitnessSize};
-pub global IS_CURRENT_SEGWIT: bool = {isCurrentSegwit};
 
 pub global PREV_TX_IN_COUNT: u32 = {prevTx.input_count};
 pub global PREV_TX_IN_COUNT_SIZE: u32 = {prevTxInCountSize};
@@ -25,9 +23,8 @@ pub global PREV_TX_WITNESS_SIZE: u32 = {prevTxWitnessSize};
 pub global IS_PREV_SEGWIT: bool = {isPrevSegwit};
 
 pub global OPCODES_COUNT: u32 = {opcodesCount};
-pub global STACK_SIZE: u32 = {stackSize};
-pub global MAX_STACK_ELEMENT_SIZE: u32 = {maxStackElementSize};
 pub global N_OUTPUT_SIZE: u32 = {nOutputSize};
 pub global INPUT_TO_SIGN: u32 = {inputToSign};
 pub global INPUT_TO_SIGN_SIZE: u32 = {inputToSignSize};
 pub global N_INPUT_SIZE: u32 = {nInputSize};
+

@@ -6,14 +6,13 @@ from generators.utils.opcodes_gen import generate
 from generators.constants import CONSTANTS_TEMPLATE, CONSTANTS_NR, PROVER_TEMPLATE, PROVER_TOML
 
 
-def get_config(path: str = "./generators/p2ms/config.json") -> Dict:
+def get_config(path: str = "./generators/p2sh/config.json") -> Dict:
     with open(path, "r") as f:
         return json.load(f)
 
 
 def main():
-    print("Spending type: p2ms")
-
+    print("Spending type: p2wsh")
     config = get_config()
 
     currentTx = Transaction(config["current_tx"])
@@ -24,18 +23,7 @@ def main():
     prevTx = Transaction(config["prev_tx"])
     prevTx.cut_script_sigs()
 
-    script_pub_key = prevTx.outputs[vout].script_pub_key
-    script_pub_key_size = prevTx.outputs[vout].script_pub_key_size
-
-    script = Script(
-        config["script_sig"] +
-        bytearray(script_pub_key).hex(),
-        currentTx,
-        config["input_to_sign"])
-    generate(script.sizes)
-
-    with open(config["file_path"] + CONSTANTS_TEMPLATE, "r") as file:
-        templateOpcodes = file.read()
+    INPUT_TO_SIGN = config["input_to_sign"]
 
     CURRENT_TX_INP_COUNT_SIZE = currentTx._get_compact_size_size(currentTx.input_count)
     CURRENT_TX_INP_SIZE = sum(currentTx._get_input_size(inp)
@@ -50,16 +38,54 @@ def main():
 
     PREV_TX_INP_COUNT_SIZE = prevTx._get_compact_size_size(prevTx.input_count)
     PREV_TX_INP_SIZE = sum(prevTx._get_input_size(inp)
-                           for inp in prevTx.inputs) + PREV_TX_INP_COUNT_SIZE
+                            for inp in prevTx.inputs) + PREV_TX_INP_COUNT_SIZE
     PREV_TX_OUT_COUNT_SIZE = prevTx._get_compact_size_size(prevTx.output_count)
     PREV_TX_OUT_SIZE = sum(prevTx._get_output_size(out)
-                           for out in prevTx.outputs) + PREV_TX_OUT_COUNT_SIZE
+                            for out in prevTx.outputs) + PREV_TX_OUT_COUNT_SIZE
     PREV_TX_MAX_WITNESS_STACK_SIZE = 0 if prevTx.witness is None else max(
         len(w.stack_items) for w in prevTx.witness)
     PREV_TX_WITNESS_SIZE = 0 if prevTx.witness is None else sum(
         prevTx._get_witness_size(wit) for wit in prevTx.witness)
 
-    INPUT_TO_SIGN = config["input_to_sign"]
+    script_pub_key = prevTx.outputs[vout].script_pub_key
+
+    script_sig = currentTx.witness_to_hex_script(INPUT_TO_SIGN)
+
+    full_script_pub_key = [168, 32]
+    full_script_pub_key.extend(script_pub_key[2:])
+    full_script_pub_key.append(135)
+    script_pub_key = full_script_pub_key
+
+    script = Script(
+        script_sig, 
+        currentTx, 
+        config["input_to_sign"])
+    sizes = script.sizes
+
+    redeem_script = Script(
+        script.script_elements[-1], 
+        currentTx, config["input_to_sign"], 
+        script.script_elements[0:-1])
+    
+    spk_script = Script(
+        bytearray(script_pub_key).hex(),
+        currentTx,
+        config["input_to_sign"],
+        [script.script_elements[-1]])
+    sizes = sizes | redeem_script.sizes | spk_script.sizes
+    generate(sizes)
+
+    require_stack_size = max(
+        script.require_stack_size +
+        spk_script.require_stack_size,
+        redeem_script.require_stack_size)
+    max_element_size = max(
+        script.max_element_size,
+        redeem_script.max_element_size,
+        spk_script.max_element_size)
+
+    with open(config["file_path"] + CONSTANTS_TEMPLATE, "r") as file:
+        templateOpcodes = file.read()
 
     opcodesFile = templateOpcodes.format(
         currentTx=currentTx,
@@ -78,14 +104,17 @@ def main():
         prevTxMaxWitnessStackSize=PREV_TX_MAX_WITNESS_STACK_SIZE,
         prevTxWitnessSize=PREV_TX_WITNESS_SIZE,
         isPrevSegwit=str(PREV_TX_WITNESS_SIZE != 0).lower(),
-        opcodesCount=script.opcodes,
         currentTxSize=currentTx._get_transaction_size() * 2,
         prevTxSize=prevTx._get_transaction_size() * 2,
-        signSize=len(config['script_sig']),
         scriptPubKeySize=len(script_pub_key),
-        scriptPubKeySizeSize=currentTx._get_compact_size_size(script_pub_key_size),
-        stackSize=script.require_stack_size,
-        maxStackElementSize=script.max_element_size,
+        inputWitnessSize=currentTx._get_witness_size(currentTx.witness[INPUT_TO_SIGN]) - 1,
+        redeemScriptSize=len(script.script_elements[-1]) // 2,
+        codeseparatorRedeemScriptSize=redeem_script.script_len_codeseparator,
+        codeseparatorRedeemScriptSizeSize=currentTx._get_compact_size_size(
+            redeem_script.script_len_codeseparator),
+        redeemOpcodesCount=redeem_script.opcodes,
+        stackSize=require_stack_size,
+        maxStackElementSize=max_element_size,
         nOutputSize=currentTx._get_output_size(
             currentTx.outputs[INPUT_TO_SIGN]) if len(
             currentTx.outputs) > INPUT_TO_SIGN else 0,
@@ -106,7 +135,6 @@ def main():
     proverFile = templateProver.format(
         currentTxData=currentTxData,
         prevTxData=prevTxData,
-        scriptSig=config["script_sig"],
         inputToSign=INPUT_TO_SIGN
     )
 

@@ -10,13 +10,15 @@ from enum import Enum
 
 class SpendType(Enum):
     P2PK = 0
-    P2PKH = 1  # And p2wpkh
-    P2MS = 2
-    P2SH = 3  # And p2wsh
-    P2SH_P2WPKH = 4
-    P2SH_P2WSH = 5
-    P2TR_KEY = 6
-    P2TR_SCRIPT = 7
+    P2PKH = 1
+    P2WPKH = 2
+    P2MS = 3
+    P2SH = 4
+    P2WSH = 5
+    P2SH_P2WPKH = 6
+    P2SH_P2WSH = 7
+    P2TR_KEY = 8
+    P2TR_SCRIPT = 9
 
 
 def get_config(path: str = "./generators/general/config.json") -> Dict:
@@ -46,8 +48,10 @@ def main():
     # Define spending type
     if len(script_pub_key) in (35, 67) and script_pub_key[-1] == 172:
         spend_type = SpendType.P2PK
-    elif (len(script_pub_key) == 25 and script_pub_key[-1] == 172) or (len(script_pub_key) == 22 and script_pub_key[0] == 0):
+    elif (len(script_pub_key) == 25 and script_pub_key[-1] == 172):
         spend_type = SpendType.P2PKH
+    elif (len(script_pub_key) == 22 and script_pub_key[0] == 0):
+        spend_type = SpendType.P2WPKH
     elif script_pub_key[-1] == 174:
         spend_type = SpendType.P2MS
     elif len(script_pub_key) == 23 and script_pub_key[-1] == 135:
@@ -62,7 +66,7 @@ def main():
             print(f"Error: spending type looks like p2sh but something is wrong!")
             sys.exit()
     elif len(script_pub_key) == 34 and script_pub_key[0] == 0:
-        spend_type = SpendType.P2SH
+        spend_type = SpendType.P2WSH
     elif len(script_pub_key) == 34 and script_pub_key[0] == 81:
         if len(currentTx.witness[input_to_sign].stack_items) == 1:
             spend_type = SpendType.P2TR_KEY
@@ -80,6 +84,9 @@ def main():
         case SpendType.P2PKH:
             json_name = "np2tr.template"
             path = "p2pkh"
+        case SpendType.P2WPKH:
+            json_name = "p2tr.template"
+            path = "p2wpkh"
         case SpendType.P2MS:
             json_name = "np2tr.template"
             path = "p2ms"
@@ -92,6 +99,9 @@ def main():
                     path = "p2sh_p2wpkh"
                 case SpendType.P2SH_P2WSH:
                     path = "p2sh_p2wsh"
+        case SpendType.P2WSH:
+            json_name = "p2tr.template"
+            path = "p2wsh"
         case SpendType.P2TR_KEY | SpendType.P2TR_SCRIPT:
             json_name = "p2tr.template"
             match spend_type:

@@ -30,6 +30,10 @@ def main():
     CURRENT_TX_OUT_COUNT_SIZE = currentTx._get_compact_size_size(currentTx.output_count)
     CURRENT_TX_OUT_SIZE = sum(currentTx._get_output_size(out)
                             for out in currentTx.outputs) + CURRENT_TX_OUT_COUNT_SIZE
+    CURRENT_TX_MAX_WITNESS_STACK_SIZE = 0 if currentTx.witness is None else max(
+        len(w.stack_items) for w in currentTx.witness)
+    CURRENT_TX_WITNESS_SIZE = 0 if currentTx.witness is None else sum(
+        currentTx._get_witness_size(wit) for wit in currentTx.witness)
 
     PREV_TX_INP_COUNT_SIZE = prevTx._get_compact_size_size(prevTx.input_count)
     PREV_TX_INP_SIZE = sum(prevTx._get_input_size(inp)
@@ -62,6 +66,9 @@ def main():
         currentTxInSize=CURRENT_TX_INP_SIZE,
         currentTxOutCountSize=CURRENT_TX_OUT_COUNT_SIZE,
         currentTxOutSize=CURRENT_TX_OUT_SIZE,
+        currentTxMaxWitnessStackSize=CURRENT_TX_MAX_WITNESS_STACK_SIZE,
+        currentTxWitnessSize=CURRENT_TX_WITNESS_SIZE,
+        isCurrentSegwit=str(CURRENT_TX_WITNESS_SIZE != 0).lower(),
         prevTxInCountSize=PREV_TX_INP_COUNT_SIZE,
         prevTxInSize=PREV_TX_INP_SIZE,
         prevTxOutCountSize=PREV_TX_OUT_COUNT_SIZE,

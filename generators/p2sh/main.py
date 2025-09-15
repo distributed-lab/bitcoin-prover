@@ -12,6 +12,7 @@ def get_config(path: str = "./generators/p2sh/config.json") -> Dict:
 
 
 def main():
+    print("Spending type: p2sh")
     config = get_config()
 
     currentTx = Transaction(config["current_tx"])
@@ -48,17 +49,7 @@ def main():
 
     script_pub_key = prevTx.outputs[vout].script_pub_key
 
-    script_sig = config["script_sig"] if CURRENT_TX_WITNESS_SIZE == 0 else currentTx.witness_to_hex_script(
-        INPUT_TO_SIGN)
-
-    if CURRENT_TX_WITNESS_SIZE != 0:
-        print("Spending type: p2wsh")
-        full_script_pub_key = [168, 32]
-        full_script_pub_key.extend(script_pub_key[2:])
-        full_script_pub_key.append(135)
-        script_pub_key = full_script_pub_key
-    else:
-        print("Spending type: p2sh")
+    script_sig = config["script_sig"]
 
     script = Script(
         script_sig, 
@@ -113,8 +104,6 @@ def main():
         prevTxSize=prevTx._get_transaction_size() * 2,
         signSize=1 if CURRENT_TX_WITNESS_SIZE != 0 else len(script_sig),
         scriptPubKeySize=len(script_pub_key),
-        inputWitnessSize=currentTx._get_witness_size(
-            currentTx.witness[INPUT_TO_SIGN]) - 1 if currentTx.witness is not None else 0,
         redeemScriptSize=len(script.script_elements[-1]) // 2,
         codeseparatorRedeemScriptSize=redeem_script.script_len_codeseparator,
         codeseparatorRedeemScriptSizeSize=currentTx._get_compact_size_size(
@@ -142,7 +131,7 @@ def main():
     proverFile = templateProver.format(
         currentTxData=currentTxData,
         prevTxData=prevTxData,
-        scriptSig="-" if CURRENT_TX_WITNESS_SIZE != 0 else script_sig,
+        scriptSig=script_sig,
         inputToSign=INPUT_TO_SIGN
     )
 
