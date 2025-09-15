@@ -1,5 +1,5 @@
 [package]
-name = "p2sh"
+name = "p2wsh"
 type = "bin"
 
 [dependencies]

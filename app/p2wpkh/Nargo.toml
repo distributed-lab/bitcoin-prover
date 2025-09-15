@@ -1,5 +1,5 @@
 [package]
-name = "p2pkh"
+name = "p2wpkh"
 type = "bin"
 
 [dependencies]

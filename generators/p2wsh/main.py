@@ -6,7 +6,7 @@ from generators.utils.opcodes_gen import generate
 from generators.constants import CONSTANTS_TEMPLATE, CONSTANTS_NR, PROVER_TEMPLATE, PROVER_TOML
 
 
-def get_config(path: str = "./generators/p2sh/config.json") -> Dict:
+def get_config(path: str = "./generators/p2wsh/config.json") -> Dict:
     with open(path, "r") as f:
         return json.load(f)
 
