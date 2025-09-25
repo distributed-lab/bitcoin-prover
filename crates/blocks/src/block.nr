@@ -1,6 +1,4 @@
-use convert::convert::{
-    bytes_to_hex, hex_to_bytes, reverse_bytes, sha256_to_le_bytes, u32_to_le_bytes,
-};
+use convert::convert::{bytes_to_hex, reverse_bytes, sha256_to_le_bytes, u32_to_le_bytes};
 
 pub struct BlockHeader {
     pub version: u32,
@@ -42,79 +40,6 @@ pub fn tagged_sha256<let TAG_SIZE: u32, let MESSAGE_SIZE: u32>(
     sha256::digest(
         tag.as_bytes().as_slice().append(message).as_array::<TAG_SIZE + MESSAGE_SIZE>(),
     )
-}
-
-pub fn get_merkle_node_from_1024_blocks(blocks: [BlockHeader; 1025]) -> [u8; 32] {
-    let mut arr = [[0; 32]; 1024];
-
-    for i in 0..1024 {
-        arr[i] = tagged_sha256("leaf1", hex_to_bytes(blocks[i + 1].prev_block));
-    }
-
-    for i in 0..512 {
-        arr[i] = tagged_sha256(
-            "node1",
-            arr[2 * i].as_slice().append(arr[2 * i + 1]).as_array::<64>(),
-        );
-    }
-
-    for i in 0..256 {
-        arr[i] = tagged_sha256(
-            "node1",
-            arr[2 * i].as_slice().append(arr[2 * i + 1]).as_array::<64>(),
-        );
-    }
-
-    for i in 0..128 {
-        arr[i] = tagged_sha256(
-            "node1",
-            arr[2 * i].as_slice().append(arr[2 * i + 1]).as_array::<64>(),
-        );
-    }
-
-    for i in 0..64 {
-        arr[i] = tagged_sha256(
-            "node1",
-            arr[2 * i].as_slice().append(arr[2 * i + 1]).as_array::<64>(),
-        );
-    }
-
-    for i in 0..32 {
-        arr[i] = tagged_sha256(
-            "node1",
-            arr[2 * i].as_slice().append(arr[2 * i + 1]).as_array::<64>(),
-        );
-    }
-
-    for i in 0..16 {
-        arr[i] = tagged_sha256(
-            "node1",
-            arr[2 * i].as_slice().append(arr[2 * i + 1]).as_array::<64>(),
-        );
-    }
-
-    for i in 0..8 {
-        arr[i] = tagged_sha256(
-            "node1",
-            arr[2 * i].as_slice().append(arr[2 * i + 1]).as_array::<64>(),
-        );
-    }
-
-    for i in 0..4 {
-        arr[i] = tagged_sha256(
-            "node1",
-            arr[2 * i].as_slice().append(arr[2 * i + 1]).as_array::<64>(),
-        );
-    }
-
-    for i in 0..2 {
-        arr[i] = tagged_sha256(
-            "node1",
-            arr[2 * i].as_slice().append(arr[2 * i + 1]).as_array::<64>(),
-        );
-    }
-
-    tagged_sha256("node1", arr[0].as_slice().append(arr[1]).as_array::<64>())
 }
 
 pub fn calc_merkle_state<let SIZE: u32>(

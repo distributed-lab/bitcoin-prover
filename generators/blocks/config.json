@@ -5,7 +5,7 @@
     },
     "blocks": {
         "start": 0,
-        "count": 3072
+        "count": 20
     },
     "from_checkpoint": false
 }

@@ -3,11 +3,9 @@ from typing import Dict
 from generators.blocks.pullers import BlockHeaderPuller
 from generators.blocks.block import Block, create_nargo_toml
 import logging
-import sys
 import subprocess
 import ast
 import logging
-import math
 import os
 import shutil
 import argparse
@@ -23,6 +21,8 @@ RECURSIVE_APP_PATH = "./app/blocks_recursive/recursive/"
 RECURSIVE_SCHEME_PATH = "./target/recursive.json"
 RECURSIVE_OUTPUT_PATH = "./target/blocks_bin/recursive/"
 
+MERKLE_ROOT_STATE_LEN = 25
+ETH_ADDRESS = "0x0000000000000000000000000000000000000000"
 
 def setup_logging():
     logging.basicConfig(level=logging.DEBUG)
@@ -31,6 +31,16 @@ def setup_logging():
 def get_config(path) -> Dict:
     with open(path, "r") as f:
         return json.load(f)
+
+
+def hex_to_bytearray(hex_str: str) -> bytearray:
+    if hex_str.startswith("0x") or hex_str.startswith("0X"):
+        hex_str = hex_str[2:]
+    
+    if len(hex_str) % 2 != 0:
+        hex_str = "0" + hex_str
+
+    return bytearray.fromhex(hex_str)
 
 
 def to_toml_array_hashes(elements) -> str:
@@ -62,55 +72,50 @@ def save_batch_info(batch_idx: int, is_start: bool):
     shutil.copy(src + "public_inputs", dst)
     shutil.copy(src + "public_inputs_fields.json", dst)
 
+    logging.debug(f"Proof data saved to {dst}")
+
 
 def main():
     setup_logging()
 
     parser = argparse.ArgumentParser(description="Prove the validity of the Bitcoin block header chain")
     parser.add_argument("--config", type=str, required=False, help="config file path", default="generators/blocks/config.json")
+    parser.add_argument("--address", type=str, required=False, help="ethereum address", default="0x0000000000000000000000000000000000000000")
     args = parser.parse_args()
 
     config = get_config(args.config if args.config is not None else DEFAULT_CONFIG_PATH)
+    address = hex_to_bytearray(args.address if args.address is not None else ETH_ADDRESS)
     index = 0
     checkpoint = config["from_checkpoint"]
     batch_idx = 0
     os.makedirs(OUTPUT_DATA_PATH + "schemas", exist_ok=True)
 
     blocks_amount = config["blocks"]["count"]
-    if blocks_amount % 1024 != 0:
-        print("Amount of blocks must be (1024 * x)")
-        sys.exit()
-
-    merkle_root_state_len = math.ceil(math.log(blocks_amount / 1024, 2)) + 1
 
     with open(RECURSIVE_BASE_APP_PATH + "src/constants.nr", "w") as f:
-        f.write(f"pub global MERKLE_ROOT_ARRAY_LEN: u32 = {merkle_root_state_len};")
+        f.write(f"pub global MERKLE_ROOT_ARRAY_LEN: u32 = {MERKLE_ROOT_STATE_LEN};")
 
     with open(RECURSIVE_APP_PATH + "src/constants.nr", "w") as f:
         f.write(f"""pub global HONK_VK_SIZE: u32 = 128;
 pub global HONK_PROOF_SIZE: u32 = 456;
 pub global HONK_IDENTIFIER: u32 = 1;
-pub global PUBLIC_INPUTS: u32 = {47 + 32 * merkle_root_state_len};
+pub global PUBLIC_INPUTS: u32 = {79 + 32 * MERKLE_ROOT_STATE_LEN};
 
-pub global MERKLE_ROOT_ARRAY_LEN: u32 = {merkle_root_state_len};
+pub global MERKLE_ROOT_ARRAY_LEN: u32 = {MERKLE_ROOT_STATE_LEN};
 """)
 
     puller = BlockHeaderPuller(config["gateway"])
     hex_headers = puller.pull_block_headers(
         config["blocks"]["start"], config["blocks"]["count"])
     blocks = [Block(header) for header in hex_headers]
-    b = Block("0" * 160)
-    blocks.append(b)
 
     if not checkpoint:
-        nargo_toml = create_nargo_toml(blocks[index:1025], "blocks")
-        index += 1024
+        nargo_toml = create_nargo_toml(blocks[0:1], "block")
+        index += 1
 
         with open(RECURSIVE_BASE_APP_PATH + "Prover.toml", "w") as f:
-            f.write(
-                f"last_block_hash = [{', '.join(
-                    f'"{elem}"' for elem in bytes.fromhex(blocks[index].get_block_hash())
-                )}]\n\n")
+            f.write(f"address = [{', '.join(
+                f'"{elem}"' for elem in address)}]\n\n")
             f.write(nargo_toml)
 
         logging.debug("nargo execute (base)")
@@ -196,8 +201,8 @@ pub global MERKLE_ROOT_ARRAY_LEN: u32 = {merkle_root_state_len};
             pi = file.read()
 
         pi_array = ast.literal_eval(pi)
-        index = int(pi_array[-(3 + 32 * merkle_root_state_len)], 16)
-        batch_idx = index // 1024
+        index = int(pi_array[44], 16) + 1
+        batch_idx = index
         logging.debug(f"Continue proving from {index} block...")
 
     with open(RECURSIVE_OUTPUT_PATH + "vk_fields.json", "r") as file:
@@ -206,31 +211,32 @@ pub global MERKLE_ROOT_ARRAY_LEN: u32 = {merkle_root_state_len};
     while index < blocks_amount:
         pi_array = ast.literal_eval(pi)
 
-        if index == 2048 and not checkpoint:
+        if index == 2 and not checkpoint:
             logging.debug("You can use checkpoint from this moment...")
 
-        logging.debug(f"Prooving blocks from {index} to {index + 1024}")
-        nargo_toml = create_nargo_toml(blocks[index:(index + 1025)], "blocks")
-        index += 1024
+        logging.debug(f"Prooving block {index}")
+        nargo_toml = create_nargo_toml(blocks[index:(index + 1)], "block")
+        prev_block_toml = create_nargo_toml(blocks[(index - 1):index], "prev_block")
+        index += 1
 
         with open(RECURSIVE_APP_PATH + "Prover.toml", "w") as f:
-            f.write(f"last_block_hash = [{', '.join(
-                f'"{elem}"' for elem in bytes.fromhex(
-                    blocks[index - (1 if index == blocks_amount else 0)].get_block_hash()
-                ))}]\n\n")
             f.write(f"timestamps = [{', '.join(str(v)
                     for v in pi_array[32:43])}]\n\n")
-            f.write(f"time_idx = \"{pi_array[-(4 + 32 * merkle_root_state_len)]}\"\n\n")
-            f.write(f"last_block_height = \"{int(pi_array[-(3 + 32 * merkle_root_state_len)], 16)}\"\n\n")
-            f.write(f"chainwork = \"{int(pi_array[-(2 + 32 * merkle_root_state_len)], 16)}\"\n\n")
+            f.write(f"time_idx = \"{pi_array[43]}\"\n\n")
+            f.write(f"last_block_height = \"{int(pi_array[44], 16)}\"\n\n")
+            f.write(f"chainwork = \"{int(pi_array[45], 16)}\"\n\n")
             f.write(f"verification_key = {vk}\n\n")
             f.write(f"proof = {proof}\n\n")
             f.write(f"public_inputs = {pi}\n\n")
-            f.write(f"prev_timestamp = {pi_array[-1]}\n\n")
-            f.write(f"ignore_last = \"{int(index == blocks_amount)}\"\n\n")
+            f.write(f"prev_timestamp = {pi_array[-33]}\n\n")
             f.write(f"merkle_state = {to_toml_array_hashes(
-                pi_array[-(1 + 32 * merkle_root_state_len):-1])}\n\n")
+                pi_array[46:-33])}\n\n")
+            f.write(f"prev_block_hash = [{', '.join(
+                f'"{elem}"' for elem in pi_array[0:32])}]\n\n")
+            f.write(f"address = [{', '.join(
+                f'"{elem}"' for elem in address)}]\n\n")
             f.write(nargo_toml)
+            f.write(prev_block_toml)
 
         logging.debug("nargo execute (recursive)")
         subprocess.run(['nargo', 'execute', '--package', 'recursive'], check=True)

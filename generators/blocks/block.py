@@ -42,5 +42,5 @@ class Block:
 
 
 def create_nargo_toml(blocks: List[Block], struct_name: str) -> str:
-    nargo_field_blocks = map(lambda b: f"[[{struct_name}]]\n{b.to_toml_block()}", blocks)
+    nargo_field_blocks = map(lambda b: f"[{struct_name}]\n{b.to_toml_block()}", blocks)
     return "\n".join(nargo_field_blocks)
