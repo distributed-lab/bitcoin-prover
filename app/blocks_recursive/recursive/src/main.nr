@@ -16,16 +16,39 @@ fn main(
     public_inputs: [Field; PUBLIC_INPUTS],
     block: BlockHeader,
     prev_block: BlockHeader,
-    timestamps: [u32; 11],
-    time_idx: u32,
-    last_block_height: u32,
-    chainwork: Field,
-    mut merkle_state: [[u8; 32]; MERKLE_ROOT_ARRAY_LEN],
-    prev_timestamp: u32,
-    prev_block_hash: [u8; 32],
     address: [u8; 20],
 ) -> pub ([u8; 32], [u32; 11], u32, u32, Field, [[u8; 32]; MERKLE_ROOT_ARRAY_LEN], u32, [u8; 32]) {
     std::verify_proof_with_type(verification_key, proof, public_inputs, 0x0, HONK_IDENTIFIER);
+
+    let mut prev_block_hash = [0; 32];
+    for i in 0..32 {
+        prev_block_hash[i] = public_inputs[i] as u8;
+    }
+
+    let mut timestamps = [0; 11];
+    for i in 0..11 {
+        timestamps[i] = public_inputs[32 + i] as u32;
+    }
+
+    let time_idx = public_inputs[43] as u32;
+
+    let last_block_height = public_inputs[44] as u32;
+
+    let chainwork = public_inputs[45];
+
+    let mut idx = 46;
+
+    let mut merkle_state = [[0; 32]; MERKLE_ROOT_ARRAY_LEN];
+
+    for i in 0..MERKLE_ROOT_ARRAY_LEN {
+        for j in 0..32 {
+            merkle_state[i][j] = public_inputs[idx] as u8;
+            idx += 1;
+        }
+    }
+
+    let prev_timestamp = public_inputs[idx] as u32;
+    idx += 1;
 
     assert(bytes_to_hex(prev_block_hash) == get_block_hash(prev_block));
 

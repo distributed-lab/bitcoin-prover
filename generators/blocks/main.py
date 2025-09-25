@@ -220,19 +220,9 @@ pub global MERKLE_ROOT_ARRAY_LEN: u32 = {MERKLE_ROOT_STATE_LEN};
         index += 1
 
         with open(RECURSIVE_APP_PATH + "Prover.toml", "w") as f:
-            f.write(f"timestamps = [{', '.join(str(v)
-                    for v in pi_array[32:43])}]\n\n")
-            f.write(f"time_idx = \"{pi_array[43]}\"\n\n")
-            f.write(f"last_block_height = \"{int(pi_array[44], 16)}\"\n\n")
-            f.write(f"chainwork = \"{int(pi_array[45], 16)}\"\n\n")
             f.write(f"verification_key = {vk}\n\n")
             f.write(f"proof = {proof}\n\n")
             f.write(f"public_inputs = {pi}\n\n")
-            f.write(f"prev_timestamp = {pi_array[-33]}\n\n")
-            f.write(f"merkle_state = {to_toml_array_hashes(
-                pi_array[46:-33])}\n\n")
-            f.write(f"prev_block_hash = [{', '.join(
-                f'"{elem}"' for elem in pi_array[0:32])}]\n\n")
             f.write(f"address = [{', '.join(
                 f'"{elem}"' for elem in address)}]\n\n")
             f.write(nargo_toml)
