@@ -104,7 +104,7 @@ pub global PUBLIC_INPUTS: u32 = {79 + 32 * MERKLE_ROOT_STATE_LEN};
 pub global MERKLE_ROOT_ARRAY_LEN: u32 = {MERKLE_ROOT_STATE_LEN};
 """)
 
-    puller = BlockHeaderPuller(config["gateway"])
+    puller = BlockHeaderPuller(config["rpc"])
     hex_headers = puller.pull_block_headers(
         config["blocks"]["start"], config["blocks"]["count"])
     blocks = [Block(header) for header in hex_headers]

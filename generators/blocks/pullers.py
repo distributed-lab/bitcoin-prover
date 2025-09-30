@@ -1,39 +1,45 @@
-from electrum_client.requests import BlockHeadersRequest
-from electrum_client.rpc import Client as ElectrumClient
+import requests
 from typing import Dict, List
-from generators.blocks.block import BLOCK_HEADER_SIZE
 import logging
-
 
 class BlockHeaderPuller:
     """
-    Pulls block headers from the Electrum server.
+    Pulls block headers from a Bitcoin Core RPC node in batches.
     """
 
-    def __init__(self, gateway_config: Dict):
-        self.client = ElectrumClient(
-            gateway_config["host"],
-            gateway_config["port"])
+    def __init__(self, rpc_config: Dict):
+        self.url = f"{rpc_config['host']}:{rpc_config['port']}"
+        self.auth = (rpc_config["user"], rpc_config["password"])
+        self.session = requests.Session()
+        logging.getLogger("urllib3").propagate = False
 
-    def pull_block_headers(self, start: int, count: int,
-                           step: int = 2000) -> List[str]:
-        logging.debug(f"Pulling {count} block headers starting from {
-                      start} with step {step}")
-        answer = []
-        for i in range(start, start + count, step):
-            n_headers = min(step, start + count - i)
-            logging.debug(f"Pulling {i} to {i + n_headers}")
-            request = BlockHeadersRequest(i, n_headers)
-            response = self.client.call(request)
-            new_headers_concat_hex = response["result"]["hex"]
-            assert len(new_headers_concat_hex) == 2 * \
-                BLOCK_HEADER_SIZE * n_headers
-            for i in range(n_headers):
-                new_header_hex = new_headers_concat_hex[2 *
-                                                        BLOCK_HEADER_SIZE *
-                                                        i: 2 *
-                                                        BLOCK_HEADER_SIZE *
-                                                        (i +
-                                                         1)]
-                answer.append(new_header_hex)
-        return answer
+    def _rpc_batch(self, calls: List[Dict]) -> List:
+        response = self.session.post(
+            self.url,
+            auth=self.auth,
+            json=calls
+        )
+        response.raise_for_status()
+        results = response.json()
+        return [r["result"] for r in sorted(results, key=lambda x: x["id"])]
+
+    def pull_block_headers(self, start: int, count: int, step: int = 2000) -> List[str]:
+        logging.debug(f"Pulling {count} block headers starting from {start} with step {step}")
+        headers = []
+
+        for batch_start in range(start, start + count, step):
+            batch_end = min(batch_start + step, start + count)
+            heights = list(range(batch_start, batch_end))
+
+            calls = [{"jsonrpc": "1.0", "id": i, "method": "getblockhash", "params": [h]}
+                     for i, h in enumerate(heights)]
+            block_hashes = self._rpc_batch(calls)
+
+            calls = [{"jsonrpc": "1.0", "id": i, "method": "getblockheader", "params": [h, False]}
+                     for i, h in enumerate(block_hashes)]
+            batch_headers = self._rpc_batch(calls)
+
+            headers.extend(batch_headers)
+            logging.debug(f"Fetched {len(batch_headers)} headers ({batch_start}..{batch_end-1})")
+
+        return headers

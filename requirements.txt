@@ -1,3 +1,2 @@
 python-bitcoinlib==0.12.2
-electrum-client==0.0.1
 requests==2.32.5
