@@ -30,10 +30,14 @@ source ./generators/venv/bin/activate
 pip install -r requirements.txt
 ```
 
-To create the blocks proof, edit [config](generators/blocks/config.json) and run this command:
+To create the blocks proof run this command:
 ```bash
-./scripts/blocks.sh
+./scripts/blocks.sh [--config ./congig.json --address 0x0000000000000000000000000000000000000000]
 ```
+| Parameter | Description | Default |
+|------------|-------------|----------|
+| `--config` | Path to the configuration JSON file (see example `./generators/blocks/config.json`). | `./generators/blocks/config.json` |
+| `--address` | Ethereum address that will receive award (if the default address is set, anyone can receive the reward) | `0x0000000000000000000000000000000000000000` | 
 
 To create any spending proof, edit [config](generators/general/config.json) and run:
 ```bash
