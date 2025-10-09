@@ -1,7 +1,7 @@
 import json
 from typing import Dict
 from generators.blocks.pullers import BlockHeaderPuller
-from generators.blocks.block import Block, create_nargo_toml
+from generators.blocks.block import Block, create_nargo_toml, Blocks
 import logging
 import subprocess
 import ast
@@ -103,11 +103,20 @@ pub global PUBLIC_INPUTS: u32 = {79 + 32 * MERKLE_ROOT_STATE_LEN};
 
 pub global MERKLE_ROOT_ARRAY_LEN: u32 = {MERKLE_ROOT_STATE_LEN};
 """)
+        
+    loaded = Blocks("./generators/blocks/blocks.json")  
 
-    puller = BlockHeaderPuller(config["rpc"])
-    hex_headers = puller.pull_block_headers(
-        config["blocks"]["start"], config["blocks"]["count"])
-    blocks = [Block(header) for header in hex_headers]
+    if loaded.amount >= blocks_amount:
+        blocks = loaded.blocks
+    else:
+        puller = BlockHeaderPuller(config["rpc"])
+        for i in range(loaded.amount, config["blocks"]["count"], 2000):
+            hex_headers = puller.pull_block_headers(
+                i, min(2000, config["blocks"]["count"] - i))
+            blocks = [Block(header) for header in hex_headers]
+            loaded.add_blocks(blocks)
+        
+        blocks = loaded.blocks
 
     if not checkpoint:
         nargo_toml = create_nargo_toml(blocks[0:1], "block")
@@ -145,9 +154,9 @@ pub global MERKLE_ROOT_ARRAY_LEN: u32 = {MERKLE_ROOT_STATE_LEN};
                         '--init_kzg_accumulator'],
                        check=True)
 
-        shutil.copy(RECURSIVE_BASE_OUTPUT_PATH + "vk", OUTPUT_DATA_PATH + "schemas/vk_start")
+        shutil.copy(RECURSIVE_BASE_OUTPUT_PATH + "vk", OUTPUT_DATA_PATH + "schemas/vk_base")
         shutil.copy(RECURSIVE_BASE_OUTPUT_PATH + "vk_fields.json",
-                    OUTPUT_DATA_PATH + "schemas/vk_fields_start.json")
+                    OUTPUT_DATA_PATH + "schemas/vk_fields_base.json")
 
         subprocess.run(['bb', 'verify',
                         '-s', 'ultra_honk',
@@ -191,27 +200,31 @@ pub global MERKLE_ROOT_ARRAY_LEN: u32 = {MERKLE_ROOT_STATE_LEN};
                     OUTPUT_DATA_PATH + "schemas/vk_fields_recursive.json")
 
     else:
-        with open(RECURSIVE_OUTPUT_PATH + "proof_fields.json", "r") as file:
-            proof = file.read()
-
-        with open(RECURSIVE_OUTPUT_PATH + "vk_fields.json", "r") as file:
-            vk = file.read()
-
         with open(RECURSIVE_OUTPUT_PATH + "public_inputs_fields.json", "r") as file:
             pi = file.read()
 
         pi_array = ast.literal_eval(pi)
-        index = int(pi_array[44], 16) + 1
+        index = int(pi_array[44], 16)
         batch_idx = index
+
+        with open(OUTPUT_DATA_PATH + f"batch{index - 1}/" + "proof_fields.json", "r") as file:
+            proof = file.read()
+
+        with open(OUTPUT_DATA_PATH + f"schemas/" + "vk_fields_recursive.json", "r") as file:
+            vk = file.read()
+
+        with open(OUTPUT_DATA_PATH + f"batch{index - 1}/" + "public_inputs_fields.json", "r") as file:
+            pi = file.read()
+
         logging.debug(f"Continue proving from {index} block...")
 
-    with open(RECURSIVE_OUTPUT_PATH + "vk_fields.json", "r") as file:
+    with open(OUTPUT_DATA_PATH + 'schemas/vk_fields_recursive.json', "r") as file:
         vk_recursive = file.read()
 
     while index < blocks_amount:
         pi_array = ast.literal_eval(pi)
 
-        if index == 2 and not checkpoint:
+        if index == 3 and not checkpoint:
             logging.debug("You can use checkpoint from this moment...")
 
         logging.debug(f"Prooving block {index}")
@@ -256,7 +269,7 @@ pub global MERKLE_ROOT_ARRAY_LEN: u32 = {MERKLE_ROOT_STATE_LEN};
 
             subprocess.run(['bb', 'verify',
                             '-s', 'ultra_honk',
-                            '-k', RECURSIVE_OUTPUT_PATH + 'vk',
+                            '-k', OUTPUT_DATA_PATH + 'schemas/vk_recursive',
                             '-p', RECURSIVE_OUTPUT_PATH + 'proof',
                             '-i', RECURSIVE_OUTPUT_PATH + 'public_inputs'],
                            check=True)

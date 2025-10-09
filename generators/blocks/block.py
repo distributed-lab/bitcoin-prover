@@ -1,5 +1,7 @@
 from typing import List
 import hashlib
+import os
+import json
 
 BLOCK_HEADER_SIZE = 80
 
@@ -39,8 +41,44 @@ class Block:
 
     def __str__(self) -> str:
         return self.to_toml_block()
+    
+    def to_dict(self):
+        return {
+            "version": self.version,
+            "prev_hash": self.prev_hash,
+            "merkle_hash": self.merkle_hash,
+            "time": self.time,
+            "nBits": self.nBits,
+            "nonce": self.nonce
+        }
 
 
 def create_nargo_toml(blocks: List[Block], struct_name: str) -> str:
     nargo_field_blocks = map(lambda b: f"[{struct_name}]\n{b.to_toml_block()}", blocks)
     return "\n".join(nargo_field_blocks)
+
+
+class Blocks:
+    def __init__(self, json_path):
+        self.json_path = json_path
+        blocks = []
+        try:
+            with open(self.json_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    data = json.loads(line)
+                    block = Block.__new__(Block)
+                    for k, v in data.items():
+                        setattr(block, k, v)
+                    blocks.append(block)
+        except FileNotFoundError:
+            pass
+        
+        self.amount = len(blocks)
+        self.blocks = blocks
+
+    def add_blocks(self, new_blocks: list[Block]):
+        self.amount += len(new_blocks)
+        self.blocks.extend(new_blocks)
+        with open(self.json_path, "a", encoding="utf-8") as f:
+            for block in new_blocks:
+                f.write(json.dumps(block.to_dict(), ensure_ascii=False) + "\n")

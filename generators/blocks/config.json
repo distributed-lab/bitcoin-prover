@@ -6,8 +6,7 @@
         "password": "ilovebitcoin"
     },
     "blocks": {
-        "start": 0,
-        "count": 11
+        "count": 900001
     },
     "from_checkpoint": false
 }

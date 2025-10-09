@@ -3,3 +3,4 @@ target/*
 *dev*
 *__pycache__*
 venv
+*blocks.json
