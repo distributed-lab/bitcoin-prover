@@ -32,7 +32,7 @@ pip install -r requirements.txt
 
 To create the blocks proof run this command:
 ```bash
-./scripts/blocks.sh [--config ./congig.json --address 0x0000000000000000000000000000000000000000]
+./scripts/blocks.sh [--config ./config.json --address 0x0000000000000000000000000000000000000000]
 ```
 | Parameter | Description | Default |
 |------------|-------------|----------|
