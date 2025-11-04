@@ -5,6 +5,7 @@ This project contains implementations in Noir and corresponding Python generator
 ## Overview
 
 The typical workflow is as follows:
+
 1. Python generators create configuration files.
 2. Noir code in the `app/` directory is compiled and executed.
 3. Proofs are generated and verified using the `bb` tool.
@@ -31,11 +32,13 @@ pip install -r requirements.txt
 ```
 
 To create the blocks proof, edit [config](generators/blocks/config.json) and run this command:
+
 ```bash
 ./scripts/blocks.sh
 ```
 
 To create any spending proof, edit [config](generators/general/config.json) and run:
+
 ```bash
 python3 -m generators.general.main
 ```
