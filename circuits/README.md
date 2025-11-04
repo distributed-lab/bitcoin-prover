@@ -20,7 +20,7 @@ The typical workflow is as follows:
 ## Usage
 
 > [!IMPORTANT]
-> All commands must be run from the root directory of the repository.
+> All commands must be run from the `./circuits` directory.
 
 After running any script, you need to install the Python dependencies.
 To do that, create a virtual environment and install the dependencies from `requirements.txt` using the following commands:
@@ -31,13 +31,13 @@ source ./generators/venv/bin/activate
 pip install -r requirements.txt
 ```
 
-To create the blocks proof, edit [config](generators/blocks/config.json) and run this command:
+To create the blocks proof, edit [config](./generators/blocks/config.json) and run this command:
 
 ```bash
 ./scripts/blocks.sh
 ```
 
-To create any spending proof, edit [config](generators/general/config.json) and run:
+To create any spending proof, edit [config](./generators/general/config.json) and run:
 
 ```bash
 python3 -m generators.general.main
