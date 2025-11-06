@@ -14,6 +14,9 @@ fn main() -> Result<()> {
         "/Users/user/Documents/Projects/cryptography/bitcoin-prover/utxo_indexer/chainstate.dev.db",
     );
     let mut opts = Options::default();
+
+    opts.set_compression_type(rocksdb::DBCompressionType::Snappy);
+
     opts.create_if_missing(false);
 
     let db = DB::open_for_read_only(&opts, path, false)?;
@@ -23,38 +26,14 @@ fn main() -> Result<()> {
         .context("DB is not reachable")?
         .context("obfuscation key is not present in DB")?;
 
-    // let obfuscation_key = hex::decode("3c1be7ab41a2f690").unwrap();
-
-    // let key = hex::decode("435a7b146bcde2a1f879c367fbbbac97a401aef899430182effb998d4ff1452a6d06")?;
-
-    // let value = db.get(&key)?.unwrap();
-
-    // let deobfuscated_value = deobfuscate(&value, &obfuscation_key);
-
-    // if let Some(coin_value) = CoinValue::deserialize(&deobfuscated_value) {
-    //     println!(
-    //         "  height: {}, is_coinbase: {}, amount: {}, script_pubkey: {}",
-    //         coin_value.height,
-    //         coin_value.is_coinbase,
-    //         coin_value.amount,
-    //         hex::encode(&coin_value.script_pubkey)
-    //     );
-    // }
-
     println!("Opened chainstate at {:?}", path);
     println!("Parsing UTXO entries...");
 
     let iter = db.iterator(IteratorMode::Start);
 
+    let mut p2pkh_count = 0;
+
     for (i, item) in iter.enumerate() {
-        if i < 408 {
-            continue;
-        }
-
-        if i > 408 {
-            break;
-        }
-
         let (key, value) = item.context("DB is not reachable and iterable")?;
 
         let coin_key = match CoinKey::deserialize(&key) {
@@ -68,8 +47,6 @@ fn main() -> Result<()> {
             Some(cv) => cv,
             None => continue,
         };
-
-        println!("raw value: {}", hex::encode(&value));
 
         println!(
             "ENTRY #{}, KEY: {}, DEOBFUSCATED VALUE RAW: {}",
@@ -86,8 +63,12 @@ fn main() -> Result<()> {
             coin_value.height,
             coin_value.amount,
             hex::encode(&coin_value.script_pubkey)
-        )
+        );
+
+        p2pkh_count += 1;
     }
+
+    println!("Total P2PKH UTXO entries: {}", p2pkh_count);
 
     Ok(())
 }
@@ -152,9 +133,7 @@ impl CoinValue {
     pub fn deserialize(data: &[u8]) -> Option<Self> {
         let mut cursor = 0;
 
-        let (code, consumed) = Self::read_var_int_u64(data).ok()?;
-
-        println!("code: {}, consumed: {}", code, consumed);
+        let (code, consumed) = Self::read_var_int_u32(data)?;
 
         cursor += consumed;
 
@@ -162,12 +141,12 @@ impl CoinValue {
 
         let is_coinbase = (code & 1) == 1;
 
-        let (compressed_amount, consumed) = Self::read_var_int_u64(&data[cursor..]).ok()?;
+        let (compressed_amount, consumed) = Self::read_var_int_u32(&data[cursor..])?;
         cursor += consumed;
 
-        let amount = Self::decompress_amount(compressed_amount);
+        let amount = Self::decompress_amount(compressed_amount as u64);
 
-        let (script_len, consumed) = Self::read_var_int_u64(&data[cursor..]).ok()?;
+        let (script_len, consumed) = Self::read_var_int_u64(&data[cursor..])?;
 
         // TODO: implement the other script types
         if Self::P2PKH_COAT_OF_ARMS != script_len {
@@ -175,6 +154,10 @@ impl CoinValue {
         }
 
         cursor += consumed;
+
+        if data.len() < cursor + Self::PKH_SIZE {
+            return None;
+        }
 
         let mut pkh = data[cursor..cursor + Self::PKH_SIZE].to_vec();
 
@@ -187,76 +170,66 @@ impl CoinValue {
         script_pubkey.push(OP_CHECKSIG.to_u8());
 
         Some(Self {
-            height,
+            height: height as u64,
             is_coinbase,
             amount,
             script_pubkey,
         })
     }
 
-    // while(true) {
-    //     unsigned char chData = ser_readdata8(is);
-    //     if (n > (std::numeric_limits<I>::max() >> 7)) {
-    //        throw std::ios_base::failure("ReadVarInt(): size too large");
-    //     }
-    //     n = (n << 7) | (chData & 0x7F);
-    //     if (chData & 0x80) {
-    //         if (n == std::numeric_limits<I>::max()) {
-    //             throw std::ios_base::failure("ReadVarInt(): size too large");
-    //         }
-    //         n++;
-    //     } else {
-    //         return n;
-    //     }
-    // }
-
-    fn read_var_int_u64(data: &[u8]) -> Result<(u64, usize)> {
-        let mut n: u64 = 0;
-        let mut size: usize = 0;
+    fn read_var_int_u64(data: &[u8]) -> Option<(u64, usize)> {
+        let mut result: u64 = 0;
+        let mut consumed = 0;
 
         for byte in data {
-            size += 1;
+            consumed += 1;
 
-            if n > (u64::MAX >> 7) {
-                anyhow::bail!("ReadVarInt(): size too large");
+            if result > (u64::MAX >> 7) {
+                return None;
             }
 
-            n = (n << 7) | u64::from(byte & 0x7f);
-            if byte & 0x80 != 0x80 {
-                break;
-            }
+            result = (result << 7) | u64::from(byte & 0x7F);
+            if byte & 0x80 != 0x00 {
+                if result == u64::MAX {
+                    return None;
+                }
 
-            n += 1;
+                result += 1;
+            } else {
+                return Some((result, consumed));
+            }
         }
 
-        Ok((n, size))
+        // TODO: change the return algorithm
+        unreachable!();
     }
 
-    //     uint64_t DecompressAmount(uint64_t x)
-    // {
-    //     // x = 0  OR  x = 1+10*(9*n + d - 1) + e  OR  x = 1+10*(n - 1) + 9
-    //     if (x == 0)
-    //         return 0;
-    //     x--;
-    //     // x = 10*(9*n + d - 1) + e
-    //     int e = x % 10;
-    //     x /= 10;
-    //     uint64_t n = 0;
-    //     if (e < 9) {
-    //         // x = 9*n + d - 1
-    //         int d = (x % 9) + 1;
-    //         x /= 9;
-    //         // x = n
-    //         n = x*10 + d;
-    //     } else {
-    //         n = x+1;
-    //     }
-    //     while (e) {
-    //         n *= 10;
-    //         e--;
-    //     }
-    //     return n;
-    // }
+    fn read_var_int_u32(data: &[u8]) -> Option<(u32, usize)> {
+        let mut result: u32 = 0;
+        let mut consumed = 0;
+
+        for byte in data {
+            consumed += 1;
+
+            if result > (u32::MAX >> 7) {
+                return None;
+            }
+
+            result = (result << 7) | u32::from(byte & 0x7F);
+            if byte & 0x80 != 0x00 {
+                if result == u32::MAX {
+                    return None;
+                }
+
+                result += 1;
+            } else {
+                return Some((result, consumed));
+            }
+        }
+
+        // TODO: change the return algorithm
+        unreachable!();
+    }
 
     fn decompress_amount(x: u64) -> u64 {
         if x == 0 {
@@ -299,76 +272,5 @@ mod tests {
 
         assert_eq!(deserialized.txid, tx_id);
         assert_eq!(deserialized.vout, 6u32.into());
-    }
-
-    #[test]
-    fn code_encoding() {
-        //         void WriteVarInt(Stream& os, I n)
-        // {
-        //     CheckVarIntMode<Mode, I>();
-        //     unsigned char tmp[(sizeof(n)*8+6)/7];
-        //     int len=0;
-        //     while(true) {
-        //         tmp[len] = (n & 0x7F) | (len ? 0x80 : 0x00);
-        //         if (n <= 0x7F)
-        //             break;
-        //         n = (n >> 7) - 1;
-        //         len++;
-        //     }
-        //     do {
-        //         ser_writedata8(os, tmp[len]);
-        //     } while(len--);
-        // }
-
-        let height: u64 = 686482;
-        let is_coinbase: u64 = 0;
-
-        let code = height * 2 + is_coinbase;
-
-        let encoded = {
-            let mut n = code;
-            let mut tmp = Vec::new();
-
-            loop {
-                let byte = (n & 0x7F) as u8 | if tmp.is_empty() { 0x00 } else { 0x80 };
-                tmp.push(byte);
-                if n <= 0x7F {
-                    break;
-                }
-                n = (n >> 7) - 1;
-            }
-
-            tmp.reverse();
-            tmp
-        };
-
-        println!("Encoded code bytes: {}", hex::encode(&encoded));
-
-        let (result, _) = read_var_int_u64(&encoded).unwrap();
-
-        println!("Decoded code: {}", result);
-
-        let decoded_height = result >> 1;
-        let decoded_is_coinbase = result & 1;
-
-        println!("Decoded height: {}", decoded_height);
-        println!("Decoded is_coinbase: {}", decoded_is_coinbase);
-    }
-
-    fn read_var_int_u64(data: &[u8]) -> anyhow::Result<(u64, usize)> {
-        let mut n: u64 = 0;
-        let mut size: usize = 0;
-
-        for byte in data {
-            size += 1;
-            n = (n << 7) | u64::from(byte & 0x7f);
-            if byte & 0x80 != 0x80 {
-                break;
-            }
-
-            n += 1;
-        }
-
-        Ok((n, size))
     }
 }
