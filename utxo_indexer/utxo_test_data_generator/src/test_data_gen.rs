@@ -9,13 +9,15 @@ use k256::{
 };
 use rand::Rng;
 use ripemd::Ripemd160;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 #[allow(dead_code)]
+#[derive(Serialize, Deserialize)]
 pub struct TestUtxo {
     pub amount: u64,
-    pub script_pub_key: Vec<u8>,
-    pub witness: Vec<u8>,
+    pub script_pub_key: String,
+    pub witness: String,
 }
 
 #[allow(dead_code)]
@@ -47,8 +49,8 @@ pub fn generate_test_utxos(
 
         res.push(TestUtxo {
             amount,
-            script_pub_key: script_pub_key.into_bytes(),
-            witness: Vec::from(der_bytes),
+            script_pub_key: hex::encode(script_pub_key.into_bytes()),
+            witness: hex::encode(Vec::from(der_bytes)),
         });
     }
 
@@ -56,12 +58,7 @@ pub fn generate_test_utxos(
 }
 
 pub fn hash160(data: &[u8]) -> [u8; 20] {
-    let sha256_hash = Sha256::digest(data);
-    let ripemd_hash = Ripemd160::digest(sha256_hash);
-
-    let mut result = [0; 20];
-    result.copy_from_slice(&ripemd_hash);
-    result
+    Ripemd160::digest(Sha256::digest(data)).into()
 }
 
 #[cfg(test)]
@@ -83,10 +80,10 @@ mod tests {
 
             assert!(
                 hash160(ver_key.to_encoded_point(true).to_bytes().as_ref())
-                    == utxos[i].script_pub_key[3..23]
+                    == hex::decode(&utxos[i].script_pub_key).unwrap()[3..23]
             );
 
-            let sign = Signature::from_der(&utxos[i].witness).unwrap();
+            let sign = Signature::from_der(&hex::decode(&utxos[i].witness).unwrap()).unwrap();
             ver_key.verify(&[0; 32], &sign).unwrap();
         }
     }

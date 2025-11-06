@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use clap::Parser;
 
 #[derive(Parser)]
@@ -14,4 +16,8 @@ pub struct Cli {
     /// Private key in hex (will be generated if it doesn't set)
     #[arg(long)]
     pub priv_key: Option<String>,
+
+    /// Path to file where generated utxos will be saved
+    #[arg(long)]
+    pub output: Option<PathBuf>,
 }
