@@ -21,12 +21,16 @@ fn main() -> Result<()> {
 
     let db = DB::open_for_read_only(&opts, path, false)?;
 
-    let obfuscation_key = db
+    let obfuscation_key_entry = db
         .get(OBFUSCATION_KEY_DB_KEY)
         .context("DB is not reachable")?
         .context("obfuscation key is not present in DB")?;
 
-    println!("Opened chainstate at {:?}", path);
+    println!(
+        "Opened chainstate at {:?}. Using obfuscation key: {}",
+        path,
+        hex::encode(&obfuscation_key_entry[1..])
+    );
     println!("Parsing UTXO entries...");
 
     let iter = db.iterator(IteratorMode::Start);
@@ -34,6 +38,13 @@ fn main() -> Result<()> {
     let mut p2pkh_count = 0;
 
     for (i, item) in iter.enumerate() {
+        if i % 100_000 == 0 {
+            println!(
+                "Processed {} entries. Current P2PKH count: {}",
+                i, p2pkh_count
+            );
+        }
+
         let (key, value) = item.context("DB is not reachable and iterable")?;
 
         let coin_key = match CoinKey::deserialize(&key) {
@@ -41,7 +52,7 @@ fn main() -> Result<()> {
             None => continue,
         };
 
-        let deobfuscated_value = deobfuscate(&value, &obfuscation_key);
+        let deobfuscated_value = deobfuscate(&value, &obfuscation_key_entry[1..]);
 
         let coin_value = match CoinValue::deserialize(&deobfuscated_value) {
             Some(cv) => cv,
@@ -56,11 +67,12 @@ fn main() -> Result<()> {
         );
 
         println!(
-            "ENTRY #{}, TXID: {}, VOUT: {}; HEIGHT: {}, AMOUNT: {}, SCRIPT_PUBKEY: {}",
+            "ENTRY #{}, TXID: {}, VOUT: {}; HEIGHT: {}, IS_COINBASE: {}, AMOUNT: {}, SCRIPT_PUBKEY: {}",
             i,
             coin_key.txid,
             coin_key.vout.0,
             coin_value.height,
+            coin_value.is_coinbase,
             coin_value.amount,
             hex::encode(&coin_value.script_pubkey)
         );
@@ -200,8 +212,7 @@ impl CoinValue {
             }
         }
 
-        // TODO: change the return algorithm
-        unreachable!();
+        None
     }
 
     fn read_var_int_u32(data: &[u8]) -> Option<(u32, usize)> {
@@ -227,8 +238,7 @@ impl CoinValue {
             }
         }
 
-        // TODO: change the return algorithm
-        unreachable!();
+        None
     }
 
     fn decompress_amount(x: u64) -> u64 {
