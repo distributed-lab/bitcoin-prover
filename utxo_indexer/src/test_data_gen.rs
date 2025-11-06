@@ -1,4 +1,4 @@
-use anyhow::{Ok, Result};
+use anyhow::{Ok, Result, anyhow};
 use k256::{
     ecdsa::{Signature, SigningKey, signature::Signer},
     elliptic_curve::sec1::ToEncodedPoint,
@@ -7,6 +7,7 @@ use rand::Rng;
 use ripemd::Ripemd160;
 use sha2::{Digest, Sha256};
 
+#[allow(dead_code)]
 pub struct TestUtxo {
     pub amount: u64,
     pub script_pub_key: Vec<u8>,
@@ -14,13 +15,30 @@ pub struct TestUtxo {
     pub private_key: [u8; 32],
 }
 
-pub fn generate_test_utxos(utxos_amount: u32, message: [u8; 32]) -> Result<Vec<TestUtxo>> {
+#[allow(dead_code)]
+pub fn generate_test_utxos(
+    utxos_amount: u32,
+    message: [u8; 32],
+    hex_priv_key: Option<String>,
+) -> Result<Vec<TestUtxo>> {
     let mut rng = rand::rng();
     let mut res: Vec<TestUtxo> = Vec::new();
 
+    let priv_key = match hex_priv_key {
+        Some(k) => hex::decode(k)?,
+        None => Vec::new(),
+    };
+
     for _ in 0..utxos_amount {
-        let amount: u64 = rng.random_range(1000..=100000000);
-        let private_key: [u8; 32] = rng.random();
+        let amount: u64 = rng.random_range(1000..=10000000);
+        let private_key: [u8; 32] = if priv_key.is_empty() {
+            rng.random()
+        } else {
+            priv_key
+                .as_slice()
+                .try_into()
+                .map_err(|_| anyhow!("Failed to parse private  key"))?
+        };
 
         let sign_key = SigningKey::from_bytes(&private_key)?;
         let pub_key = sign_key.verifying_key().to_encoded_point(true);
@@ -64,7 +82,7 @@ mod tests {
 
     #[test]
     fn text_gen() {
-        let utxos = generate_test_utxos(10, [0; 32]).unwrap();
+        let utxos = generate_test_utxos(10, [0; 32], None).unwrap();
 
         for i in 0..10 {
             let sign_key = SigningKey::from_bytes(&utxos[i].private_key).unwrap();
