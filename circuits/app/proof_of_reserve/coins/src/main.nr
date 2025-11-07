@@ -1,3 +1,6 @@
+// First proof
+// Checks if user own coresponding utxos and acumulate amount
+
 mod constants;
 
 use constants::MAX_COINS_DATABASE_AMOUNT;

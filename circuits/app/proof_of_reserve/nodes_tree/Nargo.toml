@@ -1,0 +1,7 @@
+[package]
+name = "nodes_tree"
+type = "bin"
+authors = [""]
+
+[dependencies]
+utils = { path = "../../../crates/utils" }
