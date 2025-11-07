@@ -1,5 +1,5 @@
 // First proof
-// Checks if user own coresponding utxos and acumulate amount
+// Checks if user own corresponding utxos and accumulate amount
 
 mod constants;
 
