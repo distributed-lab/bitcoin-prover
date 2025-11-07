@@ -1,5 +1,6 @@
 mod bitcoin_primitives;
 mod bitcoin_serialization;
+mod utils;
 
 mod cli;
 
@@ -7,20 +8,16 @@ use anyhow::{Context, Result};
 use bitcoin::hashes::Hash;
 use clap::Parser;
 use rocksdb::{DB, IteratorMode, Options};
-use std::{
-    fs::File,
-    io::{BufReader, BufWriter},
-};
 
 use bitcoin::hashes::sha256;
 
 use crate::{
     bitcoin_primitives::{CoinKey, CoinValue},
     bitcoin_serialization::deobfuscate,
+    utils::{P2PKH_UTXO_SIZE, load_utxos, save_utxos},
 };
 
 const OBFUSCATION_KEY_DB_KEY: &[u8] = b"\x0e\x00obfuscate_key";
-const P2PKH_UTXO_SIZE: usize = 8 + 25; // 8 bytes for amount, 25 bytes for P2PKH scriptPubKey
 
 fn main() -> Result<()> {
     let cli = cli::Cli::parse();
@@ -119,18 +116,4 @@ fn run_build_merkle_root(utxo_index_path: &str) -> Result<()> {
     println!("Merkle root: {}", hex::encode(root.as_byte_array()));
 
     Ok(())
-}
-
-fn save_utxos(utxos: &Vec<[u8; P2PKH_UTXO_SIZE]>, path: &str) -> Result<()> {
-    let file = File::create(path)?;
-    let mut writer = BufWriter::new(file);
-    bincode::encode_into_std_write(utxos, &mut writer, bincode::config::standard())?;
-    Ok(())
-}
-
-fn load_utxos(path: &str) -> Result<Vec<[u8; P2PKH_UTXO_SIZE]>> {
-    let file = File::open(path)?;
-    let mut reader = BufReader::new(file);
-    let utxos = bincode::decode_from_std_read(&mut reader, bincode::config::standard())?;
-    Ok(utxos)
 }
