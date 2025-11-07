@@ -10,7 +10,6 @@ use rocksdb::{DB, IteratorMode, Options};
 use std::{
     fs::File,
     io::{BufReader, BufWriter},
-    path::Path,
 };
 
 use bitcoin::hashes::sha256;
@@ -105,6 +104,8 @@ fn run_build_merkle_root(utxo_index_path: &str) -> Result<()> {
     println!("Loading UTXO index from {}", utxo_index_path);
 
     let utxos = load_utxos(utxo_index_path)?;
+
+    println!("Calculating Merkle root for {} UTXOs", utxos.len());
 
     let mut merkle_tree_leaf_hashes: Vec<sha256::Hash> = Vec::with_capacity(utxos.len());
     for utxo in utxos {
