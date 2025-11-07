@@ -37,6 +37,9 @@ fn main() -> Result<()> {
 
     let mut p2pkh_count = 0;
 
+    let mut merkle_tree_leaf_hashes: Vec<bitcoin::hashes::sha256::Hash> =
+        Vec::with_capacity(40_000_000);
+
     for (i, item) in iter.enumerate() {
         if i % 100_000 == 0 {
             println!(
@@ -47,7 +50,7 @@ fn main() -> Result<()> {
 
         let (key, value) = item.context("DB is not reachable and iterable")?;
 
-        let coin_key = match CoinKey::deserialize(&key) {
+        let _coin_key = match CoinKey::deserialize(&key) {
             Some(ck) => ck,
             None => continue,
         };
@@ -59,28 +62,42 @@ fn main() -> Result<()> {
             None => continue,
         };
 
-        println!(
-            "ENTRY #{}, KEY: {}, DEOBFUSCATED VALUE RAW: {}",
-            i,
-            hex::encode(&key),
-            hex::encode(&deobfuscated_value)
-        );
+        // println!(
+        //     "ENTRY #{}, KEY: {}, DEOBFUSCATED VALUE RAW: {}",
+        //     i,
+        //     hex::encode(&key),
+        //     hex::encode(&deobfuscated_value)
+        // );
 
-        println!(
-            "ENTRY #{}, TXID: {}, VOUT: {}; HEIGHT: {}, IS_COINBASE: {}, AMOUNT: {}, SCRIPT_PUBKEY: {}",
-            i,
-            coin_key.txid,
-            coin_key.vout.0,
-            coin_value.height,
-            coin_value.is_coinbase,
-            coin_value.amount,
-            hex::encode(&coin_value.script_pubkey)
-        );
+        // println!(
+        //     "ENTRY #{}, TXID: {}, VOUT: {}; HEIGHT: {}, IS_COINBASE: {}, AMOUNT: {}, SCRIPT_PUBKEY: {}",
+        //     i,
+        //     coin_key.txid,
+        //     coin_key.vout.0,
+        //     coin_value.height,
+        //     coin_value.is_coinbase,
+        //     coin_value.amount,
+        //     hex::encode(&coin_value.script_pubkey)
+        // );
 
         p2pkh_count += 1;
+
+        let mut leaf_data = Vec::with_capacity(8 + 25);
+        leaf_data.extend_from_slice(&coin_value.amount.to_le_bytes());
+        leaf_data.extend_from_slice(&coin_value.script_pubkey);
+
+        let leaf_hash = bitcoin::hashes::sha256::Hash::hash(&leaf_data);
+        merkle_tree_leaf_hashes.push(leaf_hash);
     }
 
     println!("Total P2PKH UTXO entries: {}", p2pkh_count);
+
+    let root = bitcoin::merkle_tree::calculate_root(merkle_tree_leaf_hashes.into_iter()).unwrap();
+
+    println!(
+        "Merkle root of all P2PKH UTXO entries: {}",
+        hex::encode(root.as_byte_array())
+    );
 
     Ok(())
 }
