@@ -62,24 +62,6 @@ fn main() -> Result<()> {
             None => continue,
         };
 
-        // println!(
-        //     "ENTRY #{}, KEY: {}, DEOBFUSCATED VALUE RAW: {}",
-        //     i,
-        //     hex::encode(&key),
-        //     hex::encode(&deobfuscated_value)
-        // );
-
-        // println!(
-        //     "ENTRY #{}, TXID: {}, VOUT: {}; HEIGHT: {}, IS_COINBASE: {}, AMOUNT: {}, SCRIPT_PUBKEY: {}",
-        //     i,
-        //     coin_key.txid,
-        //     coin_key.vout.0,
-        //     coin_value.height,
-        //     coin_value.is_coinbase,
-        //     coin_value.amount,
-        //     hex::encode(&coin_value.script_pubkey)
-        // );
-
         p2pkh_count += 1;
 
         let mut leaf_data = Vec::with_capacity(8 + 25);
@@ -113,6 +95,7 @@ fn deobfuscate(data: &[u8], obfuscation_key: &[u8]) -> Vec<u8> {
         .collect()
 }
 
+#[allow(unused)]
 #[derive(Debug)]
 struct CoinKey {
     pub txid: Txid,
@@ -145,10 +128,10 @@ impl CoinKey {
     }
 }
 
+#[allow(unused)]
 #[derive(Debug)]
 struct CoinValue {
     pub height: u64,
-    #[allow(unused)]
     pub is_coinbase: bool,
     pub amount: u64,
     pub script_pubkey: Vec<u8>,
