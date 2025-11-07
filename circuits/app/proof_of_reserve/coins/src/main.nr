@@ -18,7 +18,7 @@ struct CoinsDatabaseElement {
     amount: u64,
 }
 
-struct OwnUtxo {
+struct Spending {
     witness: [u8; 72],
     pub_key: [u8; 65],
 }
@@ -26,7 +26,7 @@ struct OwnUtxo {
 fn main(
     const_message_hash: pub [u8; SHA256_HASH_SIZE],
     coins_database: [CoinsDatabaseElement; MAX_COINS_DATABASE_AMOUNT],
-    own_utxos: [OwnUtxo; MAX_COINS_DATABASE_AMOUNT],
+    own_utxos: [Spending; MAX_COINS_DATABASE_AMOUNT],
 ) -> pub ([u8; SHA256_HASH_SIZE], u64) {
     let mut owned_amount = 0;
     let mut coins_hashes = [[0; SHA256_HASH_SIZE]; MAX_COINS_DATABASE_AMOUNT];
