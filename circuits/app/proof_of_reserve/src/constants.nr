@@ -1,4 +1,0 @@
-pub global MAX_COINS_DATABASE_AMOUNT: u32 = 10;
-pub global MAX_USER_UTXOS_AMOUNT: u32 = 2;
-
-pub global MAX_MERKLE_TREE_LEVELS: u32 = 6;

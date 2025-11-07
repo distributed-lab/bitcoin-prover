@@ -1,0 +1,1 @@
+pub global MAX_COINS_DATABASE_AMOUNT: u32 = 3;
