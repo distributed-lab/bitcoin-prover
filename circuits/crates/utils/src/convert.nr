@@ -19,15 +19,6 @@ pub fn u32_to_be_bytes(value: u32) -> [u8; 4] {
     res
 }
 
-pub fn u64_to_be_bytes(value: u64) -> [u8; 8] {
-    let mut res = [0; 8];
-    for i in 0..8 {
-        res[i] = (value >> ((7 - i) << 3)) as u8;
-    }
-
-    res
-}
-
 pub fn sha256_to_le_bytes(value: str<64>) -> [u8; 32] {
     let mut res = [0; 32];
     let value = value.as_bytes();
