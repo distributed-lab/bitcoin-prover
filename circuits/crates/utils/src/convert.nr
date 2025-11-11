@@ -100,7 +100,7 @@ pub fn vec_to_i32<let MAX_STACK_ELEMENT_SIZE: u32>(
     le_bytes_to_i32(result)
 }
 
-pub fn i32_to_vec<let N: u32, let MAX_STACK_ELEMENT_SIZE: u32>(
+pub fn i32_to_vec<let MAX_STACK_ELEMENT_SIZE: u32>(
     number: i32,
 ) -> BoundedVec<u8, MAX_STACK_ELEMENT_SIZE> {
     let bytes = i32_to_le_bytes(number);
@@ -147,7 +147,7 @@ pub fn le_bytes_to_u32(bytes: [u8; 4]) -> u32 {
     result
 }
 
-pub fn u32_to_vec<let N: u32, let MAX_STACK_ELEMENT_SIZE: u32>(
+pub fn u32_to_vec<let MAX_STACK_ELEMENT_SIZE: u32>(
     number: u32,
 ) -> BoundedVec<u8, MAX_STACK_ELEMENT_SIZE> {
     let bytes = u32_to_le_bytes(number);
