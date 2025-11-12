@@ -21,17 +21,23 @@ fn main(
     let mut owned_amount = 0;
 
     for i in 0..MAX_NODES_AMOUNT {
-        verify_ultrahonkzk_proof(
-            verification_key,
-            node_proofs[i].proof,
-            node_proofs[i].public_inputs,
-            key_hash,
-        );
-        for j in 0..SHA256_HASH_SIZE {
-            nodes[i][j] = node_proofs[i].public_inputs[j + SHA256_HASH_SIZE] as u8;
-        }
+        if !node_proofs[i].public_inputs.all(|e| e == 0) {
+            verify_ultrahonkzk_proof(
+                verification_key,
+                node_proofs[i].proof,
+                node_proofs[i].public_inputs,
+                key_hash,
+            );
 
-        owned_amount += node_proofs[i].public_inputs[64] as u64;
+            for j in 0..SHA256_HASH_SIZE {
+                nodes[i][j] = node_proofs[i].public_inputs[j + SHA256_HASH_SIZE] as u8;
+            }
+
+            owned_amount += node_proofs[i].public_inputs[64] as u64;
+        }
+        else {
+            nodes[i] = [0; 32];
+        }
     }
 
     (merkle_root::<MAX_NODES_AMOUNT, MAX_MERKLE_TREE_LEVELS>(nodes), owned_amount)
