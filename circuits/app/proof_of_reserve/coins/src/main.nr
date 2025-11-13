@@ -27,6 +27,7 @@ fn main(
     const_message_hash: pub [u8; SHA256_HASH_SIZE],
     coins_database: [CoinsDatabaseElement; MAX_COINS_DATABASE_AMOUNT],
     own_utxos: [Spending; MAX_COINS_DATABASE_AMOUNT],
+    finalize_mr: bool,
 ) -> pub ([u8; SHA256_HASH_SIZE], u64) {
     let mut owned_amount = 0;
     let mut coins_hashes = [[0; SHA256_HASH_SIZE]; MAX_COINS_DATABASE_AMOUNT];
@@ -84,5 +85,8 @@ fn main(
         };
     }
 
-    (merkle_root::<MAX_COINS_DATABASE_AMOUNT, MAX_MERKLE_TREE_LEVELS>(coins_hashes), owned_amount)
+    (
+        merkle_root::<MAX_COINS_DATABASE_AMOUNT, MAX_MERKLE_TREE_LEVELS>(coins_hashes, finalize_mr),
+        owned_amount,
+    )
 }

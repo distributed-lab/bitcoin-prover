@@ -1,4 +1,5 @@
 use anyhow::{Ok, Result};
+use bitcoin::hashes::{Hash, sha256};
 use futures::future::join_all;
 use k256::{ecdsa::SigningKey, elliptic_curve::sec1::ToEncodedPoint};
 use serde::{Deserialize, Serialize};
@@ -31,6 +32,7 @@ struct LeafsToml {
     const_message_hash: Vec<u8>,
     coins_database: Vec<CoinsDatabaseElement>,
     own_utxos: Vec<Spending>,
+    finalize_mr: bool,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -44,13 +46,16 @@ struct NodeToml {
     verification_key: Vec<String>,
     key_hash: String,
     node_proofs: Vec<NodeProof>,
+    finalize_mr: bool,
 }
 
 #[tokio::main]
 async fn main() {
     let message = "Hello, world!";
     let priv_key = [1; 32];
-    let utxos = generate_test_utxos(12, message.as_ref(), &priv_key).unwrap();
+    let utxos = generate_test_utxos(9, message.as_ref(), &priv_key).unwrap();
+
+    let total_amount: u64 = utxos.iter().map(|u| u.amount).sum();
 
     let sk = SigningKey::from_bytes(&priv_key).unwrap();
     let pk = sk.verifying_key();
@@ -60,14 +65,36 @@ async fn main() {
 
     let rounded_leafs = (utxos.len() + MAX_COINS_DATABASE_AMOUNT - 1) / MAX_COINS_DATABASE_AMOUNT;
 
-    // run first proof
-    leafs_tomls(utxos, message_hash.as_ref(), pub_key.as_bytes()).unwrap();
+    //run first proof
+    leafs_tomls(utxos.clone(), message_hash.as_ref(), pub_key.as_bytes()).unwrap();
     prove_leafs(rounded_leafs).await;
 
     // run second proof
     let (mr, amount) = prove_nodes(rounded_leafs).await;
 
     println!("Merkle root: {}, Amount: {}", mr, amount);
+    get_merkle_root(utxos);
+    println!("Expected amount: {}", total_amount)
+}
+
+fn get_merkle_root(utxos: Vec<TestUtxo>) {
+    let mut hashes = Vec::new();
+
+    for i in utxos {
+        let mut data = i.amount.to_le_bytes().to_vec();
+        data.append(&mut hex::decode(i.script_pub_key).unwrap());
+
+        let hash = Sha256::digest(data);
+        hashes.push(hash.to_vec());
+    }
+
+    let hashes: Vec<sha256::Hash> = hashes
+        .into_iter()
+        .map(|h| sha256::Hash::from_slice(&h).unwrap())
+        .collect();
+
+    let merkle_root = bitcoin::merkle_tree::calculate_root(hashes.iter().cloned()).unwrap();
+    println!("Expected merkle root: {merkle_root}");
 }
 
 fn leafs_tomls(utxos: Vec<TestUtxo>, message_hash: &[u8; 32], public_key: &[u8]) -> Result<()> {
@@ -131,6 +158,7 @@ fn leafs_tomls(utxos: Vec<TestUtxo>, message_hash: &[u8; 32], public_key: &[u8])
             own_utxos: own_utxos
                 [(i * MAX_COINS_DATABASE_AMOUNT)..((i + 1) * MAX_COINS_DATABASE_AMOUNT)]
                 .to_vec(),
+            finalize_mr: i != 0,
         };
 
         let mut file = File::create(format!(
@@ -178,8 +206,9 @@ async fn prove_leafs(chunks: usize) {
             let status = Command::new("bash")
                 .arg("-c")
                 .arg(format!(
-                    "nargo execute -p ./provers/Prover1.toml ./coins/witness/coins{}.gz",
-                    i + 1
+                    "nargo execute -p ./provers/Prover{}.toml ./coins/witness/coins{}.gz",
+                    i + 1,
+                    i + 1,
                 ))
                 .current_dir("../circuits/app/proof_of_reserve/coins")
                 .status()
@@ -266,6 +295,7 @@ fn tree_tomls(nodes: usize, vk_path: String, proof_path: String, level: usize) -
             verification_key: vk_strings.clone(),
             key_hash: key_hash.clone(),
             node_proofs,
+            finalize_mr: i != 0,
         };
 
         let mut file = File::create(format!(
@@ -280,6 +310,26 @@ fn tree_tomls(nodes: usize, vk_path: String, proof_path: String, level: usize) -
 }
 
 async fn prove_nodes(mut chunks: usize) -> (String, u64) {
+    if chunks == 1 {
+        // Get output data
+        let pi = fs::read("../circuits/target/coins/proofs/proof_0_1/public_inputs").unwrap();
+
+        let mut idx = 1055;
+
+        let mut mr = [0; 32];
+        for i in 0..32 {
+            mr[i] = pi[idx];
+            idx += 32;
+        }
+
+        let mut amount = [0; 8];
+        for i in 0..8 {
+            amount[i] = pi[idx - (7 - i)];
+        }
+
+        return (hex::encode(mr), u64::from_be_bytes(amount));
+    }
+
     let status = Command::new("bash")
         .arg("-c")
         .arg("nargo compile")
@@ -356,21 +406,24 @@ async fn prove_nodes(mut chunks: usize) -> (String, u64) {
         i += 1;
     }
 
-    // Get merkle root
+    // Get output data
     let pi = fs::read(format!(
         "../circuits/target/tree/proofs/proof_{}_1/public_inputs",
         i
     ))
     .unwrap();
 
+    let mut idx = 1055;
+
     let mut mr = [0; 32];
     for i in 0..32 {
-        mr[i] = pi[i * 32 + 31];
+        mr[i] = pi[idx];
+        idx += 32;
     }
 
     let mut amount = [0; 8];
     for i in 0..8 {
-        amount[i] = pi[1024 + 32 - (8 - i)];
+        amount[i] = pi[idx - (7 - i)];
     }
 
     (hex::encode(mr), u64::from_be_bytes(amount))

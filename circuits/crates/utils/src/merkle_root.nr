@@ -6,6 +6,7 @@ fn hash(leaf1: [u8; 32], leaf2: [u8; 32]) -> [u8; 32] {
 
 pub fn merkle_root<let N: u32, let MAX_MERKLE_TREE_LEVELS: u32>(
     mut leafs: [[u8; 32]; N],
+    finalize_mr: bool,
 ) -> [u8; 32] {
     assert((N as Field).lt(2.pow_32(MAX_MERKLE_TREE_LEVELS as Field)));
     let mut mtree = [[0; 32]; MAX_MERKLE_TREE_LEVELS];
@@ -28,11 +29,12 @@ pub fn merkle_root<let N: u32, let MAX_MERKLE_TREE_LEVELS: u32>(
     }
 
     let mut tmp_node = [0; 32];
-    for i in 0..MAX_MERKLE_TREE_LEVELS {
+    for i in 0..(MAX_MERKLE_TREE_LEVELS - 1) {
         if (
             (i < last_level & tmp_node.all(|e| e == 0))
                 | (i <= last_level & !tmp_node.all(|e| e == 0))
-        ) {
+        )
+            | finalize_mr {
             if !mtree[i].all(|e| e == 0) {
                 let right = if tmp_node.all(|e| e == 0) {
                     mtree[i]

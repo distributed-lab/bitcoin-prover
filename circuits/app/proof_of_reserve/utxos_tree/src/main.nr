@@ -16,7 +16,8 @@ fn main(
     verification_key: UltraHonkVerificationKey,
     key_hash: Field,
     node_proofs: [NodeProof; MAX_NODES_AMOUNT],
-) -> pub ([u8; SHA256_HASH_SIZE], u64) {
+    finalize_mr: bool,
+) -> pub ([u8; SHA256_HASH_SIZE], [u8; SHA256_HASH_SIZE], u64) {
     let mut nodes = [[0; SHA256_HASH_SIZE]; MAX_NODES_AMOUNT];
     let mut owned_amount = 0;
 
@@ -34,11 +35,18 @@ fn main(
             }
 
             owned_amount += node_proofs[i].public_inputs[64] as u64;
-        }
-        else {
+        } else {
             nodes[i] = [0; 32];
         }
     }
 
-    (merkle_root::<MAX_NODES_AMOUNT, MAX_MERKLE_TREE_LEVELS>(nodes), owned_amount)
+    let mut const_message = [0; 32];
+    for i in 0..32 {
+        const_message[i] = node_proofs[0].public_inputs[i] as u8;
+    }
+
+    (
+        const_message, merkle_root::<MAX_NODES_AMOUNT, MAX_MERKLE_TREE_LEVELS>(nodes, finalize_mr),
+        owned_amount,
+    )
 }

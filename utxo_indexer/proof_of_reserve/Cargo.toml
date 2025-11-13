@@ -14,3 +14,4 @@ sha2 = "0.10.9"
 k256 = { version = "0.11", features = ["ecdsa"] }
 tokio = { version = "1.48.0", features = ["full"] }
 futures = "0.3.31"
+bitcoin = "0.32.7"
