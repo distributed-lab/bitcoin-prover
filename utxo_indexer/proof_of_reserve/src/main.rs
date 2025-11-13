@@ -234,7 +234,7 @@ async fn prove_leafs(chunks: usize) {
     join_all(tasks).await;
 }
 
-fn tree_tomls(nodes: usize, vk_path: String, proof_path: String, level: usize) -> Result<()> {
+fn tree_tomls(nodes: usize, vk_path: String, proof_path: String, proof_level: usize, prover_level: usize) -> Result<()> {
     let chunks = (nodes + MAX_NODES_AMOUNT - 1) / MAX_NODES_AMOUNT;
 
     let vk = fs::read(vk_path.clone() + "/vk")?;
@@ -264,13 +264,13 @@ fn tree_tomls(nodes: usize, vk_path: String, proof_path: String, level: usize) -
             let proof = fs::read(format!(
                 "{}/proof_{}_{}/proof",
                 proof_path,
-                level,
+                proof_level,
                 i * MAX_NODES_AMOUNT + j + 1
             ))?;
             let pi = fs::read(format!(
                 "{}/proof_{}_{}/public_inputs",
                 proof_path,
-                level,
+                proof_level,
                 i * MAX_NODES_AMOUNT + j + 1
             ))?;
 
@@ -300,7 +300,7 @@ fn tree_tomls(nodes: usize, vk_path: String, proof_path: String, level: usize) -
 
         let mut file = File::create(format!(
             "../circuits/app/proof_of_reserve/utxos_tree/provers/Prover_{}_{}.toml",
-            level,
+            prover_level,
             i + 1
         ))?;
         file.write(toml::to_string(&node_toml)?.as_bytes())?;
@@ -353,6 +353,7 @@ async fn prove_nodes(mut chunks: usize) -> (String, u64) {
         "../circuits/target/vk/leafs".to_string(),
         "../circuits/target/coins/proofs".to_string(),
         0,
+        0,
     )
     .unwrap();
 
@@ -401,6 +402,7 @@ async fn prove_nodes(mut chunks: usize) -> (String, u64) {
             "../circuits/target/vk/tree".to_string(),
             "../circuits/target/tree/proofs".to_string(),
             i,
+            i + 1,
         )
         .unwrap();
         i += 1;
