@@ -1,9 +1,9 @@
+use poseidon::poseidon2::Poseidon2Hasher;
 use std::collections::map::HashMap;
 use std::hash::BuildHasherDefault;
-use std::hash::poseidon2::Poseidon2Hasher;
 
 use crate::compact_size;
-use utils::convert::{bytes_to_hex, hex_to_bytes, reverse_bytes};
+use utils::convert::{bytes_to_hex, hex_to_bytes};
 
 pub struct PositionField {
     pub offset: u32,
@@ -162,8 +162,8 @@ impl<let TRANSACTION_SIZE: u32, let INPUT_COUNT: u32, let INPUT_COUNT_LEN: u32, 
                 cur_pos += stack_size.size;
 
                 let stack_size_u32 = compact_size::compact_size_to_u32(data, stack_size);
-                let mut items: HashMap<u32, WitnessItem, 100, BuildHasherDefault<Poseidon2Hasher>> =
-                    HashMap::default();
+                let mut items: HashMap<u32, WitnessItem, 100, BuildHasherDefault<Poseidon2Hasher>>
+                     = HashMap::default();
 
                 assert(stack_size_u32 <= MAX_WITNESS_STACK_SIZE);
                 for j in 0..MAX_WITNESS_STACK_SIZE {

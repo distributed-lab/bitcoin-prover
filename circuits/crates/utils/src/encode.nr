@@ -22,7 +22,7 @@ pub fn encode_base58<let LEN: u32>(ripemd: [u8; 20]) -> str<LEN> {
     for i in 0..LEN {
         quotient = divided.udiv(divider);
         remainder = divided - quotient.mul(divider);
-        res[LEN - i - 1] = base58[remainder.get_limb(0)];
+        res[LEN - i - 1] = base58[remainder.get_limb(0) as u32];
 
         divided = quotient;
     }
@@ -73,7 +73,7 @@ pub fn encode_bech32m(value: [u8; 32]) -> str<62> {
     }
 
     for i in 0..58 {
-        res[i] = bech32m[res[i]];
+        res[i] = bech32m[res[i] as u32];
     }
 
     "bc1p".as_bytes().as_slice().append(res).as_array().as_str_unchecked()
@@ -99,7 +99,7 @@ fn bits_5_to_num(value: [u1]) -> u8 {
     let mut res = 0;
 
     for i in 0..5 {
-        res += (value[i] as u8 << (4 - i));
+        res += (value[i] as u8 << (4 - i) as u8);
     }
 
     res
