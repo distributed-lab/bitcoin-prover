@@ -91,8 +91,7 @@ fn bytes_to_utxos(
 ) -> Result<Vec<Utxo>> {
     let mut res = Vec::with_capacity(utxos_bytes.len());
 
-    // utxos_bytes.len()
-    for i in 0..7 {
+    for i in 0..utxos_bytes.len() {
         let spk = hex::encode(&utxos_bytes[i][8..33]);
 
         let own = owned.get(&spk);
