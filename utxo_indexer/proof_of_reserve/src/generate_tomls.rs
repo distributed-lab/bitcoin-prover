@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use utxo_test_data_generator::test_data_gen::TestUtxo;
+use utxo_test_data_generator::test_data_gen::Utxo;
 
 use crate::{MAX_COINS_DATABASE_AMOUNT, MAX_NODES_AMOUNT};
 
@@ -43,7 +43,7 @@ struct NodeToml {
     finalize_mr: bool,
 }
 
-pub fn leafs_tomls(utxos: Vec<TestUtxo>, message_hash: &[u8; 32], public_key: &[u8]) -> Result<()> {
+pub fn leafs_tomls(utxos: Vec<Utxo>, message_hash: &[u8; 32]) -> Result<()> {
     let mut coins_database: Vec<CoinsDatabaseElement> = utxos
         .iter()
         .map(|e| {
@@ -66,11 +66,6 @@ pub fn leafs_tomls(utxos: Vec<TestUtxo>, message_hash: &[u8; 32], public_key: &[
         });
     }
 
-    let mut pub_key = Vec::from(public_key);
-    if pub_key.len() < 65 {
-        pub_key.resize(65, 0);
-    }
-
     let mut own_utxos: Vec<Spending> = utxos
         .iter()
         .map(|e| {
@@ -79,9 +74,14 @@ pub fn leafs_tomls(utxos: Vec<TestUtxo>, message_hash: &[u8; 32], public_key: &[
                 witness.resize(72, 0);
             }
 
+            let mut pub_key = Vec::from(hex::decode(&e.pub_key)?);
+            if pub_key.len() < 65 {
+                pub_key.resize(65, 0);
+            }
+
             Ok(Spending {
                 witness,
-                pub_key: pub_key.clone(),
+                pub_key: pub_key,
             })
         })
         .collect::<Result<Vec<_>>>()?;

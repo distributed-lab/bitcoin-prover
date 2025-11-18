@@ -1,16 +1,23 @@
-use std::{fs::File, io::Write};
+use std::{
+    collections::HashMap,
+    fs::File,
+    io::{Read, Write},
+};
 
 use anyhow::Result;
 use bitcoin::hashes::{Hash, sha256};
-use k256::{ecdsa::SigningKey, elliptic_curve::sec1::ToEncodedPoint};
+use clap::Parser;
+use indexer::load_utxos;
+use serde::Deserialize;
 use sha2::{Digest, Sha256};
-use utxo_test_data_generator::test_data_gen::{TestUtxo, generate_test_utxos};
+use utxo_test_data_generator::test_data_gen::{Utxo, generate_test_utxos};
 
 use crate::{
     generate_tomls::leafs_tomls,
     proofs::{prove_leafs, prove_nodes},
 };
 
+mod cli;
 mod generate_tomls;
 mod proofs;
 
@@ -18,26 +25,57 @@ pub const MAX_COINS_DATABASE_AMOUNT: usize = 8;
 pub const MAX_NODES_AMOUNT: usize = 8;
 pub const MAX_ASYNC_TASKS: usize = 2;
 
+pub const P2PKH_UTXO_SIZE: usize = 8 + 25; // 8 bytes for amount, 25 bytes for P2PKH scriptPubKey
+
+#[derive(Debug, Deserialize)]
+struct OwnItem {
+    script_pub_key: String,
+    witness: String,
+    pub_key: String,
+}
+
 #[tokio::main]
 async fn main() {
-    let message = "Hello, world!";
-    let priv_key = [1; 32];
-    let utxos = generate_test_utxos(9, message.as_ref(), &priv_key).unwrap();
+    let cli = cli::Cli::parse();
 
-    let total_amount: u64 = utxos.iter().map(|u| u.amount).sum();
+    match &cli.command {
+        cli::Commands::Test { amount } => test_utxos(*amount).await,
+        cli::Commands::FromIndexer {
+            utxo_index_path,
+            message,
+            own_otxo_path,
+        } => {
+            from_indexer(
+                utxo_index_path.as_str(),
+                message.as_str(),
+                own_otxo_path.as_str(),
+            )
+            .await
+        }
+    }
+}
 
-    let sk = SigningKey::from_bytes(&priv_key).unwrap();
-    let pk = sk.verifying_key();
+async fn from_indexer(utxo_index_path: &str, message: &str, own_otxo_path: &str) {
+    let mut file = File::open(own_otxo_path).unwrap();
+    let mut own_string: String = Default::default();
+    file.read_to_string(&mut own_string).unwrap();
+    let owned: Vec<OwnItem> = serde_json::from_str(&own_string).unwrap();
+    let owned: HashMap<String, (String, String)> = owned
+        .into_iter()
+        .map(|e| (e.script_pub_key, (e.witness, e.pub_key)))
+        .collect();
+
+    let utxos_bytes = load_utxos(utxo_index_path).unwrap();
+    let utxos = bytes_to_utxos(utxos_bytes, owned).unwrap();
 
     let message_hash = Sha256::digest(message);
-    let pub_key = pk.to_encoded_point(true);
 
     let rounded_leafs = (utxos.len() + MAX_COINS_DATABASE_AMOUNT - 1) / MAX_COINS_DATABASE_AMOUNT;
 
     write_consts().unwrap();
 
     //run first proof
-    leafs_tomls(utxos.clone(), message_hash.as_ref(), pub_key.as_bytes()).unwrap();
+    leafs_tomls(utxos.clone(), message_hash.as_ref()).unwrap();
     prove_leafs(rounded_leafs).await.unwrap();
 
     // run second proof
@@ -45,10 +83,58 @@ async fn main() {
 
     println!("Merkle root: {}, Amount: {}", mr, amount);
     get_merkle_root(utxos);
-    println!("Expected amount: {}", total_amount)
 }
 
-fn get_merkle_root(utxos: Vec<TestUtxo>) {
+fn bytes_to_utxos(
+    utxos_bytes: Vec<[u8; P2PKH_UTXO_SIZE]>,
+    owned: HashMap<String, (String, String)>,
+) -> Result<Vec<Utxo>> {
+    let mut res = Vec::with_capacity(utxos_bytes.len());
+
+    // utxos_bytes.len()
+    for i in 0..7 {
+        let spk = hex::encode(&utxos_bytes[i][8..33]);
+
+        let own = owned.get(&spk);
+        let (witness, pub_key) = match own {
+            Some(e) => (e.0.clone(), e.1.clone()),
+            None => ("".to_string(), "".to_string()),
+        };
+
+        res.push(Utxo {
+            amount: u64::from_le_bytes(utxos_bytes[i][0..8].try_into()?),
+            script_pub_key: spk,
+            witness,
+            pub_key,
+        });
+    }
+
+    Ok(res)
+}
+
+async fn test_utxos(amount: u32) {
+    let message = "Test message";
+    let priv_key = [1; 32];
+    let utxos = generate_test_utxos(amount, message.as_ref(), &priv_key).unwrap();
+
+    let message_hash = Sha256::digest(message);
+
+    let rounded_leafs = (utxos.len() + MAX_COINS_DATABASE_AMOUNT - 1) / MAX_COINS_DATABASE_AMOUNT;
+
+    write_consts().unwrap();
+
+    //run first proof
+    leafs_tomls(utxos.clone(), message_hash.as_ref()).unwrap();
+    prove_leafs(rounded_leafs).await.unwrap();
+
+    // run second proof
+    let (mr, amount) = prove_nodes(rounded_leafs).await.unwrap();
+
+    println!("Merkle root: {}, Amount: {}", mr, amount);
+    get_merkle_root(utxos);
+}
+
+fn get_merkle_root(utxos: Vec<Utxo>) {
     let mut hashes = Vec::new();
 
     for i in utxos {
