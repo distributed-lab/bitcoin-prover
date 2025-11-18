@@ -27,6 +27,8 @@ pub const MAX_ASYNC_TASKS: usize = 2;
 
 pub const P2PKH_UTXO_SIZE: usize = 8 + 25; // 8 bytes for amount, 25 bytes for P2PKH scriptPubKey
 
+const TEST_MESSAGE: &str = "Test message";
+
 #[derive(Debug, Deserialize)]
 struct OwnItem {
     script_pub_key: String,
@@ -38,35 +40,17 @@ struct OwnItem {
 async fn main() {
     let cli = cli::Cli::parse();
 
-    match &cli.command {
-        cli::Commands::Test { amount } => test_utxos(*amount).await,
+    let (utxos, message) = match &cli.command {
+        cli::Commands::Test { amount } => (test_utxos(*amount).unwrap(), TEST_MESSAGE),
         cli::Commands::FromIndexer {
             utxo_index_path,
             message,
             own_otxo_path,
-        } => {
-            from_indexer(
-                utxo_index_path.as_str(),
-                message.as_str(),
-                own_otxo_path.as_str(),
-            )
-            .await
-        }
-    }
-}
-
-async fn from_indexer(utxo_index_path: &str, message: &str, own_otxo_path: &str) {
-    let mut file = File::open(own_otxo_path).unwrap();
-    let mut own_string: String = Default::default();
-    file.read_to_string(&mut own_string).unwrap();
-    let owned: Vec<OwnItem> = serde_json::from_str(&own_string).unwrap();
-    let owned: HashMap<String, (String, String)> = owned
-        .into_iter()
-        .map(|e| (e.script_pub_key, (e.witness, e.pub_key)))
-        .collect();
-
-    let utxos_bytes = load_utxos(utxo_index_path).unwrap();
-    let utxos = bytes_to_utxos(utxos_bytes, owned).unwrap();
+        } => (
+            from_indexer(utxo_index_path.as_str(), own_otxo_path.as_str()).unwrap(),
+            message.as_str(),
+        ),
+    };
 
     let message_hash = Sha256::digest(message);
 
@@ -83,6 +67,20 @@ async fn from_indexer(utxo_index_path: &str, message: &str, own_otxo_path: &str)
 
     println!("Merkle root: {}, Amount: {}", mr, amount);
     get_merkle_root(utxos);
+}
+
+fn from_indexer(utxo_index_path: &str, own_otxo_path: &str) -> Result<Vec<Utxo>> {
+    let mut file = File::open(own_otxo_path).unwrap();
+    let mut own_string: String = Default::default();
+    file.read_to_string(&mut own_string).unwrap();
+    let owned: Vec<OwnItem> = serde_json::from_str(&own_string).unwrap();
+    let owned: HashMap<String, (String, String)> = owned
+        .into_iter()
+        .map(|e| (e.script_pub_key, (e.witness, e.pub_key)))
+        .collect();
+
+    let utxos_bytes = load_utxos(utxo_index_path).unwrap();
+    Ok(bytes_to_utxos(utxos_bytes, owned)?)
 }
 
 fn bytes_to_utxos(
@@ -111,26 +109,13 @@ fn bytes_to_utxos(
     Ok(res)
 }
 
-async fn test_utxos(amount: u32) {
-    let message = "Test message";
+fn test_utxos(amount: u32) -> Result<Vec<Utxo>> {
     let priv_key = [1; 32];
-    let utxos = generate_test_utxos(amount, message.as_ref(), &priv_key).unwrap();
-
-    let message_hash = Sha256::digest(message);
-
-    let rounded_leafs = (utxos.len() + MAX_COINS_DATABASE_AMOUNT - 1) / MAX_COINS_DATABASE_AMOUNT;
-
-    write_consts().unwrap();
-
-    //run first proof
-    leafs_tomls(utxos.clone(), message_hash.as_ref()).unwrap();
-    prove_leafs(rounded_leafs).await.unwrap();
-
-    // run second proof
-    let (mr, amount) = prove_nodes(rounded_leafs).await.unwrap();
-
-    println!("Merkle root: {}, Amount: {}", mr, amount);
-    get_merkle_root(utxos);
+    Ok(generate_test_utxos(
+        amount,
+        TEST_MESSAGE.as_bytes(),
+        &priv_key,
+    )?)
 }
 
 fn get_merkle_root(utxos: Vec<Utxo>) {
