@@ -13,11 +13,12 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 #[allow(dead_code)]
-#[derive(Serialize, Deserialize)]
-pub struct TestUtxo {
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Utxo {
     pub amount: u64,
     pub script_pub_key: String,
     pub witness: String,
+    pub pub_key: String,
 }
 
 #[allow(dead_code)]
@@ -25,9 +26,9 @@ pub fn generate_test_utxos(
     utxos_amount: u32,
     message: &[u8],
     priv_key: &[u8; 32],
-) -> Result<Vec<TestUtxo>> {
+) -> Result<Vec<Utxo>> {
     let mut rng = rand::rng();
-    let mut res: Vec<TestUtxo> = Vec::with_capacity(utxos_amount as usize);
+    let mut res: Vec<Utxo> = Vec::with_capacity(utxos_amount as usize);
 
     for _ in 0..utxos_amount {
         let amount: u64 = rng.random_range(1000..=10000000);
@@ -47,10 +48,11 @@ pub fn generate_test_utxos(
             .push_opcode(OP_EQUALVERIFY)
             .push_opcode(OP_CHECKSIG);
 
-        res.push(TestUtxo {
+        res.push(Utxo {
             amount,
             script_pub_key: hex::encode(script_pub_key.into_bytes()),
             witness: hex::encode(Vec::from(der_bytes)),
+            pub_key: hex::encode(pub_key_bytes),
         });
     }
 
