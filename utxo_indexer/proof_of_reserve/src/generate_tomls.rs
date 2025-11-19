@@ -43,9 +43,9 @@ struct NodeToml {
     finalize_mr: bool,
 }
 
-pub fn leafs_tomls(utxos: Vec<Utxo>, message_hash: &[u8; 32]) -> Result<()> {
+pub fn leafs_tomls(utxos: &[Utxo], message_hash: &[u8; 32]) -> Result<()> {
     let mut coins_database: Vec<CoinsDatabaseElement> = utxos
-        .iter()
+        .into_iter()
         .map(|e| {
             Ok(CoinsDatabaseElement {
                 script_pub_key: hex::decode(&e.script_pub_key)?,
@@ -67,7 +67,7 @@ pub fn leafs_tomls(utxos: Vec<Utxo>, message_hash: &[u8; 32]) -> Result<()> {
     }
 
     let mut own_utxos: Vec<Spending> = utxos
-        .iter()
+        .into_iter()
         .map(|e| {
             let mut witness = hex::decode(&e.witness)?;
             if witness.len() < 72 {

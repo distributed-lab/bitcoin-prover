@@ -23,8 +23,17 @@ pub enum Commands {
         /// Message that was signed
         #[arg(short, long)]
         message: String,
-        /// Path to json that contains owned utxos (see example in ./proof_of_reserve/own.example.json)
+        /// Path to json that contains owned utxos (see example in ./proof_of_reserve/own_example.json)
         #[arg(short, long)]
         own_otxo_path: String,
+    },
+    /// Create DER signature of message using private key
+    Sign {
+        /// Private key to sign the message (hex without "0x")
+        #[arg(short, long)]
+        private_key: String,
+        /// Message that will be signed
+        #[arg(short, long)]
+        message: String,
     },
 }

@@ -8,6 +8,7 @@ use anyhow::Result;
 use bitcoin::hashes::{Hash, sha256};
 use clap::Parser;
 use indexer::load_utxos;
+use k256::ecdsa::{Signature, SigningKey, signature::SignerMut};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use utxo_test_data_generator::test_data_gen::{Utxo, generate_test_utxos};
@@ -50,6 +51,19 @@ async fn main() {
             from_indexer(utxo_index_path.as_str(), own_otxo_path.as_str()).unwrap(),
             message.as_str(),
         ),
+        cli::Commands::Sign {
+            private_key,
+            message,
+        } => {
+            let sign = sign_message(
+                hex::decode(private_key).unwrap().as_ref(),
+                message.as_bytes(),
+            )
+            .unwrap();
+
+            println!("Signature: {}", hex::encode(sign));
+            return;
+        }
     };
 
     let message_hash = Sha256::digest(message);
@@ -59,14 +73,21 @@ async fn main() {
     write_consts().unwrap();
 
     //run first proof
-    leafs_tomls(utxos.clone(), message_hash.as_ref()).unwrap();
+    leafs_tomls(utxos.as_ref(), message_hash.as_ref()).unwrap();
     prove_leafs(rounded_leafs).await.unwrap();
 
     // run second proof
     let (mr, amount) = prove_nodes(rounded_leafs).await.unwrap();
 
     println!("Merkle root: {}, Amount: {}", mr, amount);
-    get_merkle_root(utxos);
+    get_merkle_root(utxos.as_ref());
+}
+
+fn sign_message(priv_key: &[u8], message: &[u8]) -> Result<Vec<u8>> {
+    let mut sign_key = SigningKey::from_bytes(priv_key)?;
+    let signature: Signature = sign_key.sign(message);
+    let normalized = signature.normalize_s().unwrap_or(signature).to_der();
+    Ok(Vec::from(normalized.as_bytes()))
 }
 
 fn from_indexer(utxo_index_path: &str, own_otxo_path: &str) -> Result<Vec<Utxo>> {
@@ -80,11 +101,11 @@ fn from_indexer(utxo_index_path: &str, own_otxo_path: &str) -> Result<Vec<Utxo>>
         .collect();
 
     let utxos_bytes = load_utxos(utxo_index_path).unwrap();
-    Ok(bytes_to_utxos(utxos_bytes, owned)?)
+    Ok(bytes_to_utxos(utxos_bytes.as_ref(), owned)?)
 }
 
 fn bytes_to_utxos(
-    utxos_bytes: Vec<[u8; P2PKH_UTXO_SIZE]>,
+    utxos_bytes: &[[u8; P2PKH_UTXO_SIZE]],
     owned: HashMap<String, (String, String)>,
 ) -> Result<Vec<Utxo>> {
     let mut res = Vec::with_capacity(utxos_bytes.len());
@@ -118,12 +139,12 @@ fn test_utxos(amount: u32) -> Result<Vec<Utxo>> {
     )?)
 }
 
-fn get_merkle_root(utxos: Vec<Utxo>) {
+fn get_merkle_root(utxos: &[Utxo]) {
     let mut hashes = Vec::new();
 
     for i in utxos {
         let mut data = i.amount.to_le_bytes().to_vec();
-        data.append(&mut hex::decode(i.script_pub_key).unwrap());
+        data.append(&mut hex::decode(i.script_pub_key.clone()).unwrap());
 
         let hash = Sha256::digest(data);
         hashes.push(hash.to_vec());
