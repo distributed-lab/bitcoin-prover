@@ -17,4 +17,6 @@ members = [
     "app/p2sh_p2wsh",
     "app/blocks_recursive/recursive_base",
     "app/blocks_recursive/recursive",
+    "app/proof_of_reserve/coins",
+    "app/proof_of_reserve/utxos_tree",
 ]

@@ -593,14 +593,14 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
     // todo: replace bit shifts with more efficient operations
     pub fn op_checklocktimeverify(&mut self) {
         let elem = self.data[self.stack_size - 1];
-        let num = vec_to_i32(elem);
+        let num = vec_to_u32(elem);
         let ltime_offset = self.cur_transaction.lock_time.offset;
         let sequence_offset = self.cur_transaction.inputs[self.input_to_sign].sequence.offset;
         let mut locktime = 0;
         let mut sequence = 0;
         for i in 0..4 {
-            locktime += self.cur_transaction.data[ltime_offset + i] as i32 << (i * 8) as u8;
-            sequence += self.cur_transaction.data[sequence_offset + i] as i32 << (i * 8) as u8;
+            locktime += self.cur_transaction.data[ltime_offset + i] as u32 << (i * 8) as u32;
+            sequence += self.cur_transaction.data[sequence_offset + i] as u32 << (i * 8) as u32;
         }
 
         if (num < 0)
@@ -615,14 +615,14 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
     // todo: replace bit shifts with more efficiency operations
     pub fn op_checksequenceverify(&mut self) {
         let elem = self.data[self.stack_size - 1];
-        let num = vec_to_i32(elem);
+        let num = vec_to_u32(elem);
         let version_offset = self.cur_transaction.version.offset;
         let sequence_offset = self.cur_transaction.inputs[self.input_to_sign].sequence.offset;
         let mut version = 0;
         let mut sequence = 0;
         for i in 0..4 {
-            version += self.cur_transaction.data[version_offset + i] as i32 << (i * 8) as u8;
-            sequence += self.cur_transaction.data[sequence_offset + i] as i32 << (i * 8) as u8;
+            version += self.cur_transaction.data[version_offset + i] as u32 << (i * 8) as u32;
+            sequence += self.cur_transaction.data[sequence_offset + i] as u32 << (i * 8) as u32;
         }
 
         let types_are_equal = ((sequence >> 22) & 1) == ((num >> 22) & 1);
@@ -1183,7 +1183,7 @@ impl<let MAX_STACK_ELEMENT_SIZE: u32, let MAX_STACK_SIZE: u32, let CURRENT_TRANS
                 let mut message_hash = [0; 32];
 
                 let (pub_x, pub_y) = keys[N - 1 - i];
-                let (signature, hash_type, _) = sigs[sig_now];
+                let (signature, hash_type, _) = sigs[sig_now as u32];
 
                 if hash_type == SIGHASH_ALL {
                     message_hash = self.get_sighash_all_message_hash::<SCRIPT_CODE_LEN>(address);

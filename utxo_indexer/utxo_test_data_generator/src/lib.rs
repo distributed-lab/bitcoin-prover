@@ -1,1 +1,1 @@
-mod test_data_gen;
+pub mod test_data_gen;

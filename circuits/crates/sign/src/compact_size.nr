@@ -6,11 +6,11 @@ pub fn compact_size_to_u32<let N: u32>(data: [u8; N], position: PositionField) -
         result = data[position.offset] as u32;
     } else if position.size == 3 {
         for i in 1..3 {
-            result += data[position.offset + i] as u32 << (8 * (i - 1) as u8);
+            result += data[position.offset + i] as u32 << (8 * (i - 1));
         }
     } else if position.size == 5 {
         for i in 1..5 {
-            result += data[position.offset + i] as u32 << (8 * (i - 1) as u8);
+            result += data[position.offset + i] as u32 << (8 * (i - 1) as u32);
         }
     } else if position.size == 9 {
         assert(false, "Compact size type FF is not supported");
